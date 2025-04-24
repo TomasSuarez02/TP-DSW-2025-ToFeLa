@@ -6,16 +6,16 @@
 * 52960 - Lautaro Goyoaga
 * 52977 - Felipe Bentancour
 
-# SUBJECT
-## OVERVIEW
+## SUBJECT
+### OVERVIEW
 
-# ''
+### ''
 
-# MODEL OR CLASESS DIAGRAM
+### MODEL OR CLASESS DIAGRAM
 
 
 
-## FUNCTIONAL SCOPE
+### FUNCTIONAL SCOPE
 
 ### MINIMUM SCOPE
 
