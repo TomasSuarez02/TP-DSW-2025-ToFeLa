@@ -31,5 +31,5 @@ Regularity:
 Additional Requirements for AD:
 |Req|Detail|
 |:-|:-|
-|CRUD |1. CRUD-AGENT 2. ...<br>|
+|CRUD |1. CRUD-AGENT<br>2. ...<br>|
 |CUU/Epic|1. ...<br>|
