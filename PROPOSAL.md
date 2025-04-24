@@ -25,11 +25,11 @@ Through a modern and user-friendly online system, clients can access an up-to-da
 Regularity:
 |Req|Detail|
 |:-|:-|
-|Simple CRUD|1. CRUD-CLIENT 2. CRUD-PROPERTY 3. CRUD-CITY |
-|Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY 2. CRUD-RENT {depend on} ...|
+|Simple CRUD|1. CRUD-CLIENT<br>2. CRUD-PROPERTY<br>3. CRUD-CITY<br>|
+|Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY<br>2. CRUD-RENT {depend on} ...<br>|
 
 Additional Requirements for AD:
 |Req|Detail|
 |:-|:-|
-|CRUD |1. CRUD-AGENT 2. ... |
-|CUU/Epic|1. ... |
+|CRUD |1. CRUD-AGENT 2. ...<br>|
+|CUU/Epic|1. ...<br>|
