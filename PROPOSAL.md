@@ -1,13 +1,17 @@
 # PROPOSAL TP DSW
 
+
+
 ## TEAM MEMBERS
 * 50252 - Tomás Nahuel Suárez
 * 52960 - Lautaro Goyoaga
 * 52977 - Felipe Bentancour
 
+
+
 ## REPOSITORIES
-* [Frontend app]
-* [Backentd app]
+* [ Frontend app ]
+* [ Backentd app ]
 
 
 
@@ -22,21 +26,21 @@ Through a modern and user-friendly online system, clients can access an up-to-da
 
 
 ## MODEL OR CLASESS DIAGRAM
-* [Documents]
+* [ Documents ]
 
 
 
 ## FUNCTIONAL SCOPE
 
 ### MINIMUM SCOPE
-
-Regularity:
+Requirements for Regularity:
 |Req|Detail|
 |:-|:-|
 |Simple CRUD|1. CRUD-CLIENT<br>2. CRUD-PROPERTY<br>3. CRUD-CITY<br>|
 |Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY<br>2. CRUD-RENT {depend on} ...<br>|
 
-Additional Requirements for AD:
+##ADDITIONAL SCOPE
+Requirements for AD:
 |Req|Detail|
 |:-|:-|
 |CRUD |1. CRUD-AGENT<br>2. ...<br>|
