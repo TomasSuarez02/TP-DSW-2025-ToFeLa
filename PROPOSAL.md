@@ -9,10 +9,13 @@
 ## SUBJECT
 #### OVERVIEW
 
-### ''
+### '...'
+
+Our real estate agency specializes in property rentals, offering comprehensive services for both property owners and tenants. We operate in various areas of the city and its surroundings, managing a wide range of properties including apartments, houses, offices, and commercial spaces. We handle the entire rental process—from property listing, responding to inquiries, organizing viewings, and screening potential tenants, to drafting and signing lease agreements.
+
+Through a modern and user-friendly online system, clients can access an up-to-date catalog of available properties, filter listings according to their needs, and request viewings. Property owners can rely on us for full management of their assets, including monthly rent collection, contract administration, and handling of tenant requests.
 
 ### MODEL OR CLASESS DIAGRAM
-
 
 
 ## FUNCTIONAL SCOPE
@@ -22,11 +25,11 @@
 Regularity:
 |Req|Detail|
 |:-|:-|
-|Simple CRUD|1. 2. 3. |
-|Dependent CRUD|1. |
+|Simple CRUD|1. CRUD-CLIENT 2. CRUD-PROPERTY 3. CRUD-CITY |
+|Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY 2. CRUD-RENT {depend on} ...|
 
 Additional Requirements for AD:
 |Req|Detail|
 |:-|:-|
-|CRUD |1. 2. |
-|CUU/Epic|1. |
+|CRUD |1. CRUD-AGENT 2. ... |
+|CUU/Epic|1. ... |
