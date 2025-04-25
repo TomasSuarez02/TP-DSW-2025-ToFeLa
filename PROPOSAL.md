@@ -37,7 +37,7 @@ Requirements for Regularity:
 |Req|Detail|
 |:-|:-|
 |Simple CRUD|1. CRUD-CLIENT<br>2. CRUD-PROPERTY<br>3. CRUD-CITY<br>|
-|Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY<br>2. CRUD-RENT {depend on} ...<br>|
+|Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY<br>2. CRUD-RENT {depend on} ...<br>3. CRUD-VISIT {depend on} agente inmobiliario, cliente y propiedad|
 
 ### ADDITIONAL SCOPE
 Requirements for AD:
