@@ -36,8 +36,8 @@ Through a modern and user-friendly online system, clients can access an up-to-da
 Requirements for Regularity:
 |Req|Detail|
 |:-|:-|
-|Simple CRUD|1. CRUD-CLIENT<br>2. CRUD-PROPERTY<br>3. CRUD-CITY<br>|
-|Dependent CRUD|1. CRUD-ZONE {depend on} CRUD-CITY<br>2. CRUD-RENT {depend on} ...<br>3. CRUD-VISIT {depend on} agente inmobiliario, cliente y propiedad|
+|Simple CRUD|1. CRUD-usuario<br>2. CRUD-PROPERTY<br>3. CRUD-inmobiliaria<br>|
+|Dependent CRUD|1. CRUD-contrato {depend on} alquiler<br>2. CRUD-RENT {depend on} propiedad y usuario<br>3. CRUD-VISIT {depend on} agente inmobiliario, cliente y propiedad|
 
 ### ADDITIONAL SCOPE
 Requirements for AD:
