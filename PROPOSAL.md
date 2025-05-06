@@ -47,4 +47,12 @@ Requirements for AD:
 |Req|Detail|
 |:-|:-|
 |CRUD |1. CRUD-Seña<br>2. CRUD-Pago<br>3. CRUD-Consulta|
-|CUU/Epic|1. Reservar una propiedad mediante una seña<br>2. Registrar un pago asociado a un alquiler o contrato vigente<br>3. Cancelar visit programada|
+|CUU/Epic|1. Reservar una propiedad mediante una seña<br>2. Registrar un pago asociado a un alquiler o contrato vigente<br>3. Cancelar visita programada|
+
+
+### VOLUNTARY ADDITIONAL FUNCTIONAL SCOP
+|Req|Detail|
+|:-|:-|
+|Listados |1. Listado de propiedades más vistas|
+|CUU/Epic|1. Marcar propiedades como favoritas(cliente)<br>2. Búsqueda avanzada de propiedades con múltiples filtros(zona, precio, disponibilidad)|
+|Otros|1.Envio notificación automática al usuario previo al vencimiento de su contrato|
