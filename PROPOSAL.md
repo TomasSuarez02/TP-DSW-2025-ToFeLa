@@ -26,7 +26,7 @@ Through a modern and user-friendly online system, clients can access an up-to-da
 
 
 ## MODEL OR CLASESS DIAGRAM
-* https://app.diagrams.net/#G1ZbQkN20eFp5l86Js8l3kue8Z8fASMzbW#%7B%22pageId%22%3A%22d972EGIYbc2AfdaPhBwq%22%7D
+* https://drive.google.com/file/d/1LIt04DcUZPJjcmk4pFcEN-Hz-9-4sP1d/view?usp=sharing
 
 
 
