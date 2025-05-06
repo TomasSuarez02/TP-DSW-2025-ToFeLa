@@ -36,7 +36,7 @@ Through a modern and user-friendly online system, clients can access an up-to-da
 Requirements for Regularity:
 |Req|Detail|
 |:-|:-|
-|Simple CRUD|1. CRUD-Usuario<br>2. CRUD-Propiedad<br>3. CRUD-Inmobiliaria|
+  |Simple CRUD|1. CRUD-Cliente<br>2. CRUD-Propiedad<br>3. CRUD-Inmobiliaria|
 |Dependent CRUD|1. CRUD-Tipo de Documentacion {depend on} Alquiler<br>2. CRUD-Agente Inmobiliario {depend on} inmobiliaria|
 |Listado + Detalle|1. Listado de propiedades filtrado por zona, tipo o inmobiliaria => muestra dirección, precio, estado<br>2. Listado de visitas por cliente o propiedad => muestra fecha, agente, estado => detalle muestra toda la información de la visita|
 |CUU / EPIC|1. Reservar una visita a una propiedad disponible<br>2. Cargar tipo de documentation necesaria para el alquiler<br>3. Reservar una propiedad mediante una seña<br>|
