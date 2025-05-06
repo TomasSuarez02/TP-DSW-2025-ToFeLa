@@ -38,10 +38,13 @@ Requirements for Regularity:
 |:-|:-|
 |Simple CRUD|1. CRUD-Usuario<br>2. CRUD-Propiedad<br>3. CRUD-Inmobiliaria<br>|
 |Dependent CRUD|1. CRUD-Contrato {depend on} Alquiler<br>2. CRUD-Alquiler {depend on} Propiedad y Usuario<br>3. CRUD-Visita {depend on} agente inmobiliario, cliente y propiedad|
+|Listado + Detalle|1. Listado de propiedades filtrado por zona, tipo o inmobiliaria => muestra dirección, precio, estado<br>2. Listado de visitas por cliente o propiedad => muestra fecha, agente, estado => detalle muestra toda la información de la visita|
+|CUU / EPIC|1. Reservar una visita a una propiedad disponible<br>2. Generar un contrato desde un alquiler vigente<br>3. Ver historial de visitas y contratos de un cliente|
+
 
 ### ADDITIONAL SCOPE
 Requirements for AD:
 |Req|Detail|
 |:-|:-|
-|CRUD |1. CRUD-AGENT<br>2. ...<br>|
-|CUU/Epic|1. ...<br>|
+|CRUD |1. CRUD-Seña<br>2. CRUD-Pago<br>3. CRUD-Consulta|
+|CUU/Epic|1. Reservar una propiedad mediante una seña<br>2. Registrar un pago asociado a un alquiler o contrato vigente<br>3. Cancelar visit programada|
