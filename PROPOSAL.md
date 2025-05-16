@@ -37,18 +37,17 @@ Through a modern and user-friendly online system, clients can access an up-to-da
 Requirements for Regularity:
 |Req|Detail|
 |:-|:-|
-  |Simple CRUD|1. CRUD-Cliente<br>2. CRUD-Propiedad<br>3. CRUD-Inmobiliaria|
-|Dependent CRUD|1. CRUD-Tipo de Documentacion {depend on} Alquiler<br>2. CRUD-Agente Inmobiliario {depend on} inmobiliaria<br>3. CRUD- Seña {depends on} Cliente, Propiedad|
+  |Simple CRUD|1. CRUD-Cliente<br>2. CRUD-TipoPropiedad<br>3. CRUD-Inmobiliaria<br>4.TipoDocumentacion|
+|Dependent CRUD|1. CRUD-Propiedad {depend on} Inmboliaria. CRUD-Agente Inmobiliario {depend on} inmobiliaria|
 |Listado + Detalle|1. Listado de propiedades filtrado por zona, tipo o inmobiliaria => muestra dirección, precio, estado<br>2. Listado de visitas por cliente o propiedad => muestra fecha, agente, estado => detalle muestra toda la información de la visita|
-|CUU / EPIC|1. Reservar una propiedad mediante una seña<br>2. Cargar tipo de documentation necesaria para el alquiler|
+|CUU / EPIC|1. Reservar una propiedad mediante una seña<br>2. Agendar visita|
 
 
 ### ADDITIONAL SCOPE
 Requirements for AD:
 |Req|Detail|
 |:-|:-|
-|CRUD |1. CRUD-Pago<br>2. CRUD-Visita|
-|CUU/Epic|1. Registrar un pago asociado a un alquiler o contrato vigente<br>2. Reservar una visita a una propiedad disponible<br>3. Cancelar visita programada|
+|CUU/Epic|1. Registrar un pago de alquiler<br>2. Confirmar alquiler|
 
 
 ### VOLUNTARY ADDITIONAL FUNCTIONAL SCOP
