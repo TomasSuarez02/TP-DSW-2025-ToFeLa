@@ -6,6 +6,7 @@
 * 50252 - Tomás Nahuel Suárez
 * 52960 - Lautaro Goyoaga
 * 52977 - Felipe Bentancour
+* 50839 - Paloma Tejedor
 
 
 
