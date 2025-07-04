@@ -1,0 +1,41 @@
+### obtener todos los cliente
+GET http://localhost:3000/api/clientes
+
+
+### obtener un cliente
+GET http://localhost:3000/api/clientes/1
+
+### crear un nuevo cliente
+POST http://localhost:3000/api/clientes
+Content-Type: application/json
+
+{
+    "nombre": "pepe",
+    "apellido": "pepe",
+    "mail": "pepe@gmail.com",
+    "telefono": "341222342",
+    "id": "2"
+}
+### modificar un cliente (PUT - recurso completo e idempotente)
+PUT http://localhost:3000/api/clientes/2
+Content-Type: application/json
+
+{
+    "nombre": "pepe",
+    "apellido": "pepe",
+    "mail": "joseluis@hotmail.com",
+    "telefono": "341222342",
+    "id": "2"
+}
+
+### modificar un cliente (PATCH - recurso parcial)
+PATCH http://localhost:3000/api/clientes/2
+Content-Type: application/json
+
+{
+    "nombre": "pepe",
+    "apellido": "jose"
+}
+
+### borrar un cliente
+DELETE http://localhost:3000/api/clientes/2
