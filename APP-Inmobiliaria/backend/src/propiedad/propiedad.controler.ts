@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { PropiedadRepository } from './propiedad.repository.js';
 import { Propiedad } from './propiedad.entity.js';
-import { InmobiliariaRepository } from '../inmobiliaria/inmobiliaria.repository.js';
+import { orm } from '../shared/db/orm.js'
 
-const repository = new PropiedadRepository();
-const inmobiliariaRepository = new InmobiliariaRepository();
+const em = orm.em;
 
 function sanitizePropiedadInput(req: Request, res: Response, next: NextFunction) {
   req.body.sanitizedInput = {
@@ -17,46 +15,66 @@ function sanitizePropiedadInput(req: Request, res: Response, next: NextFunction)
   next();
 }
 
-function findAll(req: Request, res: Response) {
-  res.json({ data: repository.findAll() });
+async function findAll(req: Request, res: Response) {
+  try {
+      const propiedades = await em.find(
+        Propiedad,
+        {},
+        { populate: ['tiposPropiedad'] }
+      )
+      res.status(200).json({ message: 'found all Propiedades', data: propiedades })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
 }
 
-function findOne(req: Request, res: Response) {
-  const id = req.params.id;
-  const propiedad = repository.findOne({ id });
-  if (!propiedad) return res.status(404).send({ message: 'Propiedad not found' });
-  res.json({ data: propiedad });
+async function findOne(req: Request, res: Response) {
+  try {
+      const id = req.params.id
+      const propiedad = await em.findOneOrFail(
+        Propiedad,
+        { id: Number(id) }
+        , { populate: ['tiposPropiedad'] }
+      )
+      res.status(200).json({ message: 'found propiedad', data: propiedad })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
 }
 
-function add(req: Request, res: Response) {
-  const input = req.body.sanitizedInput;
-  if (!inmobiliariaRepository.findOne({ id: input.inmobiliariaCuit })) {
-    return res.status(400).send({ message: 'Inmobiliaria no existe' });
-  }
-  const propiedad = new Propiedad(
-    Math.random().toString(36).substring(2, 9),
-    input.direccion,
-    input.precio,
-    input.estado,
-    input.tipoPropiedadId,
-    input.inmobiliariaCuit
-  );
-  repository.add(propiedad);
-  return res.status(201).send({ message: 'Propiedad created', data: propiedad });
+async function add(req: Request, res: Response) {
+  try {
+      const cliente = em.create(Propiedad, req.body.sanitizedInput)
+      await em.flush()
+      res.status(201).json({ message: 'propiedad created', data: cliente })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
 }
 
-function update(req: Request, res: Response) {
-  req.body.sanitizedInput.id = req.params.id;
-  const propiedad = repository.update(req.body.sanitizedInput);
-  if (!propiedad) return res.status(404).send({ message: 'Propiedad not found' });
-  return res.status(200).send({ message: 'Propiedad updated', data: propiedad });
+async function update(req: Request, res: Response) {
+  try {
+      const id = req.params.id
+      const propiedadToUpdate = await em.findOneOrFail(Propiedad, { id: Number(id) })
+      em.assign(propiedadToUpdate, req.body.sanitizedInput)
+      await em.flush()
+      res
+        .status(200)
+        .json({ message: 'propiedad updated', data: propiedadToUpdate })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
 }
 
-function remove(req: Request, res: Response) {
-  const id = req.params.id;
-  const propiedad = repository.delete({ id });
-  if (!propiedad) return res.status(404).send({ message: 'Propiedad not found' });
-  res.status(200).send({ message: 'Propiedad deleted' });
+async function remove(req: Request, res: Response) {
+  try {
+      const id = req.params.id
+      const propiedad = em.getReference(Propiedad, Number(id))
+      await em.removeAndFlush(propiedad)
+      res.status(200).json({ message: 'propiedad deleted' })
+    } catch (error: any) {
+      res.status(500).json({ message: error.message })
+    }
 }
 
 export { sanitizePropiedadInput, findAll, findOne, add, update, remove };
