@@ -1,19 +1,10 @@
 import { Router } from 'express';
-import {
-  sanitizeAgenteInput,
-  findAll,
-  findOne,
-  add,
-  update,
-  remove
-} from './agenteinmobiliario.controler.js';
+import { findAll, findOne, add, update, remove } from './agenteinmobiliario.controller.js';
 
-const router = Router();
+export const agenteinmobiliarioRouter = Router();
 
-router.get('/', findAll);
-router.get('/:id', findOne);
-router.post('/', sanitizeAgenteInput, add);
-router.put('/:id', sanitizeAgenteInput, update);
-router.delete('/:id', remove);
-
-export { router as agenteinmobiliarioRouter };
+agenteinmobiliarioRouter.get('/', findAll);
+agenteinmobiliarioRouter.get('/:id', findOne);
+agenteinmobiliarioRouter.post('/', add);
+agenteinmobiliarioRouter.put('/:id', update);
+agenteinmobiliarioRouter.delete('/:id', remove);

@@ -1,32 +1,44 @@
+import { orm } from '../shared/db/orm.js';
 import { AgenteInmobiliario } from './agenteinmobiliario.entity.js';
+import { Inmobiliaria } from '../inmobiliaria/inmobiliaria.entity.js';
 
 export class AgenteInmobiliarioRepository {
-  private items: AgenteInmobiliario[] = [];
+  private em = orm.em;
 
-  findAll() {
-    return this.items;
+  async findAll() {
+    return await this.em.find(AgenteInmobiliario, {}, { populate: ['inmobiliaria'] });
   }
 
-  findOne({ id }: { id: string }) {
-    return this.items.find(item => item.id === id);
+  async findOne(id: number) {
+    return await this.em.findOne(AgenteInmobiliario, { id }, { populate: ['inmobiliaria'] });
   }
 
-  add(agente: AgenteInmobiliario) {
-    this.items.push(agente);
+  async add(nombre: string, inmobiliariaCuit: string) {
+    const inmobiliaria = await this.em.findOneOrFail(Inmobiliaria, { cuit: inmobiliariaCuit });
+    const agente = this.em.create(AgenteInmobiliario, { nombre, inmobiliaria });
+    await this.em.persistAndFlush(agente);
     return agente;
   }
 
-  update(data: Partial<AgenteInmobiliario> & { id: string }) {
-    const index = this.items.findIndex(item => item.id === data.id);
-    if (index === -1) return null;
-    this.items[index] = { ...this.items[index], ...data };
-    return this.items[index];
+  async update(id: number, data: Partial<{ nombre: string; inmobiliariaCuit: string }>) {
+    const agente = await this.em.findOne(AgenteInmobiliario, { id });
+    if (!agente) return null;
+
+    if (data.nombre) agente.nombre = data.nombre;
+    if (data.inmobiliariaCuit) {
+      const inmobiliaria = await this.em.findOneOrFail(Inmobiliaria, { cuit: data.inmobiliariaCuit });
+      agente.inmobiliaria = inmobiliaria;
+    }
+
+    await this.em.flush();
+    return agente;
   }
 
-  delete({ id }: { id: string }) {
-    const index = this.items.findIndex(item => item.id === id);
-    if (index === -1) return null;
-    const deleted = this.items.splice(index, 1)[0];
-    return deleted;
+  async delete(id: number) {
+    const agente = await this.em.findOne(AgenteInmobiliario, { id });
+    if (!agente) return null;
+
+    await this.em.removeAndFlush(agente);
+    return agente;
   }
 }
