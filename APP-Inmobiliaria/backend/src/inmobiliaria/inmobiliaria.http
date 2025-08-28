@@ -10,8 +10,7 @@ Content-Type: application/json
 {
     "nombre": "Casa S.A",
     "direccion": "Buenos aires 3402",
-    "telefono": "341222342",
-    "clientes": [1],
+    "telefono": "341222342"
 }
 
 ### ID

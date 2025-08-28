@@ -24,15 +24,15 @@ export class Cliente extends BaseEntity {
     nro_doc!:number
 
     @Property({nullable: false})
-    telefono!:number
+    telefono!:string
 
     @Property({nullable: false})
     direccion!:string
 
-    @ManyToMany(() => TipoDocumentacion, tipo_doc => tipo_doc.clientes, { cascade: [Cascade.ALL] })
+    @ManyToMany(() => TipoDocumentacion, documentacion => documentacion.clientes, { cascade: [Cascade.ALL] , owner: true , nullable: true})
     documentaciones = new Collection<TipoDocumentacion>(this);
 
-    @ManyToMany(() => Inmobiliaria, inmobiliaria => inmobiliaria.clientes, { cascade: [Cascade.ALL] })
+    @ManyToMany(() => Inmobiliaria, (inmobiliaria) => inmobiliaria.clientes , {nullable: true})
     inmobiliarias = new Collection<Inmobiliaria>(this);
 }
     

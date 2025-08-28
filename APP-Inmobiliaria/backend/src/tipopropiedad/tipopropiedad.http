@@ -9,7 +9,9 @@ Content-Type: application/json
 
 {
     "id": 1,
-    "descripcion": "Monoambiente"
+    "nombre": "Departamento",
+    "descripcion": "Monoambiente",
+    "estado": "Activo"
 }
 
 ### ID

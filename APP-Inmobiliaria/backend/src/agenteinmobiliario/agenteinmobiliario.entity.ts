@@ -1,6 +1,7 @@
-import { Entity, PrimaryKey, Property, ManyToOne, Cascade } from '@mikro-orm/core';
+import { Entity, PrimaryKey, Property, ManyToOne, Cascade, Rel } from '@mikro-orm/core';
 import { Inmobiliaria } from '../inmobiliaria/inmobiliaria.entity.js';
 import { BaseEntity } from '../shared/db/baseEntity.entity.js';
+import { Cliente } from '../cliente/cliente.entity.js';
 
 @Entity()
 export class AgenteInmobiliario extends BaseEntity {
@@ -14,11 +15,13 @@ export class AgenteInmobiliario extends BaseEntity {
   email!: string;
 
   @Property({ nullable: false })
-  telefono!: number;
+  telefono!: string;
 
   @Property({ nullable: false })
   fechaIngreso!: Date;
 
-  @ManyToOne(() => Inmobiliaria, { nullable: false, cascade: [Cascade.ALL] })
-  inmobiliaria!: Inmobiliaria;
+  @ManyToOne(() => Inmobiliaria , {nullable: true})
+  inmobiliaria!: Rel<Inmobiliaria>;
+
 }
+//

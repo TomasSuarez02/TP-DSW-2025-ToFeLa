@@ -10,7 +10,7 @@ Content-Type: application/json
     "nombre": "Juan",
     "apellido": "Perez",
     "email": "juan.perez@email.com",
-    "telefono": 3411234567,
+    "telefono": "3411234567",
     "fechaIngreso": "2023-01-15"
 }
 

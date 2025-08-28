@@ -15,7 +15,7 @@ async function sanitizeTipoDocumentacionInput(req: Request, res: Response, next:
 
 async function findAll(req: Request, res: Response) {
   try {
-    const tipos = em.find(TipoDocumentacion, {}, { populate: ['clientes'] });
+    const tipos = await em.find(TipoDocumentacion, {}, { populate: ['clientes'] });
     res.status(200).json({ message: 'found all tipos de documentacion', data: tipos });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -26,7 +26,7 @@ async function findAll(req: Request, res: Response) {
 async function findOne(req: Request, res: Response) {
   try {
     const id = req.params.id;
-    const tipo = em.findOneOrFail(TipoDocumentacion, { id: Number(id) }, { populate: ['clientes'] });
+    const tipo = await em.findOneOrFail(TipoDocumentacion, { id: Number(id) }, { populate: ['clientes'] });
     res.status(200).json({ message: 'found tipo de documentacion', data: tipo });
   } catch (error:any) {
     res.status(500).json({ message: error.message });

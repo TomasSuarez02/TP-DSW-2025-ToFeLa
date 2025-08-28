@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, Property, Collection, Cascade, ManyToMany } from "@mikro-orm/core";
+import { Entity, ManyToOne, Property, Collection, Cascade, ManyToMany, Rel } from "@mikro-orm/core";
 import { BaseEntity } from '../shared/db/baseEntity.entity.js'
 import { Inmobiliaria } from '../inmobiliaria/inmobiliaria.entity.js'
 import { TipoPropiedad } from "../tipopropiedad/tipopropiedad.entity.js";
@@ -14,11 +14,11 @@ export class Propiedad extends BaseEntity {
     @Property({ nullable: false })
     estado!: string;
 
-    @ManyToMany(() => TipoPropiedad, tipoPropiedad => tipoPropiedad.propiedades, { cascade: [Cascade.ALL] })
+    @ManyToMany(() => TipoPropiedad, (tipoPropiedad) => tipoPropiedad.propiedades, { cascade: [Cascade.ALL], owner: true , nullable: true})
     tiposPropiedad = new Collection<TipoPropiedad>(this);
 
-    @ManyToOne(() => Inmobiliaria, { nullable: false, cascade: [Cascade.ALL] })
-    inmobiliaria!: Inmobiliaria;
+    @ManyToOne(() => Inmobiliaria, { nullable: true, cascade: [Cascade.ALL] })
+    inmobiliaria!: Rel<Inmobiliaria>;
 }
 
 /*constructor(
