@@ -1,56 +1,76 @@
 import { Request, Response, NextFunction } from 'express';
-import { AgenteInmobiliarioRepository } from './agenteinmobiliario.repository.js';
 import { AgenteInmobiliario } from './agenteinmobiliario.entity.js';
-import { InmobiliariaRepository } from '../inmobiliaria/inmobiliaria.repository.js';
+import { orm } from '../shared/db/orm.js';
 
-const repository = new AgenteInmobiliarioRepository();
-const inmobiliariaRepository = new InmobiliariaRepository();
+const em = orm.em;
 
 function sanitizeAgenteInput(req: Request, res: Response, next: NextFunction) {
   req.body.sanitizedInput = {
+    id: req.body.id,
     nombre: req.body.nombre,
-    inmobiliariaCuit: req.body.inmobiliariaCuit,
+    apellido: req.body.apellido,
+    email: req.body.email,
+    telefono: req.body.telefono,
+    fechaIngreso: req.body.fechaIngreso,
   };
+  Object.keys(req.body.sanitizedInput).forEach((key) => {
+    if (req.body.sanitizedInput[key] === undefined) {
+      delete req.body.sanitizedInput[key];
+    }
+  });
   next();
 }
 
-function findAll(req: Request, res: Response) {
-  res.json({ data: repository.findAll() });
-}
-
-function findOne(req: Request, res: Response) {
-  const id = req.params.id;
-  const agente = repository.findOne({ id });
-  if (!agente) return res.status(404).send({ message: 'AgenteInmobiliario not found' });
-  res.json({ data: agente });
-}
-
-function add(req: Request, res: Response) {
-  const input = req.body.sanitizedInput;
-  if (!inmobiliariaRepository.findOne({ id: input.inmobiliariaCuit })) {
-    return res.status(400).send({ message: 'Inmobiliaria no existe' });
+async function findAll(req: Request, res: Response) {
+  try {
+    const agentes = await em.find(AgenteInmobiliario, {});
+    res.status(200).json({ message: 'found all agentes inmobiliarios', data: agentes });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
   }
-  const agente = new AgenteInmobiliario(
-    Math.random().toString(36).substring(2, 9),
-    input.nombre,
-    input.inmobiliariaCuit
-  );
-  repository.add(agente);
-  return res.status(201).send({ message: 'AgenteInmobiliario created', data: agente });
 }
 
-function update(req: Request, res: Response) {
-  req.body.sanitizedInput.id = req.params.id;
-  const agente = repository.update(req.body.sanitizedInput);
-  if (!agente) return res.status(404).send({ message: 'AgenteInmobiliario not found' });
-  return res.status(200).send({ message: 'AgenteInmobiliario updated', data: agente });
+async function findOne(req: Request, res: Response) {
+  try {
+    const id = req.params.id;
+    const agente = await em.findOneOrFail(AgenteInmobiliario, { id: Number(id) });
+    res.status(200).json({ message: 'found agente inmobiliario', data: agente });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 }
 
-function remove(req: Request, res: Response) {
-  const id = req.params.id;
-  const agente = repository.delete({ id });
-  if (!agente) return res.status(404).send({ message: 'AgenteInmobiliario not found' });
-  res.status(200).send({ message: 'AgenteInmobiliario deleted' });
+async function add(req: Request, res: Response) {
+  try {
+    const agente = em.create(AgenteInmobiliario, req.body.sanitizedInput);
+    await em.flush();
+    res.status(201).json({ message: 'agente inmobiliario created', data: agente });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+async function update(req: Request, res: Response) {
+  try {
+    const id = req.params.id;
+    const agenteToUpdate = await em.findOneOrFail(AgenteInmobiliario, { id: Number(id) });
+    em.assign(agenteToUpdate, req.body.sanitizedInput);
+    await em.flush();
+    res.status(200).json({ message: 'agente inmobiliario updated', data: agenteToUpdate });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+async function remove(req: Request, res: Response) {
+  try {
+    const id = req.params.id;
+    const agenteToRemove = await em.findOneOrFail(AgenteInmobiliario, { id: Number(id) });
+    await em.removeAndFlush(agenteToRemove);
+    res.status(200).json({ message: 'agente inmobiliario eliminado', data: agenteToRemove });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 }
 
 export { sanitizeAgenteInput, findAll, findOne, add, update, remove };

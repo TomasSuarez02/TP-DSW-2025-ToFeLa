@@ -12,8 +12,7 @@ Content-Type: application/json
     "tipo_documento": "DNI",
     "nro_doc": 46295231,
     "direccion": "Mendoza 3122",
-    "telefono": "3412223242",
-    
+    "telefono": "3412223242"
 }
 
 ### ID

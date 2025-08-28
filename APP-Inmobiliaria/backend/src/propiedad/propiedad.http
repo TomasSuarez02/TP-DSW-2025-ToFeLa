@@ -1,32 +1,62 @@
+
 ### obtener todas las propiedades
 GET http://localhost:3000/api/propiedades
 
-### obtener una propiedad
-GET http://localhost:3000/api/propiedades/1
-
 ### crear una nueva propiedad
+# @name createPropiedad
 POST http://localhost:3000/api/propiedades
 Content-Type: application/json
 
 {
+    "id": 1,
     "direccion": "Av. Siempre Viva 742",
+    "superficie": "120m2",
     "precio": 150000,
-    "estado": "disponible",
-    "tipoPropiedadId": "1",
-    "inmobiliariaCuit": "30462950917"
+    "descripcion": "Casa familiar con jardín",
+    "estado": "disponible"
 }
 
-### modificar una propiedad
-PUT http://localhost:3000/api/propiedades/1
+### ID
+@id = {{createPropiedad.response.body.data.id}}
+
+### obtener una propiedad
+GET http://localhost:3000/api/propiedades/{{id}}
+
+### modificar una propiedad (PUT - recurso completo e idempotente)
+PUT http://localhost:3000/api/propiedades/{{id}}
 Content-Type: application/json
 
 {
+    "id": 1,
     "direccion": "Av. Siempre Viva 742",
+    "superficie": "120m2",
     "precio": 160000,
-    "estado": "reservada",
-    "tipoPropiedadId": "1",
-    "inmobiliariaCuit": "30462950917"
+    "descripcion": "Casa familiar renovada",
+    "estado": "reservada"
+}
+
+### modificar una propiedad (PATCH - recurso parcial)
+PATCH http://localhost:3000/api/propiedades/{{id}}
+Content-Type: application/json
+
+{
+    "precio": 155000,
+    "estado": "vendida"
+}
+
+# @name createPropiedadToDelete
+POST http://localhost:3000/api/propiedades
+Content-Type: application/json
+
+{
+    "id": 2,
+    "direccion": "Calle Falsa 123",
+    "superficie": "80m2",
+    "precio": 90000,
+    "descripcion": "Departamento céntrico",
+    "estado": "disponible"
 }
 
 ### borrar una propiedad
-DELETE http://localhost:3000/api/propiedades/1
+@idToDelete = {{createPropiedadToDelete.response.body.data.id}}
+DELETE http://localhost:3000/api/propiedades/{{idToDelete}}

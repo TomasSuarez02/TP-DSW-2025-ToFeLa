@@ -1,26 +1,51 @@
-### obtener todos los agentes
-GET http://localhost:3000/api/agentes
+### obtener todos los agentes inmobiliarios
+GET http://localhost:3000/api/agentesinmobiliarios
 
-### obtener un agente
-GET http://localhost:3000/api/agentes/1
-
-### crear un nuevo agente
-POST http://localhost:3000/api/agentes
+### crear un nuevo agente inmobiliario
+# @name createAgenteInmobiliario
+POST http://localhost:3000/api/agentesinmobiliarios
 Content-Type: application/json
 
 {
-    "nombre": "Juan Pérez",
-    "inmobiliariaCuit": "30462950917"
+    "nombre": "Juan",
+    "apellido": "Perez",
+    "email": "juan.perez@email.com",
+    "telefono": "3411234567",
+    "fechaIngreso": "2023-01-15"
 }
 
-### modificar un agente
-PUT http://localhost:3000/api/agentes/1
+### ID
+@id = {{createAgenteInmobiliario.response.body.data.id}}
+
+
+
+### obtener un agente inmobiliario
+GET http://localhost:3000/api/agentesinmobiliarios/{{id}}
+
+### modificar un agente inmobiliario (PUT - recurso completo e idempotente)
+PUT http://localhost:3000/api/agentesinmobiliarios/{{id}}
 Content-Type: application/json
 
 {
-    "nombre": "Juan Pérez",
-    "inmobiliariaCuit": "30462950917"
+    "email": "juan.perez@nuevoemail.com",
+    "telefono": 3417654321,
+    "fechaIngreso": "2024-02-20"
 }
 
-### borrar un agente
-DELETE http://localhost:3000/api/agentes/1
+# @name createAgenteInmobiliarioToDelete
+POST http://localhost:3000/api/agentesinmobiliarios
+Content-Type: application/json
+
+{
+    "nombre": "Maria",
+    "apellido": "Gomez",
+    "email": "maria.gomez@email.com",
+    "telefono": 3419876543,
+    "fechaIngreso": "2022-05-10"
+}
+
+
+### borrar un agente inmobiliario
+
+@idToDelete = {{createAgenteInmobiliarioToDelete.response.body.data.id}}
+DELETE http://localhost:3000/api/agentesinmobiliarios/{{idToDelete}}
