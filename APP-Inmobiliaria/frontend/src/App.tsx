@@ -1,12 +1,16 @@
-import Header from './components/Header';
+import Header from './components/Header'
+import Hero from './components/Hero'
+import Footer from './components/Footer'
 
-function App() {
+export default function App() {
   return (
     <>
       <Header />
-      {/* Otros componentes */}
+      <main className="mx-auto">
+        <Hero />
+        {/* …resto de secciones… */}
+      </main>
+      <Footer />
     </>
-  );
+  )
 }
-
-export default App;

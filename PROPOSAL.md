@@ -20,7 +20,7 @@
 
 ### '...'
 
-Nuestra agencia inmobiliaria se especializa en alquileres de propiedades, ofreciendo servicios integrales tanto para propietarios como para inquilinos. Operamos en diversas zonas de la ciudad y sus alrededores, gestionando una amplia variedad de inmuebles que incluyen departamentos, casas, oficinas y locales comerciales. Nos encargamos de todo el proceso de alquiler: desde la publicación de las propiedades, la atención de consultas, la organización de visitas y la selección de posibles inquilinos, hasta la redacción y firma de contratos de arrendamiento.
+London House es una agencia inmobiliaria que se especializa en alquileres de propiedades, ofreciendo servicios integrales tanto para propietarios como para inquilinos. Operamos en diversas zonas de la ciudad y sus alrededores, gestionando una amplia variedad de inmuebles que incluyen departamentos, casas, oficinas y locales comerciales. Nos encargamos de todo el proceso de alquiler: desde la publicación de las propiedades, la atención de consultas, la organización de visitas y la selección de posibles inquilinos, hasta la redacción y firma de contratos de arrendamiento.
 
 A través de un sistema en línea moderno y fácil de usar, los clientes pueden acceder a un catálogo actualizado de propiedades disponibles, filtrar las publicaciones según sus necesidades y solicitar visitas. Los propietarios pueden confiar en nosotros para la gestión completa de sus inmuebles, incluyendo la cobranza mensual del alquiler, la administración de contratos y la atención de solicitudes por parte de los inquilinos.
 
