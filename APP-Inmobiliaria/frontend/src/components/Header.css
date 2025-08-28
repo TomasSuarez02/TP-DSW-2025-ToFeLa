@@ -1,0 +1,26 @@
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1rem 2rem;
+	background: #fff;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.logo {
+	height: 40px;
+}
+
+.menu {
+	list-style: none;
+	display: flex;
+	gap: 1.5rem;
+	margin: 0;
+	padding: 0;
+}
+
+.menu li a {
+	text-decoration: none;
+	color: #333;
+	font-weight: 500;
+}
