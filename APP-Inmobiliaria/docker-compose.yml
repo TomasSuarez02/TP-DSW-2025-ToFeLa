@@ -1,0 +1,31 @@
+services:
+  mysql:
+    image: percona/percona-server:8.0
+    container_name: ps8-dsw-hc4g-mo
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_USER: dsw
+      MYSQL_PASSWORD: dsw
+      MYSQL_DATABASE: app-inmobiliaria
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+  mysql-app:
+    image: mysql:8.0
+    container_name: mysql-app
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: app-inmobiliaria
+      MYSQL_USER: dsw
+      MYSQL_PASSWORD: dsw
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-app-data:/var/lib/mysql
+
+volumes:
+  mysql-data:
+  mysql-app-data:
