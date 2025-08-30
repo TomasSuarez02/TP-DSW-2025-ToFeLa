@@ -1,16 +1,18 @@
-import Header from './components/Header'
-import Hero from './components/Hero'
-import Footer from './components/Footer'
+import { Route ,Routes} from 'react-router-dom'
+import Home from './pages/Home.tsx';
+import Contact from './pages/Contact.tsx';
+import Rent from './pages/rent.tsx';
+import Visit from './pages/Visit.tsx';
+import Reserv from './pages/Reserv.tsx';
 
 export default function App() {
   return (
-    <>
-      <Header />
-      <main className="mx-auto">
-        <Hero />
-        {/* …resto de secciones… */}
-      </main>
-      <Footer />
-    </>
+    <Routes>
+      <Route path='/' element={<Home/>}/>
+      <Route path='/Contact' element={<Contact/>}/>
+      <Route path='/Rent' element={<Rent/>}/>
+      <Route path='/Rent/Visit' element={<Visit/>}/>
+      <Route path='/Rent/Reserv' element={<Reserv/>}/>
+    </Routes>
   )
 }

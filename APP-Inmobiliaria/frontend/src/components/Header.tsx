@@ -3,7 +3,7 @@ import { useState } from 'react'
 export default function Header() {
   const [open, setOpen] = useState(false)
 
-  const leftLinks = ['Comprar', 'Vender', 'Alquilar', 'Dejar']
+  const leftLinks = ['Comprar', 'Vender', 'Alquilar']
   const rightLinks = ['Acerca de', 'El conocimiento', 'Contacto']
 
   return (
