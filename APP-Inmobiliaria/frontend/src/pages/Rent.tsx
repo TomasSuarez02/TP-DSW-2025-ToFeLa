@@ -1,3 +1,9 @@
+import Header from "../components/Header.tsx"
+
 export default function Rent() {
-  return <h1>Rent Page</h1>;
+  return (
+  <>
+  <Header/>
+  </>
+  )
 }

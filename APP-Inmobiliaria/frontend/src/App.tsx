@@ -4,6 +4,7 @@ import Contact from './pages/Contact.tsx';
 import Rent from './pages/rent.tsx';
 import Visit from './pages/Visit.tsx';
 import Reserv from './pages/Reserv.tsx';
+import Login from './pages/Login.tsx';
 
 export default function App() {
   return (
@@ -13,6 +14,8 @@ export default function App() {
       <Route path='/Rent' element={<Rent/>}/>
       <Route path='/Rent/Visit' element={<Visit/>}/>
       <Route path='/Rent/Reserv' element={<Reserv/>}/>
+      <Route path='/Login' element={<Login/>}/>
+      
     </Routes>
   )
 }

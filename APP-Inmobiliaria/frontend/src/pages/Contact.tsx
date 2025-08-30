@@ -1,4 +1,10 @@
+import Header from "../components/Header.tsx"
+
 export default function Contact() {
-  return <h1>Contact Page</h1>;
+    return (
+    <>
+    <Header/>
+    </>
+    )
 }
 
