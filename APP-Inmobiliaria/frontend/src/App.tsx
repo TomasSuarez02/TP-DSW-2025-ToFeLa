@@ -1,7 +1,7 @@
 import { Route ,Routes} from 'react-router-dom'
 import Home from './pages/Home.tsx';
 import Contact from './pages/Contact.tsx';
-import Rent from './pages/rent.tsx';
+import Rent from './pages/Rent.tsx';
 import Visit from './pages/Visit.tsx';
 import Reserv from './pages/Reserv.tsx';
 import Login from './pages/Login.tsx';

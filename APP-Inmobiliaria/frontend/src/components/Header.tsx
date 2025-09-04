@@ -8,7 +8,7 @@ export default function Header() {
   const leftLinks = ["Alquilar", "Contacto"];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-[#F3EEE7]/90 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
       <div className="container mx-auto max-w-screen-xl px-4">
         {/* Barra principal */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-16 md:min-h-20">
