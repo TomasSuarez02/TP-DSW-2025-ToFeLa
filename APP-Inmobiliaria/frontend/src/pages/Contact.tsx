@@ -5,97 +5,162 @@ export default function Contact() {
         <>
             <Header/>
             <div style={{
-                maxWidth: "400px",
-                margin: "40px auto",
-                padding: "28px",
-                borderRadius: "14px",
-                background: "#a48460", // Marrón claro
-                boxShadow: "0 4px 18px rgba(162,132,96,0.10)",
-                border: "1.5px solid #d2bba0"
+                minHeight: "100vh",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
             }}>
-                <div style={{textAlign: "center", marginBottom: "18px"}}>
-                    <svg width={80} height={80} fill="none" viewBox="0 0 24 24" style={{marginBottom: "8px"}}>
-                        <rect width="24" height="24" rx="5" fill="#e1d3bc"/>
-                        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z" stroke="#4b2e1c" strokeWidth="1.5" strokeLinejoin="round"/>
-                        <path d="m4 7 8 7 8-7" stroke="#d2bba0" strokeWidth="1.5" strokeLinejoin="round"/>
-                    </svg>
-                    <h2 style={{
-                        fontWeight: "bold",
-                        color: "#4b2e1c", // Marrón más fuerte
-                        letterSpacing: "1px",
-                        margin: 0,
-                        fontSize: "1.25rem"
-                    }}>CONTÁCTESE CON NOSOTROS</h2>
-                    <p style={{
-                        color: "#4b2e1c",
-                        fontSize: "1rem",
-                        margin: "10px 0 0 0"
+                <div style={{
+                    borderRadius: "22px",
+                    boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
+                    overflow: "hidden",
+                    border: "2.5px solid #181818",
+                    maxWidth: "420px",
+                    width: "100%",
+                    margin: "24px",
+                    background: "#f3e5d1",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center"
+                }}>
+                    {/* Icono de teléfono */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        marginTop: "22px",
+                        marginBottom: "5px"
                     }}>
-                        Déjanos tus datos, te contactaremos a la brevedad.
-                    </p>
+                        <div style={{
+                            background: "#bfa383",
+                            borderRadius: "50%",
+                            width: "52px",
+                            height: "52px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                        }}>
+                            <svg width="32" height="32" viewBox="0 0 64 64">
+                                <path
+                                    d="M 49 44 
+                                    c -2.5 2.5 -5.5 4 -8.5 3.2
+                                    c -5.2 -1.3 -16.5 -12.6 -17.8 -17.8
+                                    C 21 26.5 22.5 23.5 25 21
+                                    l 2.7 -2.7
+                                    c 0.8 -0.8 0.8 -2 0 -2.8
+                                    l -4.4 -4.4
+                                    c -0.8 -0.8 -2 -0.8 -2.8 0
+                                    l -3.8 3.8
+                                    c -3.3 3.3 -4.7 8.1 -3.4 12.6
+                                    c 2.2 7.7 15.1 20.6 22.8 22.8
+                                    c 4.6 1.3 9.3 -0.1 12.6 -3.4
+                                    l 3.8 -3.8
+                                    c 0.8 -0.8 0.8 -2 0 -2.8
+                                    l -4.4 -4.4
+                                    c -0.8 -0.8 -2 -0.8 -2.8 0
+                                    L 49 44 Z"
+                                    stroke="#fff"
+                                    strokeWidth="3"
+                                    fill="none"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                    <div style={{padding: "0 18px 18px 18px", width: "100%"}}>
+                        <h2 style={{
+                            fontFamily: "'Playfair Display', serif",
+                            color: "#181818",
+                            fontSize: "1.4rem",
+                            textAlign: "center",
+                            fontWeight: 500,
+                            letterSpacing: "1.5px",
+                            margin: 0,
+                            marginBottom: "8px"
+                        }}>
+                            CONTÁCTESE CON NOSOTROS
+                        </h2>
+                        <p style={{
+                            fontFamily: "'Playfair Display', serif",
+                            color: "#181818",
+                            fontSize: "0.98rem",
+                            textAlign: "center",
+                            marginBottom: "17px"
+                        }}>
+                            Déjanos tus datos, te contactaremos a la brevedad.
+                        </p>
+                        <form>
+                            <input
+                                type="text"
+                                placeholder="Nombre"
+                                style={inputStyleLogin}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Apellido"
+                                style={inputStyleLogin}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Celular"
+                                style={inputStyleLogin}
+                            />
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                style={inputStyleLogin}
+                            />
+                            <textarea
+                                placeholder="Mensaje"
+                                rows={4}
+                                style={{
+                                    ...inputStyleLogin,
+                                    resize: "none",
+                                    height: "60px"
+                                }}
+                            />
+                            <button
+                                type="submit"
+                                style={buttonStyleLogin}
+                            >
+                                Enviar
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <form>
-                    <input
-                        type="text"
-                        placeholder="Nombre"
-                        style={inputStyle}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Apellido"
-                        style={inputStyle}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Celular"
-                        style={inputStyle}
-                    />
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        style={inputStyle}
-                    />
-                    <textarea
-                        placeholder="Mensaje"
-                        rows={4}
-                        style={{
-                            ...inputStyle,
-                            resize: "none",
-                            height: "80px"
-                        }}
-                    />
-                    <button
-                        type="submit"
-                        style={{
-                            width: "100%",
-                            background: "#4b2e1c", // Marrón aún más fuerte
-                            color: "#f3ecdb", // Marfil
-                            fontWeight: "bold",
-                            fontSize: "1.1rem",
-                            border: "none",
-                            borderRadius: "8px",
-                            padding: "12px",
-                            marginTop: "12px",
-                            cursor: "pointer",
-                            boxShadow: "0 2px 6px rgba(75,46,28,0.09)"
-                        }}
-                    >
-                        Enviar
-                    </button>
-                </form>
             </div>
         </>
     )
 }
 
-const inputStyle: React.CSSProperties = {
+const inputStyleLogin: React.CSSProperties = {
     width: "100%",
-    padding: "10px 12px",
-    marginBottom: "12px",
-    fontSize: "1rem",
-    borderRadius: "8px",
-    border: "1.5px solid #d2bba0", // Arena claro
-    background: "#fffdfa", // Blanco/beige muy suave
-    color: "#4b2e1c", // Marrón aún más fuerte
-    outline: "none"
+    padding: "13px 14px",
+    marginBottom: "10px",
+    fontSize: "1.03rem",
+    borderRadius: "10px",
+    border: "1.2px solid #e3d4c2",
+    background: "#fffdfa",
+    color: "#a08e7a",
+    outline: "none",
+    fontFamily: "'Segoe UI', 'Open Sans', Arial, sans-serif",
+    fontWeight: 400,
+};
+
+const buttonStyleLogin: React.CSSProperties = {
+    width: "100%",
+    background: "#bfa383",
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: "1.08rem",
+    border: "none",
+    borderRadius: "13px",
+    padding: "12px",
+    marginTop: "6px",
+    marginBottom: "8px",
+    cursor: "pointer",
+    fontFamily: "'Segoe UI', 'Open Sans', Arial, sans-serif",
+    boxShadow: "0 2px 8px rgba(191, 163, 131, 0.10)"
 };
