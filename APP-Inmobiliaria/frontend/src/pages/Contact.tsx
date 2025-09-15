@@ -4,10 +4,10 @@ export default function Contact() {
     return (
         <>
             <Header/>
-            <div className="min-h-screen bg-white flex items-center justify-center">
-                <div className="rounded-2xl shadow-lg overflow-hidden border-1 border-black max-w-[450px] w-full m-6 bg-[#f3e5d1] flex flex-col items-center">
+            <div className="min-h-screen bg-gradient-to-b from-white to-[#f3e5d1] flex items-center justify-center">
+                <div className="p-4 rounded-2xl shadow-lg overflow-hidden border-1 border-black max-w-[500px] w-full m-6 bg-[#f3e5d1] flex flex-col items-center">
                     {/* Icono de teléfono */}
-                    <div className="flex justify-center items-center mt-[22px] mb-[5px]">
+                    <div className="flex justify-center items-center mt-[22px] mb-[5px] p-4">
                         <div className="bg-[#bfa383] rounded-full w-14 h-14 flex items-center justify-center">
                             <svg width="32" height="32" viewBox="0 0 64 64">
                                 <path
@@ -41,7 +41,7 @@ export default function Contact() {
                         <h2 className="font-playfair text-black text-2xl text-center font-medium m-0 mb-2">
                             CONTÁCTESE CON NOSOTROS
                         </h2>
-                        <p className="font-playfair text-black text-[0.98rem] text-center mb-5">
+                        <p className="font-playfair text-black text-[0.98rem] text-center mb-5 p-3">
                             Déjanos tus datos, te contactaremos a la brevedad.
                         </p>
                         <form>
@@ -72,7 +72,7 @@ export default function Contact() {
                             />
                             <button
                                 type="submit"
-                                className="w-full bg-[#bfa383] text-white font-bold text-xl border-none rounded-2xl py-3 mt-1.5 mb-2 cursor-pointer font-sans shadow-md shadow-[#bfa3831a] hover:bg-[#a88c6f] transition-colors duration-300"
+                                className="w-full bg-[#bfa383] text-white font-bold text-xl border-none rounded-2xl py-3 mt-4 cursor-pointer font-sans shadow-md shadow-[#bfa3831a] hover:bg-[#a88c6f] transition-colors duration-300"
                             >
                                 Enviar
                             </button>
