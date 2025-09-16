@@ -22,7 +22,7 @@ export default function Card({ id, direccion, precio, estado, inmobiliaria, tipo
       <img
         src={imagen ? imagen : 'src/assets/DeptoPrueba.jpg'}
         alt={direccion}
-        className="w-full aspect-[3/2] object-cover bg-white group-hover:opacity-80 rounded-xl mb-2"
+        className="w-full aspect-auto object-cover bg-white group-hover:opacity-80 rounded-xl mb-2"
       />
       <div className="mb-2 flex justify-between items-center">
         <span className="text-xs text-gray-400">ID: {id}</span>
