@@ -26,7 +26,7 @@ export default function Header() {
             </button>
 
             {/* Links normales (solo en desktop) */}
-            <nav className="hidden md:flex gap-6 text-sm">
+            <nav className="hidden md:flex gap-6 text-[18px]">
               {leftLinks.map(label => (
                 <Link
                   key={label}
@@ -42,17 +42,17 @@ export default function Header() {
           {/* CENTRO */}
           <a
             href="/"
-            className="justify-self-center text-xl md:text-2xl tracking-wider font-['Playfair_Display'] text-neutral-900"
+            className="justify-self-center text-2xl md:text-3xl tracking-wider font-['Playfair_Display'] text-neutral-900"
           >
             LONDON HOUSE
           </a>
 
           {/* DERECHA: auth (solo en desktop) */}
-          <div className="hidden md:block justify-self-end">
+          <div className="hidden md:block justify-self-end ">
             {!isLoggedIn ? (
               <Link
                 to="/login"
-                className="text-sm tracking-wide text-neutral-900 hover:opacity-80"
+                className="text-[18px] tracking-wide text-neutral-900 hover:opacity-80 "
               >
                 Iniciar Sesión
               </Link>
