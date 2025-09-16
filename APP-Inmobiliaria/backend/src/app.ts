@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 import express from 'express'
+import cors from 'cors'
 import { clienteRouter } from './cliente/cliente.routes.js'
 import { tipopropiedadRouter } from './tipopropiedad/tipopropiedad.routes.js'
 import { inmobiliariaRouter } from './inmobiliaria/inmobiliaria.routes.js'
@@ -10,7 +11,13 @@ import { orm, syncSchema } from './shared/db/orm.js'
 import { RequestContext } from '@mikro-orm/core'
 
 
+
 const app = express()
+app.use(cors({
+  origin: '*', // Puedes restringir a tu dominio si lo deseas
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
 app.use(express.json())
 
 //luego de los middlewares base
