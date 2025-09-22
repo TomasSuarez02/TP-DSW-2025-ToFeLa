@@ -1,0 +1,45 @@
+
+### obtener todas las imagenes
+GET http://localhost:3000/api/imagenes
+
+### crear una nueva imagen
+# @name createImagen
+POST http://localhost:3000/api/imagenes
+Content-Type: application/json
+
+{
+    "id": 1,
+    "path": "http://localhost:3000/images/imagen1.jpg",
+    "propiedad": 1
+}
+
+### ID
+@id = {{createImagen.response.body.data.id}}
+
+### obtener una imagen
+GET http://localhost:3000/api/imagenes/{{id}}
+
+### modificar una imagen (PUT - recurso completo e idempotente)
+PUT http://localhost:3000/api/imagenes/{{id}}
+Content-Type: application/json
+
+{
+    "id": 1,
+    "path": "http://localhost:3000/images/imagen1.jpg",
+    "propiedad": 1
+}
+
+
+# @name createImagenToDelete
+POST http://localhost:3000/api/imagenes
+Content-Type: application/json
+
+{
+    "id": 4,
+    "path": "http://localhost:3000/images/imagen2.jpg",
+    "propiedad": 1
+}
+
+### borrar una imagen
+@idToDelete = {{createImagenToDelete.response.body.data.id}}
+DELETE http://localhost:3000/api/imagenes/{{idToDelete}}
