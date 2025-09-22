@@ -10,6 +10,7 @@ import { agenteInmobiliarioRouter } from './agenteinmobiliario/agenteinmobiliari
 import { orm, syncSchema } from './shared/db/orm.js'
 import { RequestContext } from '@mikro-orm/core'
 import { imagenRouter } from './imagenes/imagen.routes.js'
+import { contactoRouter } from './contacto/contacto.routes.js'
 
 
 
@@ -35,6 +36,7 @@ app.use('/api/propiedades', propiedadRouter)
 app.use('/api/agentesinmobiliarios', agenteInmobiliarioRouter)
 app.use('/api/imagenes', imagenRouter) // Nueva ruta para imagenes
 app.use('/images', express.static('uploads/images')) // Servir imágenes estáticas
+app.use('/api/contacto', contactoRouter); // Nueva ruta para contacto
 
 
 app.use((_, res) => {

@@ -1,6 +1,45 @@
+// Contact.tsx
+
 import Header from "../components/Header.tsx"
+import React, { useState } from 'react';
+import axios from 'axios';
 
 export default function Contact() {
+    // Declaración de estados para todos los campos del formulario
+    const [nombre, setNombre] = useState<string>('');
+    const [apellido, setApellido] = useState<string>('');
+    const [celular, setCelular] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
+    const [mensaje, setMensaje] = useState<string>('');
+    const [status, setStatus] = useState<string>('');
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setStatus('Enviando...');
+
+        try {
+            // Se crea el objeto de datos con todos los campos
+            const data = { nombre, apellido, celular, email, mensaje };
+            const response = await axios.post('http://host.docker.internal:3000/api/contacto', data);
+
+            if (response.status === 200) {
+                setStatus('¡Mensaje enviado con éxito! 😊');
+                // Limpiar todos los campos al enviar
+                setNombre('');
+                setApellido('');
+                setCelular('');
+                setEmail('');
+                setMensaje('');
+            } else {
+                const errorMessage = (response.data as { message?: string }).message ?? 'Error desconocido';
+                setStatus(`Error: ${errorMessage}`);
+            }
+        } catch (error) {
+            console.error('Error al enviar el formulario:', error);
+            setStatus('Hubo un problema de conexión. Por favor, inténtalo de nuevo más tarde.');
+        }
+    };
+
     return (
         <>
             <Header/>
@@ -11,23 +50,7 @@ export default function Contact() {
                         <div className="bg-[#bfa383] rounded-full w-14 h-14 flex items-center justify-center">
                             <svg width="32" height="32" viewBox="0 0 64 64">
                                 <path
-                                    d="M 49 44 
-                                    c -2.5 2.5 -5.5 4 -8.5 3.2
-                                    c -5.2 -1.3 -16.5 -12.6 -17.8 -17.8
-                                    C 21 26.5 22.5 23.5 25 21
-                                    l 2.7 -2.7
-                                    c 0.8 -0.8 0.8 -2 0 -2.8
-                                    l -4.4 -4.4
-                                    c -0.8 -0.8 -2 -0.8 -2.8 0
-                                    l -3.8 3.8
-                                    c -3.3 3.3 -4.7 8.1 -3.4 12.6
-                                    c 2.2 7.7 15.1 20.6 22.8 22.8
-                                    c 4.6 1.3 9.3 -0.1 12.6 -3.4
-                                    l 3.8 -3.8
-                                    c 0.8 -0.8 0.8 -2 0 -2.8
-                                    l -4.4 -4.4
-                                    c -0.8 -0.8 -2 -0.8 -2.8 0
-                                    L 49 44 Z"
+                                    d="M 49 44 c -2.5 2.5 -5.5 4 -8.5 3.2 c -5.2 -1.3 -16.5 -12.6 -17.8 -17.8 C 21 26.5 22.5 23.5 25 21 l 2.7 -2.7 c 0.8 -0.8 0.8 -2 0 -2.8 l -4.4 -4.4 c -0.8 -0.8 -2 -0.8 -2.8 0 l -3.8 3.8 c -3.3 3.3 -4.7 8.1 -3.4 12.6 c 2.2 7.7 15.1 20.6 22.8 22.8 c 4.6 1.3 9.3 -0.1 12.6 -3.4 l 3.8 -3.8 c 0.8 -0.8 0.8 -2 0 -2.8 l -4.4 -4.4 c -0.8 -0.8 -2 -0.8 -2.8 0 L 49 44 Z"
                                     stroke="#fff"
                                     strokeWidth="3"
                                     fill="none"
@@ -44,31 +67,51 @@ export default function Contact() {
                         <p className="font-playfair text-black text-[0.98rem] text-center mb-5 p-3">
                             Déjanos tus datos, te contactaremos a la brevedad.
                         </p>
-                        <form>
+                        <form onSubmit={handleSubmit}>
                             <input
                                 type="text"
                                 placeholder="Nombre"
                                 className="w-full px-4 py-3 mb-2 text-[1.03rem] rounded-[10px] border border-[#e3d4c2] bg-[#fffdfa] text-[#a08e7a] outline-none font-sans font-normal"
+                                value={nombre}
+                                onChange={(e) => setNombre(e.target.value)}
+                                name="nombre"
+                                required
                             />
                             <input
                                 type="text"
                                 placeholder="Apellido"
                                 className="w-full px-4 py-3 mb-2 text-[1.03rem] rounded-[10px] border border-[#e3d4c2] bg-[#fffdfa] text-[#a08e7a] outline-none font-sans font-normal"
+                                value={apellido}
+                                onChange={(e) => setApellido(e.target.value)}
+                                name="apellido"
+                                required
                             />
                             <input
                                 type="text"
                                 placeholder="Celular"
                                 className="w-full px-4 py-3 mb-2 text-[1.03rem] rounded-[10px] border border-[#e3d4c2] bg-[#fffdfa] text-[#a08e7a] outline-none font-sans font-normal"
+                                value={celular}
+                                onChange={(e) => setCelular(e.target.value)}
+                                name="celular"
+                                required
                             />
                             <input
                                 type="email"
                                 placeholder="Email"
                                 className="w-full px-4 py-3 mb-2 text-[1.03rem] rounded-[10px] border border-[#e3d4c2] bg-[#fffdfa] text-[#a08e7a] outline-none font-sans font-normal"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                name="email"
+                                required
                             />
                             <textarea
                                 placeholder="Mensaje"
                                 rows={4}
                                 className="w-full px-4 py-3 mb-2 text-[1.03rem] rounded-[10px] border border-[#e3d4c2] bg-[#fffdfa] text-[#a08e7a] outline-none font-sans font-normal resize-none h-16"
+                                value={mensaje}
+                                onChange={(e) => setMensaje(e.target.value)}
+                                name="mensaje"
+                                required
                             />
                             <button
                                 type="submit"
