@@ -9,9 +9,9 @@ Content-Type: application/json
 {
     "nombre": "pepe",
     "apellido": "pepe",
+    "email": "pepe@gmail.com",
     "tipo_documento": "DNI",
     "nro_doc": 46295231,
-    "direccion": "Mendoza 3122",
     "telefono": "3412223242"
 }
 
@@ -28,7 +28,6 @@ PUT http://localhost:3000/api/clientes/{{id}}
 Content-Type: application/json
 
 {
-    "direccion": "San Luis 2010",
     "telefono": "3413387632",
 }
 
@@ -42,8 +41,8 @@ Content-Type: application/json
     "apellido": "Luis",
     "tipo_documento": "DNI",
     "nro_doc": 18678093,
-    "direccion": "San juan 3412",
     "telefono": "3412232343",
+    "email": "jose.luis@gmail.com"
 }
 
 

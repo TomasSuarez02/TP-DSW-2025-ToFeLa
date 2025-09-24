@@ -9,11 +9,10 @@ function sanitizeClienteInput(req: Request, res: Response, next: NextFunction) {
   req.body.sanitizedInput = {
     nombre: req.body.nombre,
     apellido: req.body.apellido,
-    mail: req.body.mail,
+    email: req.body.email,
     telefono: req.body.telefono,
     tipo_documento: req.body.tipo_documento,
     nro_doc: req.body.nro_doc,
-    direccion: req.body.direccion,
     id: req.body.id
   }
   //more checks here

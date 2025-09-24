@@ -11,7 +11,7 @@ export class AgenteInmobiliario extends BaseEntity {
   @Property({ nullable: false })
   apellido!: string;
 
-  @Property({ nullable: false })
+  @Property({ nullable: false, unique: true })
   email!: string;
 
   @Property({ nullable: false })

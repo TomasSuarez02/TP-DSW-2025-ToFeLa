@@ -20,14 +20,14 @@ export class Cliente extends BaseEntity {
     @Property({nullable: false})
     tipo_documento!:string
 
-    @Property({nullable: false})
+    @Property({nullable: false, unique: true})
     nro_doc!:number
 
     @Property({nullable: false})
     telefono!:string
 
-    @Property({nullable: false})
-    direccion!:string
+    @Property({nullable:false, unique: true})
+    email!:string
 
     @ManyToMany(() => TipoDocumentacion, documentacion => documentacion.clientes, { cascade: [Cascade.ALL] , owner: true , nullable: true})
     documentaciones = new Collection<TipoDocumentacion>(this);
