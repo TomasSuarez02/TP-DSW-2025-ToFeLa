@@ -11,11 +11,6 @@ import { Usuario } from '../shared/db/usuario.entity.js'
 
 @Entity()
 export class Cliente extends Usuario {
-    @Property({nullable: false})
-    tipo_documento!:string
-
-    @Property({nullable: false, unique: true})
-    nro_doc!:number
 
     @ManyToMany(() => TipoDocumentacion, documentacion => documentacion.clientes, { cascade: [Cascade.ALL] , owner: true , nullable: true})
     documentaciones = new Collection<TipoDocumentacion>(this);

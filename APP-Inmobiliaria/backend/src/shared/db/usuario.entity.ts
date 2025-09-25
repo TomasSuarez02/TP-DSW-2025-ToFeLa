@@ -16,6 +16,12 @@ export abstract class Usuario {
   @Property({nullable:false})
   telefono!:string
 
+  @Property({nullable: false})
+  tipo_documento!:string
+
+  @Property({nullable: false, unique: true})
+  nro_doc!:number
+  
 
   /*
 
