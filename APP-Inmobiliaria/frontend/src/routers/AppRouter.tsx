@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import { Contact, Home, Login, Rent, Reserv, Visit } from "../pages/index.tsx";
+import Panel from "../pages/Panel/Panel.tsx";
 
 
 export const AppRouter = () => {
@@ -15,6 +16,7 @@ export const AppRouter = () => {
         <Route path="/Rent/visit" element={<Visit/>}/>
         <Route path="/Rent/Reserv" element={<Reserv/>}/>
         <Route path="/Rent" element={<Rent/>}/>
+        <Route path="/Panel" element={<Panel/>}/>
 
     </Routes>
     )
