@@ -30,7 +30,8 @@ export default function Login() {
       } else {
         window.location.href = "/Panel";
       }
-    } catch (err: any) {
+    } catch (err) {
+      console.log(err);
       setError("Credenciales inválidas");
     }
   };
@@ -70,13 +71,6 @@ export default function Login() {
                 />
               </div>
               <div className="flex items-center justify-between">
-                <label className="flex items-center text-sm text-[#493523] cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    className="accent-[#bba180] mr-2"
-                  />
-                  Recordar
-                </label>
                 <a href="#" className="text-xs text-[#a08974] underline hover:text-[#bba180] transition-colors">¿Olvidaste tu contraseña?</a>
               </div>
               <button
@@ -87,7 +81,7 @@ export default function Login() {
               </button>
             </form>
             <div className="mt-7 text-center">
-              <span className="text-[#a08974] text-sm">¿No tienes cuenta? <a href="#" className="underline hover:text-[#bba180] transition-colors">Regístrate</a></span>
+              <span className="text-[#a08974] text-sm">¿No tienes cuenta? <a href="/register" className="underline hover:text-[#bba180] transition-colors">Regístrate</a></span>
             </div>
           </div>
           {/* Derecha: fondo beige e icono centralizado */}

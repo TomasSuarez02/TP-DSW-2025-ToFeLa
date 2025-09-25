@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { Contact, Home, Login, Rent, Reserv, Visit } from "../pages/index.tsx";
 import Panel from "../pages/Panel/Panel.tsx";
+import { Register } from "../pages/Login/Register.tsx";
 
 
 export const AppRouter = () => {
@@ -8,7 +9,7 @@ export const AppRouter = () => {
     <Routes>
 
         {/*Rutas Publicas*/}
-        <Route path='/' element={<Home/>}/>
+        <Route path='/home' element={<Home/>}/>
         <Route path="/login" element={<Login/>}/>
         <Route path="/contact" element={<Contact/>}/>
 
@@ -17,6 +18,7 @@ export const AppRouter = () => {
         <Route path="/Rent/Reserv" element={<Reserv/>}/>
         <Route path="/Rent" element={<Rent/>}/>
         <Route path="/Panel" element={<Panel/>}/>
+        <Route path="/register" element={<Register  />}/>
 
     </Routes>
     )

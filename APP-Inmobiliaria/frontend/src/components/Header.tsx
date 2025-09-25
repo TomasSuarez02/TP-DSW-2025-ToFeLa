@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from 'react-router-dom';
 
 export default function Header() {
@@ -6,7 +6,13 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const leftLinks = ["Alquilar", "Contacto"];
-
+  useEffect(() => {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        setIsLoggedIn(true);
+      }
+    }, []);
+  
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
       <div className="container mx-auto max-w-screen-xl px-4">
@@ -41,7 +47,7 @@ export default function Header() {
 
           {/* CENTRO */}
           <a
-            href="/"
+            href="/home"
             className="justify-self-center text-2xl md:text-3xl tracking-wider font-['Playfair_Display'] text-neutral-900"
           >
             LONDON HOUSE
@@ -52,14 +58,19 @@ export default function Header() {
             {!isLoggedIn ? (
               <Link
                 to="/login"
-                className="text-[18px] tracking-wide text-neutral-900 hover:opacity-80 "
+                className="text-xl tracking-wide text-neutral-900 hover:opacity-80 "
               >
                 Iniciar Sesión
               </Link>
             ) : (
               <button
-                onClick={() => setIsLoggedIn(false)}
-                className="text-sm tracking-wide text-neutral-900 hover:opacity-80"
+                onClick={() => {
+                  localStorage.removeItem("accessToken");
+                  localStorage.removeItem("role");
+                  setIsLoggedIn(false);
+                  window.location.href = "/login";
+                }}
+                className="text-xl tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
               >
                 Cerrar Sesión
               </button>
@@ -94,10 +105,13 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => {
+                  localStorage.removeItem("accessToken");
+                  localStorage.removeItem("role");
                   setIsLoggedIn(false);
                   setOpen(false);
+                  window.location.href = "/login";
                 }}
-                className="px-2 py-2 text-[15px] tracking-wide text-neutral-900 hover:bg-black/5 rounded"
+                className="px-2 py-2 text-[15px] tracking-wide text-neutral-900 hover:bg-black/5 rounded cursor-pointer"
               >
                 Cerrar Sesión
               </button>

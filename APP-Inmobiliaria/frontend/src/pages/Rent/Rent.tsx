@@ -1,15 +1,15 @@
 import Header from "../../components/Header.tsx"
 import Grid from "./Grid.tsx"
 import Footer from "../../components/Footer.tsx"
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
 export default function Rent() {
-  useEffect(() => {
+  /* useEffect(() => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
       window.location.href = "/login";
     }
-  }, []);
+  }, []); */
 
   return (
     <>
