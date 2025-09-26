@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react"
+import { Link } from 'react-router-dom'
 
 export default function Header() {
-  const [open, setOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [open, setOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [hello, setHello] = useState(false)
 
-  const leftLinks = ["Alquilar", "Contacto"];
+  const leftLinks = ["Alquilar", "Contacto"]
   useEffect(() => {
-      const token = localStorage.getItem("accessToken");
+      const token = localStorage.getItem("accessToken")
       if (token) {
-        setIsLoggedIn(true);
+        setIsLoggedIn(true)
+        setHello(true)
       }
-    }, []);
-  
+    }, [])
+
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
       <div className="container mx-auto max-w-screen-xl px-4">
@@ -54,7 +56,8 @@ export default function Header() {
           </a>
 
           {/* DERECHA: auth (solo en desktop) */}
-          <div className="hidden md:block justify-self-end ">
+          <div className="hidden md:block justify-self-end">
+            <h1 className="text-xl font-semibold text-neutral-900 hover:opacity-80">{hello ? "Bienvenido nuevamente!" : ""}</h1>
             {!isLoggedIn ? (
               <Link
                 to="/login"
@@ -70,7 +73,7 @@ export default function Header() {
                   setIsLoggedIn(false);
                   window.location.href = "/login";
                 }}
-                className="text-xl tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
+                className="text-sm tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
               >
                 Cerrar Sesión
               </button>
