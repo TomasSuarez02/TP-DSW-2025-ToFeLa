@@ -1,6 +1,9 @@
-export default function Panel() {
-    return (
+import Header from "../../components/Header";
 
-        <div>Panel</div>
-    )
+export default function Panel() {
+  return (
+    <>
+      <Header />
+    </>
+  );
 }
