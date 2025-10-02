@@ -21,6 +21,9 @@ export abstract class Usuario {
 
   @Property({nullable: false, unique: true})
   nro_doc!:number
+
+  @Property({nullable:false})
+  password!:string
   
 
   /*

@@ -1,4 +1,4 @@
-import { ManyToMany, Property, Collection, Cascade, Entity } from "@mikro-orm/core";
+import { ManyToMany, Property, Collection, Cascade, Entity, ManyToOne, Rel, OneToMany } from "@mikro-orm/core";
 import { BaseEntity } from '../shared/db/baseEntity.entity.js'
 import { Cliente } from "../cliente/cliente.entity.js";
 import { Propiedad } from "../propiedad/propiedad.entity.js";
@@ -14,7 +14,7 @@ export class TipoPropiedad extends BaseEntity {
     @Property({ nullable: false })
     estado!: string;
 
-    @ManyToMany(() => Propiedad, (propiedad) => propiedad.tiposPropiedad, {nullable: true})
+    @OneToMany(() => Propiedad, propiedad => propiedad.tipoPropiedad )
     propiedades = new Collection<Propiedad>(this);
 }
 /*constructor(

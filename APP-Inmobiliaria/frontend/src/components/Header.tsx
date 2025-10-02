@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from "react"
+import { Link } from 'react-router-dom'
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -24,8 +24,8 @@ export default function Header() {
         setIsLoggedIn(true);
         setUserRole(role);
       }
-    }, []);
-  
+    }, [])
+
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
       <div className="container mx-auto max-w-screen-xl px-4">
@@ -75,7 +75,7 @@ export default function Header() {
           </a>
 
           {/* DERECHA: auth (solo en desktop) */}
-          <div className="hidden md:block justify-self-end ">
+          <div className="hidden md:block justify-self-end">
             {!isLoggedIn ? (
               <Link
                 to="/login"
@@ -91,7 +91,7 @@ export default function Header() {
                   setIsLoggedIn(false);
                   window.location.href = "/login";
                 }}
-                className="text-xl tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
+                className="text-sm tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
               >
                 Cerrar Sesión
               </button>
