@@ -1,0 +1,48 @@
+
+### obtener todas las visitas
+GET http://localhost:3000/api/visitas
+
+### crear una nueva visita
+# @name createVisita
+POST http://localhost:3000/api/visitas
+Content-Type: application/json 
+
+
+{
+    "id": 1,
+    "fecha_hora": "2023-03-15T10:00:00Z",
+    "propiedad": 1,
+    "cliente": 6
+}
+
+### ID
+@id = {{createVisita.response.body.data.id}}
+
+### obtener una visita
+GET http://localhost:3000/api/visitas/{{id}}
+
+### modificar una visita (PUT - recurso completo e idempotente)
+PUT http://localhost:3000/api/visitas/{{id}}
+Content-Type: application/json
+
+{
+    "id": 1,
+    "fecha_hora": "2023-03-15T10:00:00Z",
+    "propiedad": 1,
+    "cliente": 1
+}
+
+# @name createVisitaToDelete
+POST http://localhost:3000/api/visitas
+Content-Type: application/json
+
+{
+    "id": 4,
+    "fecha_hora": "2023-03-15T10:00:00Z",
+    "propiedad": 1,
+    "cliente": 7
+}
+
+### borrar una visita
+@idToDelete = {{createVisitaToDelete.response.body.data.id}}
+DELETE http://localhost:3000/api/visitas/{{idToDelete}}

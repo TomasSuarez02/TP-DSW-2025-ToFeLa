@@ -15,8 +15,14 @@ export class Propiedad extends BaseEntity {
     @Property({ nullable: false })
     estado!: string;
 
-    @ManyToMany(() => TipoPropiedad, (tipoPropiedad) => tipoPropiedad.propiedades, { cascade: [Cascade.ALL], owner: true , nullable: true})
-    tiposPropiedad = new Collection<TipoPropiedad>(this);
+    @Property({ type: 'time', nullable: false })
+    hora_desde!: string;
+
+    @Property({ type: 'time', nullable: false })
+    hora_hasta!: string;
+    
+    @ManyToOne(() => TipoPropiedad, { nullable: false, cascade: [Cascade.ALL] })
+    tipoPropiedad!: Rel<TipoPropiedad>;
 
     @ManyToOne(() => Inmobiliaria, { nullable: true, cascade: [Cascade.ALL] })
     inmobiliaria!: Rel<Inmobiliaria>;

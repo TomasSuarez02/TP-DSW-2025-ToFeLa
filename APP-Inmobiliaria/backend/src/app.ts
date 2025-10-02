@@ -11,6 +11,8 @@ import { orm, syncSchema } from './shared/db/orm.js'
 import { RequestContext } from '@mikro-orm/core'
 import authRouter from "./auth/auth.routes.js";
 import { imagenRouter } from './imagenes/imagen.routes.js'
+import { visitaRouter } from './visita/visita.routes.js'
+import { seniaRouter } from './senia/senia.routes.js'
 
 
 
@@ -37,6 +39,8 @@ app.use('/api/agentesinmobiliarios', agenteInmobiliarioRouter)
 app.use('/api/imagenes', imagenRouter) // Nueva ruta para imagenes
 app.use('/images', express.static('uploads/images')) // Servir imágenes estáticas
 app.use("/api/auth", authRouter);
+app.use('/api/visitas', visitaRouter)
+app.use('/api/senias', seniaRouter)
 
 
 app.use((_, res) => {

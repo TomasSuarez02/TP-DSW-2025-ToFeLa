@@ -1,0 +1,48 @@
+
+### obtener todas las senias
+GET http://localhost:3000/api/senias
+
+### crear una nueva senia
+# @name createSenia
+POST http://localhost:3000/api/senias
+Content-Type: application/json 
+
+
+{
+    "id": 1,
+    "importe": 1000,
+    "propiedad": 1,
+    "cliente": 6
+}
+
+### ID
+@id = {{createSenia.response.body.data.id}}
+
+### obtener una senia
+GET http://localhost:3000/api/senias/{{id}}
+
+### modificar una senia (PUT - recurso completo e idempotente)
+PUT http://localhost:3000/api/senias/{{id}}
+Content-Type: application/json
+
+{
+    "id": 1,
+    "importe": 1000,
+    "propiedad": 1,
+    "cliente": 1
+}
+
+# @name createSeniaToDelete
+POST http://localhost:3000/api/senias
+Content-Type: application/json
+
+{
+    "id": 4,
+    "importe": 1000,
+    "propiedad": 1,
+    "cliente": 1
+}
+
+### borrar una senia
+@idToDelete = {{createSeniaToDelete.response.body.data.id}}
+DELETE http://localhost:3000/api/senias/{{idToDelete}}

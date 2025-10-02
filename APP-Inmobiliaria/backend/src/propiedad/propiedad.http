@@ -8,12 +8,16 @@ POST http://localhost:3000/api/propiedades
 Content-Type: application/json
 
 {
-    "id": 1,
-    "direccion": "Av. Siempre Viva 742",
+    "id": 5,
+    "direccion": "Av. Cordoba 900",
     "superficie": "120m2",
     "precio": 150000,
-    "descripcion": "Casa familiar con jardín",
-    "estado": "disponible"
+    "descripcion": "Casa con pileta",
+    "tipoPropiedad":  "1",
+    "estado": "disponible",
+    "hora_desde": "19:00:00",
+    "hora_hasta": "21:00:00",
+    "inmobiliaria": "1"
 }
 
 ### ID
@@ -41,7 +45,8 @@ Content-Type: application/json
 
 {
     "precio": 155000,
-    "estado": "vendida"
+    "tipoPropiedad":  "1",
+    "inmobiliaria": "1"
 }
 
 # @name createPropiedadToDelete

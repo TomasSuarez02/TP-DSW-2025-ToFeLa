@@ -9,8 +9,10 @@ function sanitizePropiedadInput(req: Request, res: Response, next: NextFunction)
     direccion: req.body.direccion,
     precio: req.body.precio,
     estado: req.body.estado,
-    tipoPropiedadId: req.body.tipoPropiedadId,
-    inmobiliariaCuit: req.body.inmobiliariaCuit,
+    hora_desde: req.body.hora_desde,
+    hora_hasta: req.body.hora_hasta,
+    tipoPropiedad: req.body.tipoPropiedad,
+    inmobiliaria: req.body.inmobiliaria,
   };
   Object.keys(req.body.sanitizedInput).forEach((key) => {
     if (req.body.sanitizedInput[key] === undefined) {
@@ -25,7 +27,7 @@ async function findAll(req: Request, res: Response) {
       const propiedades = await em.find(
         Propiedad,
         {},
-        { populate: ['tiposPropiedad', 'inmobiliaria'] }
+        { populate: ['tipoPropiedad', 'inmobiliaria'] }
       );
       res.status(200).json({ message: 'found all propiedades', data: propiedades });
     } catch (error: any) {
@@ -39,7 +41,7 @@ async function findOne(req: Request, res: Response) {
       const propiedad = await em.findOneOrFail(
         Propiedad,
         { id: Number(id) },
-        { populate: ['tiposPropiedad', 'inmobiliaria'] }
+        { populate: ['tipoPropiedad', 'inmobiliaria'] }
       );
       res.status(200).json({ message: 'found propiedad', data: propiedad });
     } catch (error: any) {
