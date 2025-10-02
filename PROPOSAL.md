@@ -26,8 +26,8 @@ A través de un sistema en línea moderno y fácil de usar, los clientes pueden 
 
 
 
-## MODELO DE OBJETOS
-*  <img width="702" height="572" alt="Modelo de objetos APP-Inmobiliaria drawio" src="https://github.com/user-attachments/assets/551c1cf9-2931-407c-994b-514862f835dc" />
+## MODELO DE DATOS
+<img width="881" height="1050" alt="Modelo de datos APP-Inmobiliaria drawio" src="https://github.com/user-attachments/assets/b50cf8f1-e296-4587-ac79-b96b211200eb" />
 
 
 
