@@ -13,15 +13,16 @@ export type Propiedades = {
   estado: string
   imagen: string | null
   inmobiliaria: Inmobiliaria | null
-  tiposPropiedad: TipoPropiedad[]
+  tipoPropiedad: TipoPropiedad
 }
 
-export default function Card({direccion, precio, estado, inmobiliaria, tiposPropiedad, imagen }: Propiedades) {
+export default function Card({id, direccion, precio, estado, inmobiliaria, tipoPropiedad, imagen }: Propiedades) {
   return (
     <div className="bg-white group relative p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
       <img
         src={imagen ? imagen : 'src/assets/DeptoPrueba.jpg'}
         alt={direccion}
+        onClick={() => window.location.href = `/Rent/property/${id}`}
         className="w-full aspect-auto object-cover bg-white group-hover:opacity-80 rounded-xl mb-2 hover:cursor-pointer"
       />
       <div className="m-3 flex justify-end">
@@ -30,10 +31,8 @@ export default function Card({direccion, precio, estado, inmobiliaria, tiposProp
       <h3 className="text-xl text-gray-700 font-bold mb-1">{direccion}</h3>
       <p className="text-sm text-gray-500 mb-1">Inmobiliaria: {inmobiliaria ? inmobiliaria.nombre : 'Sin inmobiliaria'}</p>
       <div className="flex flex-wrap gap-2 mb-2">
-        {tiposPropiedad.length > 0 ? (
-          tiposPropiedad.map((tipo, idx) => (
-            <span key={idx} className="bg-[#f3e5d1] text-[#bfa383] px-2 py-1 rounded text-xs font-medium">{tipo.descripcion}</span>
-          ))
+        {tipoPropiedad ? (
+          <span className="bg-[#f3e5d1] text-[#bfa383] px-2 py-1 rounded text-xs font-medium">{tipoPropiedad.descripcion}</span>
         ) : (
           <span className="text-xs text-gray-400">Sin tipo de propiedad</span>
         )}
