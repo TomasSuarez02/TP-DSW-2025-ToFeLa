@@ -27,8 +27,8 @@ export const login = async (req: Request, res: Response) => {
 
     let role: "cliente" | "agente" | null = null;
     let user:
-      | (Cliente & { nro_doc: number; email: string; id: number })
-      | (AgenteInmobiliario & { nro_doc: number; email: string; id: number })
+      | (Cliente & { password: string; email: string; id: number })
+      | (AgenteInmobiliario & { password: string; email: string; id: number })
       | null = null;
 
     const cliente = await em.findOne(Cliente, { email });
@@ -48,7 +48,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
 
-    if (String(user.nro_doc) !== String(password)) {
+    if (String(user.password) !== String(password)) {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
     const accessToken = jwt.sign(

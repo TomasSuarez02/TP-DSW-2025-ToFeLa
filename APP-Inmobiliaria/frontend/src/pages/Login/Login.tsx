@@ -3,14 +3,14 @@ import axios from "axios";
 import Header from "../../components/Header.tsx";
 export type UserInput ={
   email: string;
-  dni: string;
+  password: string;
 }
 
 export default function Login() {
 
   const [user, setUser] = useState<UserInput>({
     email: "",
-    dni: ""
+    password: ""
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -19,7 +19,7 @@ export default function Login() {
     try {
       const res = await axios.post("http://localhost:3000/api/auth/login", {
         email: user.email,
-        password: user.dni, // el dni es la "contraseña"
+        password: user.password,
       });
 
       localStorage.setItem("accessToken", res.data.accessToken);
@@ -64,10 +64,10 @@ export default function Login() {
                 <input
                   id="password"
                   type="password"
-                  value={user.dni}
+                  value={user.password}
                   placeholder="••••••••"
                   className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                  onChange={(e) => setUser({ ...user, dni: e.target.value })}
+                  onChange={(e) => setUser({ ...user, password: e.target.value })}
                 />
               </div>
               <div className="flex items-center justify-between">

@@ -23,7 +23,7 @@ export function Register() {
             const res = await axios.post("http://localhost:3000/api/clientes", user);
             setSuccess("Usuario registrado correctamente");
             if (res) {
-                window.location.href = "/home";
+                window.location.href = "/";
             }
         } catch (err) {
             console.log(err);
@@ -107,6 +107,16 @@ export function Register() {
                                         value={user.nro_doc}
                                         onChange={e => setUser({ ...user, nro_doc: e.target.value })}
                                         className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[#493523] mb-1">Contraseña</label>
+                                    <input
+                                        type="password"
+                                        value={user.password}
+                                        onChange={e => setUser({ ...user, password: e.target.value })}
+                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200 "
                                         required
                                     />
                                 </div>

@@ -13,6 +13,7 @@ function sanitizeClienteInput(req: Request, res: Response, next: NextFunction) {
     telefono: req.body.telefono,
     tipo_documento: req.body.tipo_documento,
     nro_doc: req.body.nro_doc,
+    password: req.body.password,
     id: req.body.id
   }
   //more checks here
