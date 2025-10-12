@@ -27,7 +27,7 @@ async function findAll(req: Request, res: Response) {
       const propiedades = await em.find(
         Propiedad,
         {},
-        { populate: ['tipoPropiedad', 'inmobiliaria'] }
+        { populate: ['tipoPropiedad', 'inmobiliaria', 'imagenes'] }
       );
       res.status(200).json({ message: 'found all propiedades', data: propiedades });
     } catch (error: any) {
@@ -41,7 +41,7 @@ async function findOne(req: Request, res: Response) {
       const propiedad = await em.findOneOrFail(
         Propiedad,
         { id: Number(id) },
-        { populate: ['tipoPropiedad', 'inmobiliaria'] }
+        { populate: ['tipoPropiedad', 'inmobiliaria', 'imagenes'] }
       );
       res.status(200).json({ message: 'found propiedad', data: propiedad });
     } catch (error: any) {

@@ -14,7 +14,7 @@ export default function Rent() {
   return (
     <>
       <Header/>
-      <div className="bg-gradient-to-t from-[#e4dfd5] to-white min-h-screen">
+      <div className="bg-gradient-to-t from-[#e4dfd5] to-white ">
         <Grid/>
       </div>
       <Footer/>

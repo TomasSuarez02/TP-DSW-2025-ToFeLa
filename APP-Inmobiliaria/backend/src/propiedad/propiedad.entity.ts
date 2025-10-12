@@ -27,7 +27,7 @@ export class Propiedad extends BaseEntity {
     @ManyToOne(() => Inmobiliaria, { nullable: true, cascade: [Cascade.ALL] })
     inmobiliaria!: Rel<Inmobiliaria>;
 
-    @OneToMany(() => Imagen, imagen => imagen.propiedad)
+    @OneToMany(() => Imagen, imagen => imagen.propiedad, {nullable: false})
     imagenes = new Collection<Imagen>(this);
 }
 

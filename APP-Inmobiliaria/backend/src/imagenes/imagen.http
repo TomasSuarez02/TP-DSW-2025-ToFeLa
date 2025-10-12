@@ -9,8 +9,8 @@ Content-Type: application/json
 
 {
     "id": 1,
-    "path": "http://localhost:3000/images/imagen1.jpg",
-    "propiedad": 1
+    "path": "http://localhost:3000/images/CasaPrueba.jpg",
+    "propiedad": 5
 }
 
 ### ID
