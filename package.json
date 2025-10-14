@@ -1,0 +1,6 @@
+{
+	"dependencies": {
+		"react-time-picker": "^8.0.2",
+		"react-clock": "^6.0.0"
+	}
+}

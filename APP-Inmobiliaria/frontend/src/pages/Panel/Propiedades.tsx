@@ -41,9 +41,9 @@ export default function Propiedades() {
   const [tiposPropiedad, setTiposPropiedad] = useState<TipoPropiedad[]>([]);
   const [inmobiliarias, setInmobiliarias] = useState<Inmobiliaria[]>([]);
 
-
+  // ---------------------------
   // Cargar datos
-
+  // ---------------------------
   const fetchPropiedades = async () => {
     try {
       const res = await axios.get("http://localhost:3000/api/propiedades");
@@ -73,9 +73,9 @@ export default function Propiedades() {
     fetchDependencias();
   }, []);
 
-
+  // ---------------------------
   // Handlers
-
+  // ---------------------------
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -151,9 +151,9 @@ export default function Propiedades() {
     setShowForm(false);
   };
 
-
+  // ---------------------------
   // Utils
-
+  // ---------------------------
   const getEstadoColor = (estado: string) => {
     switch (estado.toLowerCase()) {
       case "disponible":
@@ -169,8 +169,9 @@ export default function Propiedades() {
     }
   };
 
+  // ---------------------------
   // Render
-
+  // ---------------------------
   return (
     <div className="p-6">
       {/* Header */}
@@ -186,7 +187,7 @@ export default function Propiedades() {
 
       {/* Formulario */}
       {showForm && (
-        <div className="bg-white rounded-xl shadow-md border p-6 mb-8">
+        <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block mb-2 text-sm font-medium">Dirección *</label>
@@ -331,15 +332,15 @@ export default function Propiedades() {
                   {p.estado.toUpperCase()}
                 </span>
               </div>
-              <div className="text-2xl font-bold mb-1">${p.precio.toLocaleString()}</div>
+              <div className="text-2xl font-bold mb-1 text-neutral-900">${p.precio.toLocaleString()}</div>
               <p className="text-sm text-neutral-600">📍 {p.direccion}</p>
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-600">
                 🏠 {p.tipoPropiedad?.nombre || "Sin tipo"}
-              </p>
+              </p>ß
               {p.inmobiliaria && (
-                <p className="text-sm text-neutral-500">🏢 {p.inmobiliaria.nombre}</p>
+                <p className="text-sm text-neutral-600">🏢 {p.inmobiliaria.nombre}</p>
               )}
-              <p className="text-sm text-neutral-500">
+              <p className="text-sm text-neutral-600">
                 🕐 {p.hora_desde} - {p.hora_hasta}
               </p>
 
