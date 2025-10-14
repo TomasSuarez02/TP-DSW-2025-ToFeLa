@@ -68,10 +68,10 @@ export default function Header() {
 
           {/* CENTRO */}
           <a
-            href="/home"
+            href="/"
             className="justify-self-center text-2xl md:text-3xl tracking-wider font-['Playfair_Display'] text-neutral-900"
           >
-            LONDON HOUSE
+            ROSARIO NOVA
           </a>
 
           {/* DERECHA: auth (solo en desktop) */}

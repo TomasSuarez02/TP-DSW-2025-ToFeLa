@@ -8,8 +8,8 @@ POST http://localhost:3000/api/propiedades
 Content-Type: application/json
 
 {
-    "id": 5,
-    "direccion": "Av. Cordoba 900",
+    "id": 9,
+    "direccion": "Oroño 1172",
     "superficie": "120m2",
     "precio": 150000,
     "descripcion": "Casa con pileta",
@@ -17,6 +17,14 @@ Content-Type: application/json
     "estado": "disponible",
     "hora_desde": "19:00:00",
     "hora_hasta": "21:00:00",
+    "imagenes": [
+        {
+            "path": "src/assets/DeptoPrueba.jpg"
+        },
+        {
+            "path": "src/assets/CasaPrueba.jpg"
+        }
+    ],
     "inmobiliaria": "1"
 }
 
