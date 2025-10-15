@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import express from 'express'
 import cors from 'cors'
-import path from 'path' // ✅ Agregar import de path
+import path from 'path' 
 import { clienteRouter } from './cliente/cliente.routes.js'
 import { tipopropiedadRouter } from './tipopropiedad/tipopropiedad.routes.js'
 import { inmobiliariaRouter } from './inmobiliaria/inmobiliaria.routes.js'
@@ -24,18 +24,15 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
-// ✅ Aumentar límite para imágenes base64
+
 app.use(express.json({ limit: '10mb' }))
 
-// ✅ Servir archivos estáticos ANTES de las rutas de API
 app.use('/images', express.static(path.join(process.cwd(), 'uploads/images')))
 
-//luego de los middlewares base
 app.use((req, res, next) => {
   RequestContext.create(orm.em, next)
 })
 
-//antes de las rutas y middlewares de negocio
 app.use('/api/clientes', clienteRouter)
 app.use('/api/tipopropiedades', tipopropiedadRouter)
 app.use('/api/inmobiliarias', inmobiliariaRouter)
@@ -51,7 +48,7 @@ app.use((_, res) => {
   return res.status(404).send({ message: 'Resource not found' })
 })
 
-await syncSchema() //never in production
+await syncSchema() 
 
 
 app.listen(3000, () => {
