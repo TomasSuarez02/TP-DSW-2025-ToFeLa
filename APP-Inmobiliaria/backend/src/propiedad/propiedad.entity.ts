@@ -21,13 +21,17 @@ export class Propiedad extends BaseEntity {
     @Property({ type: 'time', nullable: false })
     hora_hasta!: string;
     
-    @ManyToOne(() => TipoPropiedad, { nullable: false, cascade: [Cascade.ALL] })
+    @ManyToOne(() => TipoPropiedad, { nullable: false })
     tipoPropiedad!: Rel<TipoPropiedad>;
 
-    @ManyToOne(() => Inmobiliaria, { nullable: true, cascade: [Cascade.ALL] })
+    @ManyToOne(() => Inmobiliaria, { nullable: true })
     inmobiliaria!: Rel<Inmobiliaria>;
 
-    @OneToMany(() => Imagen, imagen => imagen.propiedad, {nullable: false})
+    // ✅ Sin cascadas problemáticas, solo orphanRemoval
+    @OneToMany(() => Imagen, imagen => imagen.propiedad, { 
+      nullable: true,
+      orphanRemoval: true 
+    })
     imagenes = new Collection<Imagen>(this);
 }
 
