@@ -12,7 +12,7 @@ const router = Router();
 
 router.get('/', findAll);
 router.get('/:id', findOne);
-router.post('/', sanitizeImagenInput, add);
+router.post('/', add); // ✅ Sin sanitizer para POST
 router.put('/:id', sanitizeImagenInput, update);
 router.delete('/:id', remove);
 
