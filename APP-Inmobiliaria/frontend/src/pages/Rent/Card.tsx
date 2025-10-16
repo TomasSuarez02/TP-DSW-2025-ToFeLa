@@ -20,29 +20,50 @@ export type Propiedades = {
   tipoPropiedad: TipoPropiedad
 }
 
-export default function Card({id, direccion, precio, estado, inmobiliaria, tipoPropiedad, imagenes }: Propiedades) {
+export default function Card({id, direccion, precio, estado, tipoPropiedad, imagenes }: Propiedades) {
   return (
-    <div className="bg-white group relative p-3 rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300">
-      <img
-        src={imagenes[1] ? imagenes[1].path : 'src/assets/notFound.webp'}
-        alt={direccion}
-        onClick={() => window.location.href = `/Rent/property/${id}`}
-        className="w-full max-h-80 aspect-auto object-cover bg-white group-hover:opacity-80 rounded-xl mb-2 hover:cursor-pointer"
-      />
-      <div className="m-3 flex justify-end">
-        <span className={`px-2 py-1 rounded text-xs font-semibold ${estado === 'disponible' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{estado.toUpperCase()}</span>
+    <div className="bg-white group relative rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+      
+      <div className="relative">
+        <img
+          src={imagenes[0] ? imagenes[0].path : 'src/assets/notFound.webp'}
+          alt={direccion}
+          onClick={() => window.location.href = `/Rent/property/${id}`}
+          className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity cursor-pointer"
+        />
+        
+        <div className="absolute top-4 right-4">
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
+            estado === 'disponible' 
+              ? 'bg-green-500 text-white' 
+              : 'bg-red-500 text-white'
+          }`}>
+            {estado}
+          </span>
+        </div>
       </div>
-      <h3 className="text-xl text-gray-700 font-bold mb-1">{direccion}</h3>
-      <p className="text-sm text-gray-500 mb-1">Inmobiliaria: {inmobiliaria ? inmobiliaria.nombre : 'Sin inmobiliaria'}</p>
-      <div className="flex flex-wrap gap-2 mb-2">
+
+      
+      <div className="p-4">
+        
+        <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">
+          {direccion}
+        </h3>
+
+        
         {tipoPropiedad ? (
-          <span className="bg-[#846a41] text-white px-2 py-1 mt-2 rounded text-sm font-medium">{tipoPropiedad.descripcion}</span>
+          <span className="inline-block bg-[#dcc7af] text-[#846a41] px-3 py-1 rounded-full text-sm font-medium mb-3">
+            {tipoPropiedad.descripcion}
+          </span>
         ) : (
-          <span className="text-xs text-gray-400">Sin tipo de propiedad</span>
+          <span className="text-xs text-gray-400 mb-3 block">Sin tipo de propiedad</span>
         )}
-      </div>
-      <div className="flex justify-between items-center mt-2">
-        <span className="text-lg font-bold text-gray-900">${precio.toLocaleString()}</span>
+
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <span className="text-2xl font-bold text-[#846a41]">
+            ${precio.toLocaleString('es-AR')}
+          </span>
+        </div>
       </div>
     </div>
   )

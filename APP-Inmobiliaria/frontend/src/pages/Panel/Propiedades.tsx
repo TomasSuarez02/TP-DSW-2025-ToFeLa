@@ -70,9 +70,8 @@ export default function Propiedades() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ✅ Corregido - para imágenes múltiples
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Limpiar URLs anteriores para evitar memory leaks
+
     selectedImages.forEach(img => {
       URL.revokeObjectURL(URL.createObjectURL(img));
     });
@@ -109,7 +108,7 @@ export default function Propiedades() {
         propiedadId = res.data.data.id;
         alert("Propiedad creada correctamente");
 
-        // ✅ Subir imágenes correctamente con el formato que espera el backend
+        // Subir imágenes correctamente con el formato que espera el backend
         if (selectedImages.length > 0) {
           for (const img of selectedImages) {
             // Convertir archivo a base64
@@ -164,7 +163,6 @@ export default function Propiedades() {
   };
 
   const resetForm = () => {
-    // ✅ Limpiar URLs de las imágenes para evitar memory leaks
     selectedImages.forEach(img => {
       URL.revokeObjectURL(URL.createObjectURL(img));
     });
@@ -189,8 +187,6 @@ export default function Propiedades() {
         return "bg-green-100 text-green-800";
       case "reservada":
         return "bg-yellow-100 text-yellow-800";
-      case "vendida":
-        return "bg-gray-100 text-gray-800";
       case "alquilada":
         return "bg-blue-100 text-blue-800";
       default:
@@ -226,7 +222,6 @@ export default function Propiedades() {
             <option value="todos">Todos</option>
             <option value="disponible">Disponible</option>
             <option value="reservada">Reservada</option>
-            <option value="vendida">Vendida</option>
             <option value="alquilada">Alquilada</option>
           </select>
 
@@ -287,7 +282,6 @@ export default function Propiedades() {
               >
                 <option value="disponible">Disponible</option>
                 <option value="reservada">Reservada</option>
-                <option value="vendida">Vendida</option>
                 <option value="alquilada">Alquilada</option>
               </select>
             </div>
@@ -340,7 +334,6 @@ export default function Propiedades() {
               />
             </div>
 
-            {/* ✅ Sección de imágenes corregida */}
             <div className="col-span-2">
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
                 Imágenes de la propiedad
@@ -411,7 +404,7 @@ export default function Propiedades() {
               key={p.id}
               className="bg-white rounded-xl shadow-md border p-4"
             >
-              {/* 🖼️ Imagen principal de la propiedad */}
+              {/* Imagen principal de la propiedad */}
               {p.imagenes && p.imagenes.length > 0 && (
                 <div className="mb-3">
                   <img

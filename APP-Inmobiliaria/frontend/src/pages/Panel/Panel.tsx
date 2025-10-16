@@ -19,9 +19,9 @@ export default function Panel() {
       case 'clientes':
         return <Clientes />;
       case 'agentes':
-        return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Agentes</h2><p className="text-neutral-600 mt-2">Próximamente...</p></div>;
+        return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Agentes</h2><p className="text-neutral-600 mt-2"></p></div>;
       default:
-        return <Propiedades />;
+        return <Propiedades/>;
     }
   };
 
