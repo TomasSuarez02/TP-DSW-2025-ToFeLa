@@ -9,7 +9,7 @@ export default function Header() {
   // Links dinámicos basados en el rol
  const getLeftLinks = () => {
   if (userRole === "agente") {
-    return ["Panel", "Propiedades"];  // Para admin
+    return ["Panel"];  // Para admin
   } else {
     return ["Alquilar", "Contacto"];  // Para cliente/público
   }

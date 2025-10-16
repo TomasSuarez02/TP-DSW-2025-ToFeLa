@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Header from "../../components/Header";
 import Propiedades from "./Propiedades";
+import Clientes from "./Clientes";
 
 export default function Panel() {
   const [activeSection, setActiveSection] = useState('propiedades');
@@ -16,7 +17,7 @@ export default function Panel() {
       case 'propiedades':
         return <Propiedades />;
       case 'clientes':
-        return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Clientes</h2><p className="text-neutral-600 mt-2">Próximamente...</p></div>;
+        return <Clientes />;
       case 'agentes':
         return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Agentes</h2><p className="text-neutral-600 mt-2">Próximamente...</p></div>;
       default:
