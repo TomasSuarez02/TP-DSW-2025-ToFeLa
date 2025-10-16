@@ -4,4 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server : {
+    proxy : {
+      "/images/": "http://localhost:3000/"
+    }
+  }
 })
