@@ -1,6 +1,8 @@
 {
 	"dependencies": {
-		"react-time-picker": "^8.0.2",
-		"react-clock": "^6.0.0"
+		"@types/multer": "^2.0.0",
+		"multer": "^2.0.2",
+		"react-clock": "^6.0.0",
+		"react-time-picker": "^8.0.2"
 	}
 }
