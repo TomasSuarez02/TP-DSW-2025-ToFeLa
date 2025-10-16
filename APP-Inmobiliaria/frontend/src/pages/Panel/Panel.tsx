@@ -6,7 +6,6 @@ export default function Panel() {
   const [activeSection, setActiveSection] = useState('propiedades');
 
   const sections = [
-    { id: 'dashboard', name: 'Dashboard', icon: '📊' },
     { id: 'propiedades', name: 'Propiedades', icon: '🏠' },
     { id: 'clientes', name: 'Clientes', icon: '👥' },
     { id: 'agentes', name: 'Agentes', icon: '👤' },
@@ -20,8 +19,6 @@ export default function Panel() {
         return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Clientes</h2><p className="text-neutral-600 mt-2">Próximamente...</p></div>;
       case 'agentes':
         return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Agentes</h2><p className="text-neutral-600 mt-2">Próximamente...</p></div>;
-      case 'dashboard':
-        return <div className="p-6"><h2 className="text-2xl font-semibold">Dashboard</h2><p className="text-neutral-600 mt-2">Próximamente...</p></div>;
       default:
         return <Propiedades />;
     }
