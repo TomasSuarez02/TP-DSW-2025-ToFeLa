@@ -178,14 +178,14 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                         <div className="border-t border-gray-200 pt-4 space-y-3">
                                             <div>
                                                 <p className="text-sm text-gray-500 uppercase tracking-wide">Tipo de propiedad</p>
-                                                <p className="text-lg font-semibold text-gray-800">{prop.tipoPropiedad?.descripcion ?? 'Sin tipo'}</p>
+                                                <p className="text-lg font-semibold text-gray-800">{prop.tipoPropiedad?.nombre ?? 'Sin tipo'}</p>
                                             </div>
                                         </div>
 
                                         <div className="border-t border-gray-200 pt-4">
                                             <h2 className="text-lg font-semibold text-gray-800 mb-2">Descripción</h2>
                                             <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                                                {prop.tipoPropiedad?.descripcion || 'No hay descripción disponible para este tipo de propiedad.'}
+                                                {prop.descripcion || 'No hay descripción disponible para esta propiedad.'}
                                             </p>
                                         </div>
 

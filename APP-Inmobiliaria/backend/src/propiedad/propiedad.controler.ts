@@ -15,14 +15,14 @@ function sanitizePropiedadInput(req: Request, res: Response, next: NextFunction)
     hora_hasta: req.body.hora_hasta,
     descripcion: req.body.descripcion,
     tipoPropiedad: req.body.tipoPropiedad,
-    inmobiliaria: req.body.inmobiliaria,
-  };
+    inmobiliaria: req.body.inmobiliaria
+  }
   Object.keys(req.body.sanitizedInput).forEach((key) => {
     if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key];
+      delete req.body.sanitizedInput[key]
     }
-  });
-  next();
+  })
+  next()
 }
 
 async function findAll(req: Request, res: Response) {
@@ -114,7 +114,7 @@ async function remove(req: Request, res: Response) {
       }
     }
     
-    // ✅ Eliminar la propiedad
+    // Eliminar la propiedad
     em.remove(propiedad);
     await em.flush();
     

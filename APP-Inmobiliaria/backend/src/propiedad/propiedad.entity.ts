@@ -20,17 +20,17 @@ export class Propiedad extends BaseEntity {
 
     @Property({ type: 'time', nullable: false })
     hora_hasta!: string;
-
+    
     @Property({ nullable: true, type: 'text' })
     descripcion?: string
-    
+
     @ManyToOne(() => TipoPropiedad, { nullable: false })
     tipoPropiedad!: Rel<TipoPropiedad>;
 
     @ManyToOne(() => Inmobiliaria, { nullable: true })
     inmobiliaria!: Rel<Inmobiliaria>;
 
-    // ✅ Sin cascadas problemáticas, solo orphanRemoval
+    // Sin cascadas problemáticas, solo orphanRemoval
     @OneToMany(() => Imagen, imagen => imagen.propiedad, { 
       nullable: true,
       orphanRemoval: true 
@@ -38,11 +38,3 @@ export class Propiedad extends BaseEntity {
     imagenes = new Collection<Imagen>(this);
 }
 
-/*constructor(
-    public id: string,
-    public direccion: string,
-    public precio: number,
-    public estado: string,
-    public tipoPropiedadId: string,
-    public inmobiliariaCuit: string // Relación con inmobiliaria
-  )*/

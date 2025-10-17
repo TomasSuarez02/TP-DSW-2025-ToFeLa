@@ -3,24 +3,29 @@ type Inmobiliaria = {
 }
 
 type TipoPropiedad = {
-  descripcion: string
+  id: number
+  nombre: string
 }
+
 type Imagenes = {
   id: number
   path: string
 }
 
-export type Propiedades = {
+export interface Propiedades {
   id: number
   direccion: string
   precio: number
   estado: string
+  descripcion?: string
+  hora_desde?: string
+  hora_hasta?: string
   imagenes: Imagenes[]
   inmobiliaria: Inmobiliaria | null
   tipoPropiedad: TipoPropiedad
 }
 
-export default function Card({id, direccion, precio, estado, tipoPropiedad, imagenes }: Propiedades) {
+export default function Card({id, direccion, precio, estado, descripcion, tipoPropiedad, imagenes }: Propiedades) {
   return (
     <div className="bg-white group relative rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
       
@@ -53,10 +58,16 @@ export default function Card({id, direccion, precio, estado, tipoPropiedad, imag
         
         {tipoPropiedad ? (
           <span className="inline-block bg-[#dcc7af] text-[#846a41] px-3 py-1 rounded-full text-sm font-medium mb-3">
-            {tipoPropiedad.descripcion}
+            {tipoPropiedad.nombre}
           </span>
         ) : (
           <span className="text-xs text-gray-400 mb-3 block">Sin tipo de propiedad</span>
+        )}
+
+        {descripcion && (
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+            {descripcion}
+          </p>
         )}
 
         <div className="mt-3 pt-3 border-t border-gray-100">
