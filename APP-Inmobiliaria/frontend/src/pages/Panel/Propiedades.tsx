@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 interface Propiedad {
@@ -17,12 +17,32 @@ interface TipoPropiedad {
   nombre: string;
 }
 
+interface Cliente {
+  id: number;
+  nombre: string;
+  apellido: string;
+}
+
+interface Senia {
+  idPropiedad?: number;
+  idCliente?: number;
+  propiedad?: number;
+  cliente?: number;
+  importe?: number;
+}
+
 export default function Propiedades() {
   const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Propiedad | null>(null);
   const [estadoFiltro, setEstadoFiltro] = useState<string>("todos");
+  const [open, setOpen] = useState<boolean>(false);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [importe, setImporte] = useState<number | null>(null);
+  const [senia, setSenia] = useState<Senia | null>(null);
+
 
   const [formData, setFormData] = useState({
     direccion: "",
@@ -48,6 +68,17 @@ export default function Propiedades() {
     }
   };
 
+const fetchClientes = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/api/clientes");
+        setClientes(res.data.data || []);
+      } catch (error) {
+        console.error("Error al cargar clientes:", error);
+      } finally {
+        setLoading(false);
+      }
+  };
+
   const fetchDependencias = async () => {
     try {
       const tipos = await axios.get("http://localhost:3000/api/tipopropiedades");
@@ -56,11 +87,14 @@ export default function Propiedades() {
       console.error("Error al cargar tipos de propiedad:", error);
     }
   };
-
   useEffect(() => {
     fetchPropiedades();
     fetchDependencias();
-  }, []);
+  }, [fetchPropiedades]);
+
+  useEffect(() => {
+    if (open) fetchClientes();
+  }, [open]);
 
   // Handlers
   const handleInputChange = (
@@ -161,6 +195,34 @@ export default function Propiedades() {
     });
     setShowForm(true);
   };
+
+  const seniaPost = useCallback((data: Senia | null) => {
+    if (!data) return;
+
+    axios.post('http://localhost:3000/api/senias', data)
+      .then(res => {
+        console.log('Senia guardada:', res.data);
+        alert('Alquiler señado con éxito');
+
+        // intentar obtener id de propiedad desde distintos posibles campos
+                const d = data as Partial<Senia>;
+                const propiedadId = d.propiedad ?? d.idPropiedad ?? null;
+        if (propiedadId) {
+          // marcar la propiedad como reservada en el backend
+          axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'reservada' })
+            .then(() => {
+              fetchPropiedades();
+            })
+            .catch(err => console.error('Error actualizando estado de propiedad', err));
+        }
+
+        setOpen(false);
+      })
+      .catch(err => {
+        console.error('Error señando alquiler', err);
+        alert('No se pudo agendar la visita')
+      });
+  }, [fetchPropiedades]);
 
   const resetForm = () => {
     selectedImages.forEach(img => {
@@ -452,7 +514,127 @@ export default function Propiedades() {
                 >
                   Eliminar
                 </button>
+                <button
+                  onClick={() => { console.log('Open modal click'); setOpen(true); }}
+                   aria-haspopup="dialog"
+                   aria-expanded={open}
+                   aria-controls="property-modal"
+                  className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-600 py-2 rounded-lg"
+                >
+                  Señar
+                </button>
               </div>
+              {open && (
+                <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
+                  {/* Fondo semitransparente */}
+                  <div
+                    className="fixed inset-0 bg-[#f5f2ed] bg-opacity-95 backdrop-blur-sm"
+                    onClick={() => {
+                      setOpen(false);
+                    }}
+                  />
+
+                  {/* Contenedor principal del modal */}
+                  <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
+                    {/* Título */}
+                    <div className="flex shrink-0 items-center pb-4 text-xl font-medium text-slate-800">
+                      Señar propiedad 
+                    </div>
+
+                    {/* Cuerpo */}
+                    <div className="relative border-t border-slate-200 py-4 leading-normal text-slate-600 font-light">
+                      {/* Propiedad */}
+                      <label htmlFor="propiedad" className="block">
+                        Propiedad
+                      </label>
+                            <input
+                              id="propiedad"
+                              type="text"
+                              readOnly
+                              className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
+                                        focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                              value={p.direccion}
+                            />
+
+                      {/* Cliente */}
+                      <label htmlFor="cliente" className="block mt-4">
+                        Cliente
+                      </label>
+                      <select
+                        id="cliente"
+                        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
+                                  focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                        value={cliente?.id}
+                        onChange={(e) => setCliente(clientes.find(c => c.id === Number(e.target.value)) || null)}
+                      >
+                        {clientes.length === 0 ? (
+                          <option>No hay clientes disponibles</option>
+                        ) : (
+                          <>
+                            <option value="" disabled>
+                              Elegí un cliente
+                            </option>
+                            {clientes.map((s) => (
+                              <option key={s.id} value={s.id}>
+                                {s.nombre} {s.apellido}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                      <label htmlFor="cliente" className="block mt-4">
+                        Importe
+                      </label>
+                      <input
+                        type="number"
+                        id="importe"
+                        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
+                        value={importe ?? ""}
+                        onChange={(e) => setImporte(e.target.value === "" ? null : Number(e.target.value))}
+                      />
+                    </div>
+
+                    {/* Botones */}
+                    <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
+                      <button
+                        onClick={() => {
+                          setOpen(false);
+                        }}
+                        className="rounded-md border border-transparent py-2 px-4 text-center text-sm 
+                                  text-slate-600 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 
+                                  disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                        type="button"
+                      >
+                        Cancelar
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (!clientes.length || !cliente) {
+                            alert('Selecciona un cliente.');
+                            return;
+                          }
+
+                          setSenia({
+                            propiedad: p?.id,
+                            cliente: cliente.id,
+                            importe: Number(importe)
+                          });
+                          seniaPost(senia)
+                        }}
+                        className="ml-2 rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm 
+                                  text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none 
+                                  active:bg-green-700 hover:bg-green-700 active:shadow-none 
+                                  disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                        type="button"
+                      >
+                        Señar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           ))}
         </div>
