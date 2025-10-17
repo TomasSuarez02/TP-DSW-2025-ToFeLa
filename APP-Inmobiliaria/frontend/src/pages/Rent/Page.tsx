@@ -2,7 +2,7 @@ import Footer from "../../components/Footer.tsx";
 import Header from "../../components/Header.tsx";
 import type { Propiedades } from "./Card.tsx";
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; 
 import axios from 'axios';
 
 export default function Page({ propiedad }: { propiedad?: Propiedades }) {
@@ -23,7 +23,6 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
         setError(null);
         axios.get(`http://localhost:3000/api/propiedades/${id}`)
         .then(res => {
-                
                 const payload = res.data?.data ?? res.data;
                 setProp(payload);
                 setHoraDesde(payload.hora_desde);
@@ -34,11 +33,8 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                 setError('No se pudo cargar la propiedad');
             })
             .finally(() => setLoading(false));
-    }, [id, propiedad]);
+    }, [id]); 
 
-    
-
-    // Log the logged-in user id (if present inside the JWT accessToken)
     useEffect(() => {
         try {
             const token = localStorage.getItem('accessToken');
@@ -59,7 +55,6 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
         }
     }, []);
 
-    // 1) Slots rápidos (en línea, sin helpers)
     const slots =
     !horaDesde || !horaHasta
         ? []
@@ -73,53 +68,55 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
             for (let t = from; t + 60 <= to; t += 60) {
             const hh = String(Math.floor(t / 60)).padStart(2, '0');
             const mm = String(t % 60).padStart(2, '0');
-            arr.push(`${hh}:${mm}`); // <-- solo HH:mm
+            arr.push(`${hh}:${mm}`);
             }
             return arr;
         })();
 
 
-        function setVisita(data: { propiedad?: number; fecha_hora?: string; cliente?: number } | null) {
-            if (data) {
-                axios.post('http://localhost:3000/api/visitas', data)
-                    .then(res => {
-                        console.log('Visita agendada:', res.data);
-                        alert('Visita agendada con éxito');
-                    })
-                    .catch(err => {
-                        console.error('Error agendando visita', err);
-                        if(data.cliente === null) {
-                            alert('Debes iniciar sesión para agendar una visita.');
-                            return;
-                        }
-                        alert('No se pudo agendar la visita')
-                    });
+    const setVisita = useCallback((data: { propiedad?: number; fecha_hora?: string; cliente?: number | null } | null) => {
+        if (data) {
+           
+            if (!data.cliente) {
+                alert('Debes iniciar sesión para agendar una visita.');
+                return;
             }
+
+            axios.post('http://localhost:3000/api/visitas', data)
+                .then(res => {
+                    console.log('Visita agendada:', res.data);
+                    alert('Visita agendada con éxito');
+                    setOpen(false); 
+                    setSlotSel(''); 
+                })
+                .catch(err => {
+                    console.error('Error agendando visita', err);
+                    alert('No se pudo agendar la visita')
+                });
+        }
+    }, []); 
+
+
+    const getLoggedUserId = useCallback((): number | null => {
+        const fromStorage = localStorage.getItem('userId');
+        if (fromStorage) {
+            const n = Number(fromStorage);
+            if (!Number.isNaN(n) && n > 0) return n;
         }
 
-            // Try to obtain logged user id from localStorage or from JWT token
-            const getLoggedUserId = (): number | null => {
-                const fromStorage = localStorage.getItem('userId');
-                if (fromStorage) {
-                    const n = Number(fromStorage);
-                    if (!Number.isNaN(n) && n > 0) return n;
-                }
-
-                // try decode token
-                try {
-                    const token = localStorage.getItem('accessToken');
-                    if (!token) return null;
-                    const parts = token.split('.');
-                    if (parts.length < 2) return null;
-                    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-                    const userId = payload.id ?? payload.userId ?? payload.sub ?? payload.usuarioId ?? null;
-                    if (userId) return Number(userId);
-                } catch (err) {
-                    console.debug('Failed to decode token for user id', err);
-                }
-                return null;
-            };
-
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) return null;
+            const parts = token.split('.');
+            if (parts.length < 2) return null;
+            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+            const userId = payload.id ?? payload.userId ?? payload.sub ?? payload.usuarioId ?? null;
+            if (userId) return Number(userId);
+        } catch (err) {
+            console.debug('Failed to decode token for user id', err);
+        }
+        return null;
+    }, []);
 
     return (
         <>
@@ -154,9 +151,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                         <span className="px-3 py-1 bg-gray-100 rounded-md font-bold text-xl">${prop?.precio.toLocaleString() ?? '-'}</span>
                                         <span className="text-xl">{prop?.tipoPropiedad?.descripcion ?? 'Tipo: -'}</span>
                                     </div>
-                                    
                                 </div>
-
 
                                 <h2 className="text-lg font-semibold text-gray-800 mb-2 mt-10">Descripción</h2>
                                 <p className="text-gray-700 leading-relaxed">{prop ? 'No hay descripción disponible para esta propiedad.' : ''}</p>
@@ -190,7 +185,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                             <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
                                                 <div
                                                     className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
-                                                    onClick={() => setOpen(false)}
+                                                    onClick={() => { setOpen(false); setSlotSel(''); }} 
                                                 />
 
                                                 <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
@@ -202,6 +197,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                     <input
                                                         id="visit-date"
                                                         type="date"
+                                                        min={new Date().toISOString().slice(0, 10)} 
                                                         className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                                                         value={fecha}
                                                         onChange={(e) => setFecha(e.target.value)}
@@ -230,7 +226,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
 
                                                     <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
                                                         <button
-                                                            onClick={() => setOpen(false)}
+                                                            onClick={() => { setOpen(false); setSlotSel(''); }} 
                                                             className="rounded-md border border-transparent py-2 px-4 text-center text-sm transition-all text-slate-600 hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                                                             type="button"
                                                         >
@@ -238,20 +234,22 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                         </button>
                                                         <button
                                                            onClick={() => {
-                                                                const clienteId = getLoggedUserId();
+                                                                
+                                                                if (!slotSel) {
+                                                                    alert('Selecciona un horario.');
+                                                                    return;
+                                                                }
 
-                                                                const fecha_hora = `${fecha} ${slotSel}:00`; // "YYYY-MM-DD HH:mm:00"
+                                                                const clienteId = getLoggedUserId();
+                                                                const fecha_hora = `${fecha} ${slotSel}:00`;
 
                                                                 setVisita({
-                                                                    propiedad: prop.id,
+                                                                    propiedad: prop?.id,
                                                                     fecha_hora,
                                                                     cliente: clienteId
                                                                 });
-
-                                                                setOpen(false);
-                                                                }}
-
-
+                                                            }}
+                                                            disabled={!slotSel} 
                                                             className="rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none active:bg-green-700 hover:bg-green-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none ml-2"
                                                             type="button"
                                                         >

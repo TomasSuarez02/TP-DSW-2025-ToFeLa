@@ -2,6 +2,7 @@ import { useState } from "react";
 import Header from "../../components/Header";
 import Propiedades from "./Propiedades";
 import Clientes from "./Clientes";
+import Visitas from "./Visitas";
 
 export default function Panel() {
   const [activeSection, setActiveSection] = useState('propiedades');
@@ -9,19 +10,30 @@ export default function Panel() {
   const sections = [
     { id: 'propiedades', name: 'Propiedades', icon: '🏠' },
     { id: 'clientes', name: 'Clientes', icon: '👥' },
-    { id: 'agentes', name: 'Agentes', icon: '👤' },
+    { id: 'visitas', name: 'Visitas', icon: '📅' }, 
   ];
 
   const renderContent = () => {
-    switch (activeSection) {
-      case 'propiedades':
-        return <Propiedades />;
-      case 'clientes':
-        return <Clientes />;
-      case 'agentes':
-        return <div className="p-6"><h2 className="text-2xl font-semibold">Gestión de Agentes</h2><p className="text-neutral-600 mt-2"></p></div>;
-      default:
-        return <Propiedades/>;
+    try {
+      switch (activeSection) {
+        case 'propiedades':
+          return <Propiedades />;
+        case 'clientes':
+          return <Clientes />;
+        case 'visitas':
+          return <Visitas />;
+        default:
+          return <Propiedades/>;
+      }
+    } catch (error) {
+      console.error('Error rendering section:', error);
+      return (
+        <div className="p-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-600">Error al cargar la sección</p>
+          </div>
+        </div>
+      );
     }
   };
 
