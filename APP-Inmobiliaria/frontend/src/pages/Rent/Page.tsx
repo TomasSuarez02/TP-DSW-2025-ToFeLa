@@ -122,145 +122,168 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
         <>
             <Header />
 
-            <main className="bg-gradient-to-t from-[#e4dfd5] to-white py-12">
-                <div className="container mx-auto my-auto">
-                    <div className="bg-white bg-opacity-90 rounded-2xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-3">
-                        <div className="md:col-span-2">
-
-                            <div className="p-6 ">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 ">
-                                    {prop?.imagenes?.map(i => (
-                                        <img key={i.id} src={i.path} alt={i.path ?? ''} className="aspect-square w-full object-cover rounded-xl" />
-                                    ))}
+            <main className="bg-[#f5f2ed] min-h-screen py-8">
+                <div className="container mx-auto px-4">
+                    {/* Layout: Izquierda imágenes (scrollable), Derecha info fija */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        
+                        {/* COLUMNA IZQUIERDA: Imágenes grandes en vertical */}
+                        <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
+                            {loading ? (
+                                <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                                    <p className="text-2xl text-gray-600">Cargando imágenes...</p>
                                 </div>
-                                {loading ? (
-                                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Cargando...</h1>
-                                ) : error ? (
-                                    <h1 className="text-2xl md:text-3xl font-bold text-red-600 mb-2">{error}</h1>
-                                ) : prop ? (
-                                    <>
-                                        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mt-10 mb-2">{prop.direccion}</h1>
-                                        <p className="text-xl text-gray-600 mb-4"><strong>Estado:</strong> {prop.estado.toUpperCase()}</p>
-                                    </>
-                                ) : (
-                                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Propiedad no encontrada</h1>
-                                )}
-
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                    <div className="flex items-center gap-4 text-gray-700">
-                                        <span className="px-3 py-1 bg-gray-100 rounded-md font-bold text-xl">${prop?.precio.toLocaleString() ?? '-'}</span>
-                                        <span className="text-xl">{prop?.tipoPropiedad?.descripcion ?? 'Tipo: -'}</span>
+                            ) : error ? (
+                                <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                                    <p className="text-2xl text-red-600">{error}</p>
+                                </div>
+                            ) : prop?.imagenes && prop.imagenes.length > 0 ? (
+                                prop.imagenes.map(img => (
+                                    <div key={img.id} className="w-full h-[500px] overflow-hidden rounded-2xl shadow-lg">
+                                        <img 
+                                            src={img.path} 
+                                            alt={img.path ?? 'Imagen de propiedad'} 
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
+                                ))
+                            ) : (
+                                <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+                                    <p className="text-xl text-gray-600">No hay imágenes disponibles</p>
                                 </div>
-
-                                <h2 className="text-lg font-semibold text-gray-800 mb-2 mt-10">Descripción</h2>
-                                <p className="text-gray-700 leading-relaxed">{prop ? 'No hay descripción disponible para esta propiedad.' : ''}</p>
-                            </div>
+                            )}
                         </div>
 
-                        <aside className="p-6 border-t md:border-t-0 md:border-l md:border-gray-100">
-                            <div className="flex flex-col gap-4">
-                                <div className="bg-gray-50 p-4 rounded-lg">
-                                    <p className="text-xl text-gray-600">Inmobiliaria</p>
-                                    <p className="font-semibold text-gray-800">{prop?.inmobiliaria?.nombre ?? 'Sin inmobiliaria'}</p>
-                                </div>
+                        {/* COLUMNA DERECHA: Info sticky */}
+                        <aside className="lg:col-span-1 order-1 lg:order-2">
+                            <div className="sticky top-8 bg-white rounded-2xl shadow-lg p-6 space-y-6">
+                                
+                                {loading ? (
+                                    <h1 className="text-3xl font-bold text-gray-800">Cargando...</h1>
+                                ) : error ? (
+                                    <h1 className="text-3xl font-bold text-red-600">{error}</h1>
+                                ) : prop ? (
+                                    <>
+                                        <div>
+                                            <h1 className="text-3xl font-bold text-gray-800 mb-2">{prop.direccion}</h1>
+                                            <p className="text-lg text-gray-600 uppercase tracking-wide">{prop.estado}</p>
+                                        </div>
 
-                                <div className="bg-gray-50 p-4 rounded-lg">
-                                    <p className="text-xl text-gray-600">Tipo de propiedad</p>
-                                    <p className="mt-2 text-gray-700 font-semibold">{prop?.tipoPropiedad?.descripcion ?? 'Sin tipo'}</p>
-                                </div>
-                                <div className="flex gap-6 mt-10">
-                                    <button
-                                        onClick={() => { console.log('Open modal click'); setOpen(true); }}
-                                        aria-haspopup="dialog"
-                                        aria-expanded={open}
-                                        aria-controls="property-modal"
-                                        className="px-4 py-2 bg-white text-xl text-[#695433] rounded-md hover:bg-[#695433] hover:text-white border-2 transition font-semibold"
-                                        type="button"
-                                    >
-                                        AGENDAR VISITA
-                                    </button>
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <p className="text-4xl font-bold text-[#695433]">
+                                                ${prop.precio.toLocaleString()}
+                                            </p>
+                                        </div>
 
-                                    {open && (
-                                        <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
-                                            <div
-                                                className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
-                                                onClick={() => { setOpen(false); setSlotSel(''); }}
-                                            />
-
-                                            <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
-                                                <div className="flex shrink-0 items-center pb-4 text-xl font-medium text-slate-800">
-                                                    Agendar visita a la propiedad
-                                                </div>
-                                                <div className="relative border-t border-slate-200 py-4 leading-normal text-slate-600 font-light">
-                                                    <label htmlFor="visit-date" className="block">Fecha de visita</label>
-                                                    <input
-                                                        id="visit-date"
-                                                        type="date"
-                                                        min={new Date().toISOString().slice(0, 10)}
-                                                        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                                                        value={fecha}
-                                                        onChange={(e) => setFecha(e.target.value)}
-                                                    />
-
-                                                    <label htmlFor="visit" className="block mt-4">Horarios disponibles</label>
-                                                    <select
-                                                        id="visit"
-                                                        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                                                        value={slotSel}
-                                                        onChange={(e) => setSlotSel(e.target.value)}
-                                                        disabled={slots.length === 0}
-                                                    >
-                                                        {slots.length === 0 ? (
-                                                            <option>No hay visitas disponibles</option>
-                                                        ) : (
-                                                            <>
-                                                                <option value="" disabled>Elegí un horario</option>
-                                                                {slots.map((s) => (
-                                                                    <option key={s} value={s}>{s}</option>
-                                                                ))}
-                                                            </>
-                                                        )}
-                                                    </select>
-                                                </div>
-
-                                                <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
-                                                    <button
-                                                        onClick={() => { setOpen(false); setSlotSel(''); }}
-                                                        className="rounded-md border border-transparent py-2 px-4 text-center text-sm transition-all text-slate-600 hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                                                        type="button"
-                                                    >
-                                                        Cancelar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-
-                                                            if (!slotSel) {
-                                                                alert('Selecciona un horario.');
-                                                                return;
-                                                            }
-
-                                                            const clienteId = getLoggedUserId();
-                                                            const fecha_hora = `${fecha} ${slotSel}:00`;
-
-                                                            setVisita({
-                                                                propiedad: prop?.id,
-                                                                fecha_hora,
-                                                                cliente: clienteId
-                                                            });
-                                                        }}
-                                                        disabled={!slotSel}
-                                                        className="rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none active:bg-green-700 hover:bg-green-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none ml-2"
-                                                        type="button"
-                                                    >
-                                                        Agendar
-                                                    </button>
-                                                </div>
+                                        <div className="border-t border-gray-200 pt-4 space-y-3">
+                                            <div>
+                                                <p className="text-sm text-gray-500 uppercase tracking-wide">Tipo de propiedad</p>
+                                                <p className="text-lg font-semibold text-gray-800">{prop.tipoPropiedad?.descripcion ?? 'Sin tipo'}</p>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
 
+                                        <div className="border-t border-gray-200 pt-4">
+                                            <h2 className="text-lg font-semibold text-gray-800 mb-2">Descripción</h2>
+                                            <p className="text-gray-700 leading-relaxed">
+                                                No hay descripción disponible para esta propiedad.
+                                            </p>
+                                        </div>
+
+                                        <div className="pt-4">
+                                            <button
+                                                onClick={() => { console.log('Open modal click'); setOpen(true); }}
+                                                aria-haspopup="dialog"
+                                                aria-expanded={open}
+                                                aria-controls="property-modal"
+                                                className="w-full px-6 py-3 bg-[#695433] text-white text-lg font-semibold rounded-lg hover:bg-[#594429] transition-colors duration-200 shadow-md hover:shadow-lg"
+                                                type="button"
+                                            >
+                                                AGENDAR VISITA
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <h1 className="text-2xl font-bold text-gray-800">Propiedad no encontrada</h1>
+                                )}
+
+                                {/* MODAL de agendar visita (sin cambios) */}
+                                {open && (
+                                    <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
+                                        <div
+                                            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+                                            onClick={() => { setOpen(false); setSlotSel(''); }}
+                                        />
+
+                                        <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
+                                            <div className="flex shrink-0 items-center pb-4 text-xl font-medium text-slate-800">
+                                                Agendar visita a la propiedad
+                                            </div>
+                                            <div className="relative border-t border-slate-200 py-4 leading-normal text-slate-600 font-light">
+                                                <label htmlFor="visit-date" className="block">Fecha de visita</label>
+                                                <input
+                                                    id="visit-date"
+                                                    type="date"
+                                                    min={new Date().toISOString().slice(0, 10)}
+                                                    className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                                                    value={fecha}
+                                                    onChange={(e) => setFecha(e.target.value)}
+                                                />
+
+                                                <label htmlFor="visit" className="block mt-4">Horarios disponibles</label>
+                                                <select
+                                                    id="visit"
+                                                    className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                                                    value={slotSel}
+                                                    onChange={(e) => setSlotSel(e.target.value)}
+                                                    disabled={slots.length === 0}
+                                                >
+                                                    {slots.length === 0 ? (
+                                                        <option>No hay visitas disponibles</option>
+                                                    ) : (
+                                                        <>
+                                                            <option value="" disabled>Elegí un horario</option>
+                                                            {slots.map((s) => (
+                                                                <option key={s} value={s}>{s}</option>
+                                                            ))}
+                                                        </>
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
+                                                <button
+                                                    onClick={() => { setOpen(false); setSlotSel(''); }}
+                                                    className="rounded-md border border-transparent py-2 px-4 text-center text-sm transition-all text-slate-600 hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                                                    type="button"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        if (!slotSel) {
+                                                            alert('Selecciona un horario.');
+                                                            return;
+                                                        }
+
+                                                        const clienteId = getLoggedUserId();
+                                                        const fecha_hora = `${fecha} ${slotSel}:00`;
+
+                                                        setVisita({
+                                                            propiedad: prop?.id,
+                                                            fecha_hora,
+                                                            cliente: clienteId
+                                                        });
+                                                    }}
+                                                    disabled={!slotSel}
+                                                    className="rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none active:bg-green-700 hover:bg-green-700 active:shadow-none disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none ml-2"
+                                                    type="button"
+                                                >
+                                                    Agendar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </aside>
                     </div>
