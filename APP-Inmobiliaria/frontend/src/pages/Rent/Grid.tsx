@@ -2,7 +2,7 @@ import {useEffect, useState } from "react"
 import Card, { type Propiedades } from "./Card"
 import axios from "axios"
 
-// Datos de prueba, va lo de la fetch dentro de la funcion
+
 
 export default function ListadoPropiedades() {
   const [propiedades, setPropiedades] = useState<Propiedades[]>([])
