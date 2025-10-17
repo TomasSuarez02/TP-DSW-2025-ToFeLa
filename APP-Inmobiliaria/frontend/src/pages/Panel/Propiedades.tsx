@@ -8,7 +8,7 @@ interface Propiedad {
   estado: string;
   hora_desde?: string;
   hora_hasta?: string;
-  tipoPropiedad?: { id: number; nombre: string };
+  tipoPropiedad?: { id: number; nombre: string; descripcion?: string };
   imagenes?: { id: number; path: string }[];
 }
 

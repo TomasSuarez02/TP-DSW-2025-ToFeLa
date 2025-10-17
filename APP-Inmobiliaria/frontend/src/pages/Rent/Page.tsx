@@ -124,10 +124,10 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
 
             <main className="bg-[#f5f2ed] min-h-screen py-8">
                 <div className="container mx-auto px-4">
-                    {/* Layout: Izquierda imágenes (scrollable), Derecha info fija */}
+    
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         
-                        {/* COLUMNA IZQUIERDA: Imágenes grandes en vertical */}
+                        {/* COLUMNA IZQUIERDA */}
                         <div className="lg:col-span-2 space-y-4 order-2 lg:order-1">
                             {loading ? (
                                 <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
@@ -154,7 +154,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                             )}
                         </div>
 
-                        {/* COLUMNA DERECHA: Info sticky */}
+                        {/* COLUMNA DERECHA */}
                         <aside className="lg:col-span-1 order-1 lg:order-2">
                             <div className="sticky top-8 bg-white rounded-2xl shadow-lg p-6 space-y-6">
                                 
@@ -184,8 +184,8 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
 
                                         <div className="border-t border-gray-200 pt-4">
                                             <h2 className="text-lg font-semibold text-gray-800 mb-2">Descripción</h2>
-                                            <p className="text-gray-700 leading-relaxed">
-                                                No hay descripción disponible para esta propiedad.
+                                            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                                                {prop.tipoPropiedad?.descripcion || 'No hay descripción disponible para este tipo de propiedad.'}
                                             </p>
                                         </div>
 
@@ -206,11 +206,11 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                     <h1 className="text-2xl font-bold text-gray-800">Propiedad no encontrada</h1>
                                 )}
 
-                                {/* MODAL de agendar visita (sin cambios) */}
+                                {/* MODAL */}
                                 {open && (
                                     <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
                                         <div
-                                            className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm"
+                                            className="fixed inset-0 bg-[#f5f2ed] bg-opacity-95 backdrop-blur-sm"
                                             onClick={() => { setOpen(false); setSlotSel(''); }}
                                         />
 

@@ -13,6 +13,7 @@ function sanitizePropiedadInput(req: Request, res: Response, next: NextFunction)
     estado: req.body.estado,
     hora_desde: req.body.hora_desde,
     hora_hasta: req.body.hora_hasta,
+    descripcion: req.body.descripcion,
     tipoPropiedad: req.body.tipoPropiedad,
     inmobiliaria: req.body.inmobiliaria,
   };

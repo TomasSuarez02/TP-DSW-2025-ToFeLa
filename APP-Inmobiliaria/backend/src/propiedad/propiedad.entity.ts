@@ -20,6 +20,9 @@ export class Propiedad extends BaseEntity {
 
     @Property({ type: 'time', nullable: false })
     hora_hasta!: string;
+
+    @Property({ nullable: true, type: 'text' })
+    descripcion?: string
     
     @ManyToOne(() => TipoPropiedad, { nullable: false })
     tipoPropiedad!: Rel<TipoPropiedad>;
