@@ -3,6 +3,7 @@ import Header from "../../components/Header";
 import Propiedades from "./Propiedades";
 import Clientes from "./Clientes";
 import Visitas from "./Visitas";
+import Senias from "./Senias.tsx";
 
 export default function Panel() {
   const [activeSection, setActiveSection] = useState('propiedades');
@@ -10,7 +11,9 @@ export default function Panel() {
   const sections = [
     { id: 'propiedades', name: 'Propiedades', icon: '🏠' },
     { id: 'clientes', name: 'Clientes', icon: '👥' },
-    { id: 'visitas', name: 'Visitas', icon: '📅' }, 
+    { id: 'visitas', name: 'Visitas', icon: '📅' },
+    { id: 'senias', name: 'Señas', icon: '💰' },
+
   ];
 
   const renderContent = () => {
@@ -22,8 +25,10 @@ export default function Panel() {
           return <Clientes />;
         case 'visitas':
           return <Visitas />;
+        case 'senias':
+          return <Senias />;
         default:
-          return <Propiedades/>;
+          return <Propiedades />;
       }
     } catch (error) {
       console.error('Error rendering section:', error);

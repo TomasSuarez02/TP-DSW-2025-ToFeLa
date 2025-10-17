@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-interface Propiedad {
+export interface Propiedad {
   id: number;
   direccion: string;
   precio: number;
@@ -18,13 +18,14 @@ interface TipoPropiedad {
   nombre: string;
 }
 
-interface Cliente {
+export interface Cliente {
   id: number;
   nombre: string;
   apellido: string;
 }
 
-interface Senia {
+export interface Senia {
+  id?: number;
   idPropiedad?: number;
   idCliente?: number;
   propiedad?: number;
