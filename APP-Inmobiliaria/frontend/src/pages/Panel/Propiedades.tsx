@@ -8,6 +8,7 @@ interface Propiedad {
   estado: string;
   hora_desde?: string;
   hora_hasta?: string;
+  descripcion?: string;
   tipoPropiedad?: { id: number; nombre: string; descripcion?: string };
   imagenes?: { id: number; path: string }[];
 }
@@ -48,6 +49,7 @@ export default function Propiedades() {
     direccion: "",
     precio: "",
     estado: "disponible",
+    descripcion: "",
     hora_desde: "",
     hora_hasta: "",
     tipoPropiedad: "",
@@ -121,6 +123,7 @@ const fetchClientes = async () => {
         direccion: formData.direccion,
         precio: parseFloat(formData.precio),
         estado: formData.estado,
+        descripcion: formData.descripcion || undefined,
         hora_desde: formData.hora_desde,
         hora_hasta: formData.hora_hasta,
         tipoPropiedad: formData.tipoPropiedad
@@ -189,6 +192,7 @@ const fetchClientes = async () => {
       direccion: propiedad.direccion || "",
       precio: propiedad.precio.toString(),
       estado: propiedad.estado || "disponible",
+      descripcion: propiedad.descripcion || "",
       hora_desde: propiedad.hora_desde || "",
       hora_hasta: propiedad.hora_hasta || "",
       tipoPropiedad: propiedad.tipoPropiedad?.id?.toString() || "",
@@ -233,6 +237,7 @@ const fetchClientes = async () => {
       direccion: "",
       precio: "",
       estado: "disponible",
+      descripcion: "",
       hora_desde: "",
       hora_hasta: "",
       tipoPropiedad: "",
@@ -393,6 +398,20 @@ const fetchClientes = async () => {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
                 required
+              />
+            </div>
+
+            <div className="col-span-2">
+              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
+                Descripción
+              </label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion}
+                onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
+                rows={4}
+                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a] resize-none"
+                placeholder="Describe las características de esta propiedad..."
               />
             </div>
 

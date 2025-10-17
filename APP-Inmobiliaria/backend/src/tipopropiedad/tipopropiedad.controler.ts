@@ -7,7 +7,6 @@ const em = orm.em
 function sanitizeTipoPropiedadInput(req: Request, res: Response, next: NextFunction) {
   req.body.sanitizedInput = {
     nombre: req.body.nombre,
-    descripcion: req.body.descripcion,
     estado: req.body.estado,
   }
   Object.keys(req.body.sanitizedInput).forEach((key) => {

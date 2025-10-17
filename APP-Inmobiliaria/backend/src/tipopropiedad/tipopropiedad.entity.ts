@@ -9,9 +9,6 @@ export class TipoPropiedad extends BaseEntity {
     nombre!: string;
 
     @Property({ nullable: false })
-    descripcion!: string;
-
-    @Property({ nullable: false })
     estado!: string;
 
     @OneToMany(() => Propiedad, propiedad => propiedad.tipoPropiedad )

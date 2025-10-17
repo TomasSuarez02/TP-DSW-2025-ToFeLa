@@ -66,7 +66,7 @@ export default function Visitas() {
     }
   };
 
-  
+
   const visitaPasada = (fecha: string) => {
     return new Date(fecha) < new Date();
   };
@@ -229,41 +229,37 @@ export default function Visitas() {
             <div className="flex gap-2">
               <button
                 onClick={() => setFiltro('todas')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filtro === 'todas'
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'todas'
                     ? 'bg-blue-600 text-white'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 Todas
               </button>
               <button
                 onClick={() => setFiltro('hoy')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filtro === 'hoy'
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'hoy'
                     ? 'bg-yellow-600 text-white'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 Hoy
               </button>
               <button
                 onClick={() => setFiltro('pendientes')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filtro === 'pendientes'
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'pendientes'
                     ? 'bg-green-600 text-white'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 Pendientes
               </button>
               <button
                 onClick={() => setFiltro('pasadas')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                  filtro === 'pasadas'
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'pasadas'
                     ? 'bg-gray-600 text-white'
                     : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
+                  }`}
               >
                 Pasadas
               </button>
@@ -332,21 +328,19 @@ export default function Visitas() {
                   return (
                     <tr
                       key={visita.id}
-                      className={`hover:bg-neutral-50 transition-colors ${
-                        proxima ? 'bg-red-50' : pasada ? 'bg-gray-50' : hoy ? 'bg-yellow-50' : ''
-                      }`}
+                      className={`hover:bg-neutral-50 transition-colors ${proxima ? 'bg-red-50' : pasada ? 'bg-gray-50' : hoy ? 'bg-yellow-50' : ''
+                        }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            proxima
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${proxima
                               ? 'bg-red-100 text-red-700 animate-pulse'
                               : pasada
-                              ? 'bg-gray-200 text-gray-700'
-                              : hoy
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-green-100 text-green-700'
-                          }`}
+                                ? 'bg-gray-200 text-gray-700'
+                                : hoy
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-green-100 text-green-700'
+                            }`}
                         >
                           {proxima ? '🔴 ¡PRÓXIMA!' : pasada ? '✓ Realizada' : hoy ? '📍 Hoy' : '⏰ Pendiente'}
                         </span>
