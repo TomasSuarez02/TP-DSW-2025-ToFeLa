@@ -60,44 +60,51 @@ export default function Propiedades() {
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   // Cargar datos
-  const fetchPropiedades = async () => {
+  const fetchPropiedades = useCallback(async () => {
     try {
       const res = await axios.get("http://localhost:3000/api/propiedades");
       setPropiedades(res.data.data || []);
+      console.log("Propiedades cargadas:", res.data.data);
     } catch (error) {
       console.error("Error al cargar propiedades:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-const fetchClientes = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/api/clientes");
-        setClientes(res.data.data || []);
-      } catch (error) {
-        console.error("Error al cargar clientes:", error);
-      } finally {
-        setLoading(false);
-      }
-  };
+  const fetchClientes = useCallback(async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/clientes");
+      setClientes(res.data.data || []);
+      console.log("Clientes cargados:", res.data.data);
+    } catch (error) {
+      console.error("Error al cargar clientes:", error);
+    } finally {
+      // No forzar re-render de loading aquí si ya fue manejado por fetchPropiedades
+      setLoading(false);
+    }
+  }, []);
 
-  const fetchDependencias = async () => {
+  const fetchDependencias = useCallback(async () => {
     try {
       const tipos = await axios.get("http://localhost:3000/api/tipopropiedades");
       setTiposPropiedad(tipos.data.data || []);
+      console.log("Tipos de propiedad cargados:", tipos.data.data);
     } catch (error) {
       console.error("Error al cargar tipos de propiedad:", error);
     }
-  };
+  }, []);
+
+  // useEffect con dependencias estables — se ejecutará una vez al montar
   useEffect(() => {
     fetchPropiedades();
     fetchDependencias();
-  }, [fetchPropiedades]);
+  }, [fetchPropiedades, fetchDependencias]);
 
+  // Cargar clientes sólo cuando se abra el modal; fetchClientes está memoizado
   useEffect(() => {
     if (open) fetchClientes();
-  }, [open]);
+  }, [open, fetchClientes]);
 
   // Handlers
   const handleInputChange = (

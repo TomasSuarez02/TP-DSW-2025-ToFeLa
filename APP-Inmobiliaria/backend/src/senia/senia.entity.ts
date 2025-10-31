@@ -10,7 +10,7 @@ export class Senia extends BaseEntity {
     @Property({ nullable: false})
     importe!: number;
 
-    @ManyToOne(() => Propiedad, { nullable: false })
+    @ManyToOne(() => Propiedad, { nullable: false})
     propiedad!: Rel<Propiedad>;
 
     @ManyToOne(() => Cliente, { nullable: false })

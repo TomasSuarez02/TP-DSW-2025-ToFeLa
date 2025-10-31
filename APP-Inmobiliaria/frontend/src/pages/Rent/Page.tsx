@@ -265,6 +265,18 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                             return;
                                                         }
 
+                                                        // Validación client-side: la fecha+hora seleccionada debe ser >= ahora
+                                                        // Creamos el Date usando partes para evitar problemas de parseo cross-browser
+                                                        const [y, mo, d] = fecha.split('-').map(Number);
+                                                        const [hh, mm] = slotSel.split(':').map(Number);
+                                                        const selectedDate = new Date(y, mo - 1, d, hh, mm, 0);
+                                                        const now = new Date();
+
+                                                        if (selectedDate < now) {
+                                                            alert('La fecha y hora deben ser iguales o posteriores al dia de hoy.');
+                                                            return;
+                                                        }
+
                                                         const clienteId = getLoggedUserId();
                                                         const fecha_hora = `${fecha} ${slotSel}:00`;
 
