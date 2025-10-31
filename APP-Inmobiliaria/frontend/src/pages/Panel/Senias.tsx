@@ -71,7 +71,28 @@ export default function Senias() {
     if (!id) return;
     if (confirm("¿Seguro que querés eliminar esta seña?")) {
       try {
+        // localizar la seña para extraer la propiedad vinculada (si existe)
+        const seniaObj = senias.find(s => s.id === id);
+        let propiedadId: number | undefined;
+        if (seniaObj) {
+          if (typeof seniaObj.propiedad === 'number') propiedadId = seniaObj.propiedad;
+          else if (seniaObj.propiedad && typeof seniaObj.propiedad === 'object' && 'id' in seniaObj.propiedad) {
+            propiedadId = (seniaObj.propiedad as { id: number }).id;
+          }
+        }
+
         await axios.delete(`http://localhost:3000/api/senias/${id}`);
+
+        // Si había una propiedad vinculada, intentar marcarla como disponible
+        if (propiedadId) {
+          try {
+            await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'disponible' });
+          } catch (err) {
+            console.error('Error actualizando estado de propiedad a disponible', err);
+            // no rompemos el flujo principal por esto
+          }
+        }
+
         fetchSenias();
         alert("Seña eliminada correctamente");
       } catch (error) {
@@ -83,8 +104,8 @@ export default function Senias() {
 
   const handleEdit = (s: Senia) => {
     setEditingSenia(s);
-    const propId = typeof s.propiedad === "number" ? String(s.propiedad) : (s.propiedad && typeof s.propiedad === 'object' && 'id' in s.propiedad ? String((s.propiedad as PropObj).id) : "");
-    const cliId = typeof s.cliente === "number" ? String(s.cliente) : (s.cliente && typeof s.cliente === 'object' && 'id' in s.cliente ? String((s.cliente as ClienteObj).id) : "");
+  const propId = typeof s.propiedad === "number" ? String(s.propiedad) : (s.propiedad && typeof s.propiedad === 'object' && 'id' in s.propiedad ? String((s.propiedad as { id: number }).id) : "");
+  const cliId = typeof s.cliente === "number" ? String(s.cliente) : (s.cliente && typeof s.cliente === 'object' && 'id' in s.cliente ? String((s.cliente as { id: number }).id) : "");
 
     setFormData({
       propiedad: propId ,
@@ -119,26 +140,52 @@ export default function Senias() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Propiedad *</label>
-              <input
-                type="number"
-                name="propiedad"
-                value={formData.propiedad}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
-                required
-              />
+              {editingSenia ? (
+                <input
+                  type="text"
+                  readOnly
+                  value={
+                    typeof editingSenia.propiedad === 'object' && editingSenia.propiedad
+                      ? ((editingSenia.propiedad as { direccion?: string }).direccion ?? `#${(editingSenia.propiedad as { id?: number }).id ?? ''}`)
+                      : (typeof editingSenia.propiedad === 'number' ? `#${editingSenia.propiedad}` : '')
+                  }
+                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                />
+              ) : (
+                <input
+                  type="number"
+                  name="propiedad"
+                  value={formData.propiedad}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                  required
+                />
+              )}
             </div>
 
             <div>
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Cliente *</label>
-              <input
-                type="number"
-                name="cliente"
-                value={formData.cliente}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
-                required
-              />
+              {editingSenia ? (
+                <input
+                  type="text"
+                  readOnly
+                  value={
+                    typeof editingSenia.cliente === 'object' && editingSenia.cliente
+                      ? `${(editingSenia.cliente as { nombre?: string }).nombre ?? ''} ${(editingSenia.cliente as { apellido?: string }).apellido ?? ''}`.trim()
+                      : (typeof editingSenia.cliente === 'number' ? `#${editingSenia.cliente}` : '')
+                  }
+                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                />
+              ) : (
+                <input
+                  type="number"
+                  name="cliente"
+                  value={formData.cliente}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                  required
+                />
+              )}
             </div>
 
             <div>
@@ -155,7 +202,7 @@ export default function Senias() {
 
             <div className="col-span-3 flex justify-end gap-3 mt-4">
               <button type="button" onClick={resetForm} className="px-4 py-2 border border-[#e5d8c2] rounded-lg text-[#1a1a1a]">Cancelar</button>
-              <button type="submit" className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] rounded-lg font-medium text-neutral-900">Crear</button>
+              <button type="submit" className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] rounded-lg font-medium text-neutral-900">Editar</button>
             </div>
           </form>
         </div>
@@ -175,11 +222,11 @@ export default function Senias() {
             <div key={s.id} className="bg-white rounded-xl shadow-md border p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-semibold text-lg text-neutral-900">Seña #{s.id}</h3>
-                <span className="text-sm text-neutral-500">Propiedad: {s.propiedad.direccion}</span>
+                <span className="text-sm text-neutral-500">Propiedad: {typeof s.propiedad === 'object' && s.propiedad ? ((s.propiedad as { direccion?: string }).direccion ?? `#${(s.propiedad as { id?: number }).id ?? ''}`) : (typeof s.propiedad === 'number' ? `#${s.propiedad}` : 'N/A')}</span>
               </div>
 
               <div className="space-y-2 mb-4">
-                <p className="text-sm text-neutral-600">Cliente: {s.cliente.nombre}</p>
+                <p className="text-sm text-neutral-600">Cliente: {typeof s.cliente === 'object' && s.cliente ? `${(s.cliente as { nombre?: string; apellido?: string }).nombre ?? ''} ${(s.cliente as { nombre?: string; apellido?: string }).apellido ?? ''}`.trim() : (typeof s.cliente === 'number' ? `#${s.cliente}` : 'N/A')}</p>
                 <p className="text-sm text-neutral-600">Importe: ${s.importe}</p>
               </div>
 

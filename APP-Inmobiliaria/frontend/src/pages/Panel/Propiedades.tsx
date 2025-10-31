@@ -40,10 +40,11 @@ export default function Propiedades() {
   const [editingProperty, setEditingProperty] = useState<Propiedad | null>(null);
   const [estadoFiltro, setEstadoFiltro] = useState<string>("todos");
   const [open, setOpen] = useState<boolean>(false);
+  const [selectedProperty, setSelectedProperty] = useState<Propiedad | null>(null);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [importe, setImporte] = useState<number | null>(null);
-  const [senia, setSenia] = useState<Senia | null>(null);
+  // estado para la seña (no guardamos el objeto aquí antes de enviarlo)
 
 
   const [formData, setFormData] = useState({
@@ -542,128 +543,150 @@ export default function Propiedades() {
                   Eliminar
                 </button>
                 <button
-                  onClick={() => { console.log('Open modal click'); setOpen(true); }}
-                   aria-haspopup="dialog"
-                   aria-expanded={open}
-                   aria-controls="property-modal"
+                  onClick={() => {
+                    // No abrir modal si la propiedad ya está reservada o alquilada
+                    const estado = p.estado?.toLowerCase() ?? '';
+                    if (estado === 'reservada' || estado === 'alquilada') {
+                      alert('No se puede señar: la propiedad ya está reservada o alquilada.');
+                      return;
+                    }
+
+                    console.log('Open modal click');
+                    setSelectedProperty(p);
+                    setOpen(true);
+                  }}
+                  aria-haspopup="dialog"
+                  aria-expanded={open}
+                  aria-controls="property-modal"
                   className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-600 py-2 rounded-lg"
                 >
                   Señar
                 </button>
               </div>
-              {open && (
-                <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
-                  {/* Fondo semitransparente */}
-                  <div
-                    className="fixed inset-0 bg-[#f5f2ed] bg-opacity-95 backdrop-blur-sm"
-                    onClick={() => {
-                      setOpen(false);
-                    }}
-                  />
-
-                  {/* Contenedor principal del modal */}
-                  <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
-                    {/* Título */}
-                    <div className="flex shrink-0 items-center pb-4 text-xl font-medium text-slate-800">
-                      Señar propiedad 
-                    </div>
-
-                    {/* Cuerpo */}
-                    <div className="relative border-t border-slate-200 py-4 leading-normal text-slate-600 font-light">
-                      {/* Propiedad */}
-                      <label htmlFor="propiedad" className="block">
-                        Propiedad
-                      </label>
-                            <input
-                              id="propiedad"
-                              type="text"
-                              readOnly
-                              className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
-                                        focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                              value={p.direccion}
-                            />
-
-                      {/* Cliente */}
-                      <label htmlFor="cliente" className="block mt-4">
-                        Cliente
-                      </label>
-                      <select
-                        id="cliente"
-                        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
-                                  focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                        value={cliente?.id}
-                        onChange={(e) => setCliente(clientes.find(c => c.id === Number(e.target.value)) || null)}
-                      >
-                        {clientes.length === 0 ? (
-                          <option>No hay clientes disponibles</option>
-                        ) : (
-                          <>
-                            <option value="" disabled>
-                              Elegí un cliente
-                            </option>
-                            {clientes.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.nombre} {s.apellido}
-                              </option>
-                            ))}
-                          </>
-                        )}
-                      </select>
-                      <label htmlFor="cliente" className="block mt-4">
-                        Importe
-                      </label>
-                      <input
-                        type="number"
-                        id="importe"
-                        className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
-                        value={importe ?? ""}
-                        onChange={(e) => setImporte(e.target.value === "" ? null : Number(e.target.value))}
-                      />
-                    </div>
-
-                    {/* Botones */}
-                    <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
-                      <button
-                        onClick={() => {
-                          setOpen(false);
-                        }}
-                        className="rounded-md border border-transparent py-2 px-4 text-center text-sm 
-                                  text-slate-600 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 
-                                  disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                        type="button"
-                      >
-                        Cancelar
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (!clientes.length || !cliente) {
-                            alert('Selecciona un cliente.');
-                            return;
-                          }
-
-                          setSenia({
-                            propiedad: p?.id,
-                            cliente: cliente.id,
-                            importe: Number(importe)
-                          });
-                          seniaPost(senia)
-                        }}
-                        className="ml-2 rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm 
-                                  text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none 
-                                  active:bg-green-700 hover:bg-green-700 active:shadow-none 
-                                  disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                        type="button"
-                      >
-                        Señar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
             </div>
           ))}
+        </div>
+
+        
+      )}
+
+      {/* Modal único para señar propiedad (fuera del map) */}
+      {open && selectedProperty && (
+        <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
+          {/* Fondo semitransparente */}
+          <div
+            className="fixed inset-0 bg-[#f5f2ed] bg-opacity-95 backdrop-blur-sm"
+            onClick={() => {
+              setOpen(false);
+              setSelectedProperty(null);
+              setCliente(null);
+              setImporte(null);
+            }}
+          />
+
+          {/* Contenedor principal del modal */}
+          <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
+            {/* Título */}
+            <div className="flex shrink-0 items-center pb-4 text-xl font-medium text-slate-800">
+              Señar propiedad
+            </div>
+
+            {/* Cuerpo */}
+            <div className="relative border-t border-slate-200 py-4 leading-normal text-slate-600 font-light">
+              {/* Propiedad */}
+              <label htmlFor="propiedad" className="block">
+                Propiedad
+              </label>
+              <input
+                id="propiedad"
+                type="text"
+                readOnly
+                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
+                          focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                value={selectedProperty.direccion}
+              />
+
+              {/* Cliente */}
+              <label htmlFor="cliente" className="block mt-4">
+                Cliente
+              </label>
+              <select
+                id="cliente"
+                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
+                          focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                value={cliente?.id ?? ''}
+                onChange={(e) => setCliente(clientes.find(c => c.id === Number(e.target.value)) || null)}
+              >
+                {clientes.length === 0 ? (
+                  <option>No hay clientes disponibles</option>
+                ) : (
+                  <>
+                    <option value="" disabled>
+                      Elegí un cliente
+                    </option>
+                    {clientes.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nombre} {s.apellido}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+
+              <label htmlFor="importe" className="block mt-4">
+                Importe
+              </label>
+              <input
+                type="number"
+                id="importe"
+                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
+                value={importe ?? ''}
+                onChange={(e) => setImporte(e.target.value === '' ? null : Number(e.target.value))}
+              />
+            </div>
+
+            {/* Botones */}
+            <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setSelectedProperty(null);
+                  setCliente(null);
+                  setImporte(null);
+                }}
+                className="rounded-md border border-transparent py-2 px-4 text-center text-sm 
+                          text-slate-600 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 
+                          disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                type="button"
+              >
+                Cancelar
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!clientes.length || !cliente) {
+                    alert('Selecciona un cliente.');
+                    return;
+                  }
+
+                  const data: Senia = {
+                    propiedad: selectedProperty.id,
+                    cliente: cliente.id,
+                    importe: Number(importe)
+                  };
+
+                  seniaPost(data);
+                }}
+                className="ml-2 rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm 
+                          text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none 
+                          active:bg-green-700 hover:bg-green-700 active:shadow-none 
+                          disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
+                type="button"
+              >
+                Señar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
