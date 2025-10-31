@@ -51,6 +51,22 @@ export default function Visitas() {
     }
   };
 
+  // Eliminar visita (similar a la lógica en Senias.tsx)
+  const handleDelete = async (id?: number) => {
+    if (!id) return;
+    if (!confirm('¿Seguro que querés eliminar esta visita?')) return;
+
+    try {
+      await axios.delete(`http://localhost:3000/api/visitas/${id}`);
+      // refrescar lista
+      fetchVisitas();
+      alert('Visita eliminada correctamente');
+    } catch (err) {
+      console.error('Error al eliminar visita:', err);
+      alert('Error al eliminar visita');
+    }
+  };
+
 
   const formatearFecha = (fecha: string) => {
     try {
@@ -364,6 +380,15 @@ export default function Visitas() {
                       <td className="px-6 py-4 text-sm text-neutral-900">{visita.propiedad?.direccion || 'N/A'}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-neutral-900">
                         ${visita.propiedad?.precio?.toLocaleString() || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleDelete(visita.id)}
+                          className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium"
+                          type="button"
+                        >
+                          Eliminar
+                        </button>
                       </td>
                     </tr>
                   );

@@ -264,9 +264,6 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                             alert('Selecciona un horario.');
                                                             return;
                                                         }
-
-                                                        // Validación client-side: la fecha+hora seleccionada debe ser >= ahora
-                                                        // Creamos el Date usando partes para evitar problemas de parseo cross-browser
                                                         const [y, mo, d] = fecha.split('-').map(Number);
                                                         const [hh, mm] = slotSel.split(':').map(Number);
                                                         const selectedDate = new Date(y, mo - 1, d, hh, mm, 0);
