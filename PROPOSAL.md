@@ -40,14 +40,14 @@ Requisitos para la regularidad:
   |Simple CRUD|1. CRUD-Cliente<br>2. CRUD-TipoPropiedad<br>3. CRUD-Inmobiliaria<br>4. CRUD-TipoDocumentacion|
 |Dependent CRUD|1. CRUD-Propiedad {depend on} Inmboliaria<br>2. CRUD-Agente Inmobiliario {depend on} inmobiliaria|
 |Listado + Detalle|1. Listado de propiedades filtrado por zona, tipo o inmobiliaria => muestra dirección, precio, estado<br>2. Listado de visitas por cliente o propiedad => muestra fecha, agente, estado => detalle muestra toda la información de la visita|
-|CUU / EPIC|1. Reservar una propiedad mediante una seña<br>2. Agendar visita|
+|CUU / EPIC|1. Agendar visita <br>2. Reservar una propiedad mediante una seña|
 
 
 ### ALCANCE ADICIONAL
 Requisitos para AD:
 |Req|Detail|
 |:-|:-|
-|CUU/Epic|1. Registrar un pago de alquiler<br>2. Confirmar alquiler|
+|CUU/Epic|1. Confirmar alquiler<br>2. Registrar un pago de alquiler|
 
 
 ### ALCANCE FUNCIONAL ADICIONAL VOLUNTARIO
