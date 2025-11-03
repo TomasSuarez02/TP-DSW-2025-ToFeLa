@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import type { Senia } from "./Propiedades.tsx";
+import type { Senia, Propiedad } from "./Propiedades.tsx";
 
 
 export default function Senias() {
@@ -15,6 +15,8 @@ export default function Senias() {
     importe: "",
   });
 
+  const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
+
   // Cargar señas
   const fetchSenias = async () => {
     try {
@@ -27,8 +29,18 @@ export default function Senias() {
     }
   };
 
+  const fetchPropiedades = async () => {
+    try {
+      const res = await axios.get("http://localhost:3000/api/propiedades");
+      setPropiedades(res.data.data || []);
+    } catch (err) {
+      console.error("Error cargando propiedades:", err);
+    }
+  };
+
   useEffect(() => {
     fetchSenias();
+    fetchPropiedades();
   }, []);
 
   // Handlers
@@ -42,17 +54,40 @@ export default function Senias() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // determine the property id we are working with
+      let propiedadIdNum: number | undefined;
+      if (formData.propiedad) propiedadIdNum = Number(formData.propiedad);
+      else if (editingSenia) {
+        if (typeof editingSenia.idPropiedad === "number") propiedadIdNum = editingSenia.idPropiedad;
+        else if (typeof editingSenia.propiedad === "number") propiedadIdNum = editingSenia.propiedad;
+        else if (editingSenia.propiedad && typeof editingSenia.propiedad === "object" && "id" in editingSenia.propiedad) propiedadIdNum = (editingSenia.propiedad as unknown as { id: number }).id;
+      }
+
+      // resolve property price if possible
+      let propiedadPrecio: number | undefined;
+      if (propiedadIdNum) {
+        const found = propiedades.find((p) => p.id === propiedadIdNum);
+        if (found && typeof found.precio === "number") propiedadPrecio = found.precio;
+      }
+      // fallback: if editingSenia.propiedad is object with precio
+      if (propiedadPrecio === undefined && editingSenia && editingSenia.propiedad && typeof editingSenia.propiedad === "object" && "precio" in editingSenia.propiedad) {
+        propiedadPrecio = (editingSenia.propiedad as unknown as { precio?: number }).precio;
+      }
+
+      const importeNum = formData.importe ? Number(formData.importe) : undefined;
+      if (importeNum !== undefined && propiedadPrecio !== undefined && importeNum > propiedadPrecio) {
+        alert(`El importe de la seña no puede ser mayor que el precio de la propiedad (${propiedadPrecio}).`);
+        return;
+      }
+
       const payload = {
-        propiedad: formData.propiedad ? Number(formData.propiedad) : undefined,
+        propiedad: propiedadIdNum,
         cliente: formData.cliente ? Number(formData.cliente) : undefined,
-        importe: formData.importe ? Number(formData.importe) : undefined,
+        importe: importeNum,
       };
 
       if (editingSenia && editingSenia.id) {
-        await axios.put(
-          `http://localhost:3000/api/senias/${editingSenia.id}`,
-          payload
-        );
+        await axios.put(`http://localhost:3000/api/senias/${editingSenia.id}`, payload);
         alert("Seña actualizada correctamente");
       } else {
         await axios.post("http://localhost:3000/api/senias", payload);
@@ -104,8 +139,8 @@ export default function Senias() {
 
   const handleEdit = (s: Senia) => {
     setEditingSenia(s);
-  const propId = typeof s.propiedad === "number" ? String(s.propiedad) : (s.propiedad && typeof s.propiedad === 'object' && 'id' in s.propiedad ? String((s.propiedad as { id: number }).id) : "");
-  const cliId = typeof s.cliente === "number" ? String(s.cliente) : (s.cliente && typeof s.cliente === 'object' && 'id' in s.cliente ? String((s.cliente as { id: number }).id) : "");
+    const propId = typeof s.propiedad === "number" ? String(s.propiedad) : (s.propiedad && typeof s.propiedad === 'object' && 'id' in s.propiedad ? String((s.propiedad as { id: number }).id) : "");
+    const cliId = typeof s.cliente === "number" ? String(s.cliente) : (s.cliente && typeof s.cliente === 'object' && 'id' in s.cliente ? String((s.cliente as { id: number }).id) : "");
 
     setFormData({
       propiedad: propId ,

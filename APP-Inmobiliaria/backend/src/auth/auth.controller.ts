@@ -1,17 +1,4 @@
-/*
 
- 1. Importaciones: importa dependencias necesarias para Express, MikroORM, JWT y las entidades de usuario.
-
- 2. login: función principal para manejar el inicio de sesión.
-    - Extrae email y password (dni) del body.
-    - Busca primero si el usuario es Cliente por email.
-    - Si no lo encuentra, busca si es AgenteInmobiliario por email.
-    - Si no existe usuario, retorna error 401 (credenciales inválidas).
-    - Si existe, compara el nro_doc (dni) con el password recibido.
-    - Si no coincide, retorna error 401 (credenciales inválidas).
-    - Si coincide, genera un JWT con el id, email y rol del usuario.
-    - Retorna el accessToken y el rol en la respuesta.
-    - Si ocurre cualquier error inesperado, retorna error 500 y lo muestra en consola.*/
 import { Request, Response } from "express";
 import { EntityManager } from "@mikro-orm/mysql";
 import jwt from "jsonwebtoken";

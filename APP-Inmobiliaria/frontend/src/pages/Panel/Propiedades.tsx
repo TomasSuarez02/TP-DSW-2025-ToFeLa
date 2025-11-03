@@ -209,33 +209,55 @@ export default function Propiedades() {
     setShowForm(true);
   };
 
-  const seniaPost = useCallback((data: Senia | null) => {
+  const seniaPost = useCallback(async (data: Senia | null) => {
     if (!data) return;
 
-    axios.post('http://localhost:3000/api/senias', data)
-      .then(res => {
-        console.log('Senia guardada:', res.data);
-        alert('Alquiler señado con éxito');
+    // intentar obtener id de propiedad desde distintos posibles campos
+    const d = data as Partial<Senia>;
+    const propiedadId = d.propiedad ?? d.idPropiedad ?? null;
 
-        // intentar obtener id de propiedad desde distintos posibles campos
-                const d = data as Partial<Senia>;
-                const propiedadId = d.propiedad ?? d.idPropiedad ?? null;
-        if (propiedadId) {
-          // marcar la propiedad como reservada en el backend
-          axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'reservada' })
-            .then(() => {
-              fetchPropiedades();
-            })
-            .catch(err => console.error('Error actualizando estado de propiedad', err));
+    // validar que el importe no supere el precio de la propiedad
+    if (propiedadId && d.importe != null) {
+      // buscar en la lista local primero
+      let prop = propiedades.find((p) => p.id === Number(propiedadId));
+      if (!prop) {
+        // intentar traer la propiedad puntual
+        try {
+          const resp = await axios.get(`http://localhost:3000/api/propiedades/${propiedadId}`);
+          prop = resp.data.data;
+        } catch (err) {
+          console.warn('No se pudo cargar la propiedad para validación del importe', err);
         }
+      }
 
-        setOpen(false);
-      })
-      .catch(err => {
-        console.error('Error señando alquiler', err);
-        alert('No se pudo agendar la visita')
-      });
-  }, [fetchPropiedades]);
+      if (prop && typeof prop.precio === 'number') {
+        if ((d.importe as number) > prop.precio) {
+          alert(`El importe de la seña no puede ser mayor que el precio de la propiedad (${prop.precio}).`);
+          return;
+        }
+      }
+    }
+
+    try {
+      const res = await axios.post('http://localhost:3000/api/senias', data);
+      console.log('Senia guardada:', res.data);
+      alert('Alquiler señado con éxito');
+
+      if (propiedadId) {
+        try {
+          await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'reservada' });
+          fetchPropiedades();
+        } catch (err) {
+          console.error('Error actualizando estado de propiedad', err);
+        }
+      }
+
+      setOpen(false);
+    } catch (err) {
+      console.error('Error señando alquiler', err);
+      alert('No se pudo agendar la visita');
+    }
+  }, [fetchPropiedades, propiedades]);
 
   const resetForm = () => {
     selectedImages.forEach(img => {

@@ -70,9 +70,7 @@ export default function Login() {
                   onChange={(e) => setUser({ ...user, password: e.target.value })}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <a href="#" className="text-xs text-[#a08974] underline hover:text-[#bba180] transition-colors">¿Olvidaste tu contraseña?</a>
-              </div>
+             
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-[#bba180] to-[#dcc7af] text-white font-bold text-lg border-none rounded-xl py-2 shadow-md shadow-[#8c6e46]/20 cursor-pointer transition-all duration-200 hover:from-[#a88c6f] hover:to-[#cdbba5]"
