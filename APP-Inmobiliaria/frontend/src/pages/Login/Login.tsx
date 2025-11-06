@@ -26,7 +26,7 @@ export default function Login() {
       localStorage.setItem("role", res.data.role);
 
       if (res.data.role === "cliente") {
-        window.location.href = "/Rent";
+        window.location.href = "/";
       } else {
         window.location.href = "/Panel";
       }

@@ -190,7 +190,7 @@ export default function Propiedades() {
         alert("Propiedad eliminada correctamente");
       } catch (error) {
         console.error("Error al eliminar propiedad:", error);
-        alert("Error al eliminar propiedad");
+        alert("Error al eliminar propiedad, tiene una seña o visita asociada");
       }
     }
   };

@@ -50,7 +50,6 @@ async function findOne(req: Request, res: Response) {
 
 async function add(req: Request, res: Response) {
   try {
-    // ✅ Usar directamente req.body 
     const { propiedad, base64, filename } = req.body;
 
     if (!base64 || !filename) {
