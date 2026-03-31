@@ -1,3 +1,3 @@
 export default function Visit() {
-  return <h1>Visit Page</h1>;
+  return <h1>Página de visitas</h1>;
 }

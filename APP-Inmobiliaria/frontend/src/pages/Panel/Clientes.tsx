@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
 interface TipoDocumentacion {
   id: number;
@@ -37,6 +38,8 @@ export default function Clientes() {
   });
 
   const [tiposDocumentacion, setTiposDocumentacion] = useState<TipoDocumentacion[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Cargar datos
   const fetchClientes = async () => {
@@ -70,20 +73,33 @@ export default function Clientes() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setSubmitError(null);
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+    setFieldErrors({});
     try {
-      const payload = {
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        email: formData.email,
-        telefono: formData.telefono,
-        tipo_documento: formData.tipo_documento,
-        nro_doc: formData.nro_doc,
-        password: formData.password,
+      const basePayload = {
+        nombre: String(formData.nombre ?? "").trim(),
+        apellido: String(formData.apellido ?? "").trim(),
+        email: String(formData.email ?? "").trim(),
+        telefono: String(formData.telefono ?? "").trim(),
+        tipo_documento: String(formData.tipo_documento ?? "").trim(),
+        nro_doc: String(formData.nro_doc ?? "").trim(),
       };
+
+      const payload =
+        editingCliente && !formData.password.trim()
+          ? basePayload
+          : { ...basePayload, password: formData.password };
 
       if (editingCliente) {
         await axios.put(
@@ -100,7 +116,9 @@ export default function Clientes() {
       fetchClientes();
     } catch (error) {
       console.error("Error al guardar cliente:", error);
-      alert("Error al guardar cliente. Revisá la consola.");
+      const parsed = parseApiError(error);
+      setSubmitError(parsed.message);
+      setFieldErrors(parsed.fieldErrors);
     }
   };
 
@@ -120,12 +138,12 @@ export default function Clientes() {
   const handleEdit = (cliente: Cliente) => {
     setEditingCliente(cliente);
     setFormData({
-      nombre: cliente.nombre || "",
-      apellido: cliente.apellido || "",
-      email: cliente.email || "",
-      telefono: cliente.telefono || "",
-      tipo_documento: cliente.tipo_documento || "",
-      nro_doc: cliente.nro_doc || "",
+      nombre: String(cliente.nombre ?? ""),
+      apellido: String(cliente.apellido ?? ""),
+      email: String(cliente.email ?? ""),
+      telefono: String(cliente.telefono ?? ""),
+      tipo_documento: String(cliente.tipo_documento ?? ""),
+      nro_doc: String(cliente.nro_doc ?? ""),
       password: "", 
     });
     setShowForm(true);
@@ -143,6 +161,8 @@ export default function Clientes() {
     });
     setEditingCliente(null);
     setShowForm(false);
+    setSubmitError(null);
+    setFieldErrors({});
   };
 
   // Utils
@@ -210,8 +230,14 @@ export default function Clientes() {
         <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
           <form
             onSubmit={handleSubmit}
+            noValidate
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
+            {submitError && (
+              <div className="col-span-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
+                {submitError}
+              </div>
+            )}
             <div>
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
                 Nombre *
@@ -221,9 +247,10 @@ export default function Clientes() {
                 name="nombre"
                 value={formData.nombre}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.nombre ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.nombre && <p className="mt-1 text-sm text-red-600">{fieldErrors.nombre}</p>}
             </div>
 
             <div>
@@ -235,9 +262,10 @@ export default function Clientes() {
                 name="apellido"
                 value={formData.apellido}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.apellido ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.apellido && <p className="mt-1 text-sm text-red-600">{fieldErrors.apellido}</p>}
             </div>
 
             <div>
@@ -249,9 +277,10 @@ export default function Clientes() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.email ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.email && <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>}
             </div>
 
             <div>
@@ -263,9 +292,10 @@ export default function Clientes() {
                 name="telefono"
                 value={formData.telefono}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.telefono ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.telefono && <p className="mt-1 text-sm text-red-600">{fieldErrors.telefono}</p>}
             </div>
 
             <div>
@@ -276,7 +306,7 @@ export default function Clientes() {
                 name="tipo_documento"
                 value={formData.tipo_documento}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.tipo_documento ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               >
                 <option value="">Seleccionar tipo...</option>
@@ -292,6 +322,7 @@ export default function Clientes() {
                   </>
                 )}
               </select>
+              {fieldErrors.tipo_documento && <p className="mt-1 text-sm text-red-600">{fieldErrors.tipo_documento}</p>}
             </div>
 
             <div>
@@ -303,9 +334,10 @@ export default function Clientes() {
                 name="nro_doc"
                 value={formData.nro_doc}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.nro_doc ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.nro_doc && <p className="mt-1 text-sm text-red-600">{fieldErrors.nro_doc}</p>}
             </div>
 
             {!editingCliente && (
@@ -318,10 +350,11 @@ export default function Clientes() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                  className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.password ? "border-red-400" : "border-[#e5d8c2]"}`}
                   required={!editingCliente}
                   placeholder={editingCliente ? "Dejar vacío para mantener contraseña actual" : ""}
                 />
+                {fieldErrors.password && <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>}
               </div>
             )}
 

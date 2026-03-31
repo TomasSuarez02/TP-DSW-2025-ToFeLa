@@ -1,12 +1,13 @@
 
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { EntityManager } from "@mikro-orm/mysql";
 import jwt from "jsonwebtoken";
 import { Cliente } from "../cliente/cliente.entity.js";
 import { AgenteInmobiliario } from "../agenteinmobiliario/agenteinmobiliario.entity.js";
 import { orm } from "../shared/db/orm.js"; 
+import { HttpError } from "../shared/errors/http.error.js";
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body; // password es nro_doc en este caso
   const em = orm.em as EntityManager;
 
@@ -31,12 +32,12 @@ export const login = async (req: Request, res: Response) => {
     }
 
     if (!user || !role) {
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return next(new HttpError(401, "Credenciales inválidas", [{ path: "general", message: "Credenciales inválidas" }], "AUTH_ERROR"));
     }
 
 
     if (String(user.password) !== String(password)) {
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return next(new HttpError(401, "Credenciales inválidas", [{ path: "general", message: "Credenciales inválidas" }], "AUTH_ERROR"));
     }
     const accessToken = jwt.sign(
       { sub: user.id, email: user.email, role },
@@ -45,8 +46,7 @@ export const login = async (req: Request, res: Response) => {
     );
 
     return res.json({ accessToken, role });
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ message: "Error en el servidor" });
+  } catch (error) {
+    return next(error);
   }
 };

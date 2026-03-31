@@ -14,6 +14,8 @@ import authRouter from "./auth/auth.routes.js";
 import { imagenRouter } from './imagenes/imagen.routes.js'
 import { visitaRouter } from './visita/visita.routes.js'
 import { seniaRouter } from './senia/senia.routes.js'
+import { HttpError } from './shared/errors/http.error.js'
+import { ormErrorHandler } from './shared/middlewares/orm-error.middleware.js'
 
 
 const app = express()
@@ -44,8 +46,33 @@ app.use("/api/auth", authRouter);
 app.use('/api/visitas', visitaRouter)
 app.use('/api/senias', seniaRouter)
 
+// Middleware para estandarizar excepciones de ORM
+app.use(ormErrorHandler)
+
 app.use((_, res) => {
-  return res.status(404).send({ message: 'Resource not found' })
+  return res.status(404).send({ message: 'Recurso no encontrado' })
+})
+
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (error instanceof HttpError) {
+    return res.status(error.status).json({
+      code: error.code || 'SERVER_ERROR',
+      message: error.message,
+      details: error.details,
+    })
+  }
+
+  if (error instanceof Error) {
+    return res.status(500).json({
+      code: 'SERVER_ERROR',
+      message: error.message,
+    })
+  }
+
+  return res.status(500).json({
+    code: 'SERVER_ERROR',
+    message: 'Error inesperado del servidor',
+  })
 })
 
 await syncSchema() 

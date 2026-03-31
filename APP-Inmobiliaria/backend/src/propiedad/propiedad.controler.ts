@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { Propiedad } from './propiedad.entity.js'
 import { orm } from '../shared/db/orm.js'
 import fs from 'fs'
@@ -6,7 +6,7 @@ import path from 'path'
 
 const em = orm.em;
 
-async function findAll(req: Request, res: Response) {
+async function findAll(req: Request, res: Response, next: NextFunction) {
   try {
       const propiedades = await em.find(
         Propiedad,
@@ -14,12 +14,12 @@ async function findAll(req: Request, res: Response) {
         { populate: ['tipoPropiedad', 'inmobiliaria', 'imagenes'] }
       );
       res.status(200).json({ message: 'found all propiedades', data: propiedades });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error) {
+      next(error);
     }
 }
 
-async function findOne(req: Request, res: Response) {
+async function findOne(req: Request, res: Response, next: NextFunction) {
   try {
       const id = req.params.id;
       const propiedad = await em.findOneOrFail(
@@ -28,34 +28,34 @@ async function findOne(req: Request, res: Response) {
         { populate: ['tipoPropiedad', 'inmobiliaria', 'imagenes'] }
       );
       res.status(200).json({ message: 'found propiedad', data: propiedad });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error) {
+      next(error);
     }
 }
 
-async function add(req: Request, res: Response) {
+async function add(req: Request, res: Response, next: NextFunction) {
   try {
       const propiedad = em.create(Propiedad, req.body.sanitizedInput);
       await em.flush();
       res.status(201).json({ message: 'propiedad created', data: propiedad });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error) {
+      next(error);
     }
 }
 
-async function update(req: Request, res: Response) {
+async function update(req: Request, res: Response, next: NextFunction) {
   try {
       const id = req.params.id;
       const propiedadToUpdate = await em.findOneOrFail(Propiedad, { id: Number(id) });
       em.assign(propiedadToUpdate, req.body.sanitizedInput);
       await em.flush();
       res.status(200).json({ message: 'propiedad updated', data: propiedadToUpdate });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error) {
+      next(error);
     }
 }
 
-async function remove(req: Request, res: Response) {
+async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id;
     console.log('Intentando eliminar propiedad con ID:', id);
@@ -101,9 +101,9 @@ async function remove(req: Request, res: Response) {
     
     console.log('Propiedad eliminada correctamente');
     res.status(200).json({ message: 'Propiedad eliminada correctamente' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error al eliminar propiedad:', error);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 }
 

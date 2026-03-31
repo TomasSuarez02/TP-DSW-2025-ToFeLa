@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header.tsx";
 export type UserInput ={
   email: string;
@@ -13,11 +13,29 @@ export default function Login() {
     password: ""
   });
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const handleFieldChange = (name: keyof UserInput, value: string) => {
+    setUser((prev) => ({ ...prev, [name]: value }));
+    setError(null);
+    setFieldErrors((prev) => {
+      if (!prev[name]) {
+        return prev;
+      }
+
+      const updated = { ...prev };
+      delete updated[name];
+      return updated;
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setFieldErrors({});
+
     try {
-      const res = await axios.post("http://localhost:3000/api/auth/login", {
+      const res = await apiClient.post("/auth/login", {
         email: user.email,
         password: user.password,
       });
@@ -30,9 +48,11 @@ export default function Login() {
       } else {
         window.location.href = "/Panel";
       }
-    } catch (err) {
-      console.log(err);
-      setError("Credenciales inválidas");
+    } catch (error: unknown) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parsed = (error as any).parsedError || { message: 'Error inesperado', fieldErrors: {} };
+      setError(parsed.message);
+      setFieldErrors(parsed.fieldErrors);
     }
   };
 
@@ -46,8 +66,9 @@ export default function Login() {
             <div className="mb-8 text-center">
               <span className="tracking-wider text-2xl text-black font-semibold drop-shadow-sm">INICIAR SESION</span>
             </div>
-            <form className="space-y-5" onSubmit={handleSubmit}>
-              {error && <p className="text-red-500">Error al iniciar sesion: email o contraseña incorrecto</p>}
+            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+              {error && <p className="text-red-500">{error}</p>}
+              {fieldErrors.general && <p className="text-red-500">{fieldErrors.general}</p>}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-[#493523] mb-1">Correo electrónico</label>
                 <input
@@ -56,8 +77,9 @@ export default function Login() {
                   placeholder="ejemplo@email.com"
                   className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
                   value={user.email}
-                  onChange={(e) => setUser({ ...user, email: e.target.value })}
+                  onChange={(e) => handleFieldChange("email", e.target.value)}
                 />
+                {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
               </div>
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-[#493523] mb-1">Contraseña</label>
@@ -67,8 +89,9 @@ export default function Login() {
                   value={user.password}
                   placeholder="••••••••"
                   className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                  onChange={(e) => setUser({ ...user, password: e.target.value })}
+                  onChange={(e) => handleFieldChange("password", e.target.value)}
                 />
+                {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
               </div>
              
               <button

@@ -1,12 +1,13 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { Imagen } from './imagen.entity.js'
 import { orm } from '../shared/db/orm.js'
 import fs from 'fs'
 import path from 'path'
+import { HttpError } from '../shared/errors/http.error.js'
 
 const em = orm.em;
 
-async function findAll(req: Request, res: Response) {
+async function findAll(req: Request, res: Response, next: NextFunction) {
   try {
       const imagenes = await em.find(
         Imagen,
@@ -14,12 +15,12 @@ async function findAll(req: Request, res: Response) {
         { populate: ['propiedad'] }
       );
       res.status(200).json({ message: 'found all imagenes', data: imagenes });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error) {
+      next(error);
     }
 }
 
-async function findOne(req: Request, res: Response) {
+async function findOne(req: Request, res: Response, next: NextFunction) {
   try {
       const id = req.params.id;
       const imagen = await em.findOneOrFail(
@@ -28,17 +29,24 @@ async function findOne(req: Request, res: Response) {
         { populate: ['propiedad'] }
       );
       res.status(200).json({ message: 'found imagen', data: imagen });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
+    } catch (error) {
+      next(error);
     }
 }
 
-async function add(req: Request, res: Response) {
+async function add(req: Request, res: Response, next: NextFunction) {
   try {
     const { propiedad, base64, filename } = req.body;
 
     if (!base64 || !filename) {
-      return res.status(400).json({ message: 'Falta la imagen o el nombre del archivo' });
+      return next(
+        new HttpError(
+          400,
+          'Falta la imagen o el nombre del archivo',
+          [{ path: 'base64', message: 'Falta la imagen o el nombre del archivo' }],
+          'VALIDATION_ERROR',
+        ),
+      );
     }
 
     // Crear directorio si no existe
@@ -60,25 +68,25 @@ async function add(req: Request, res: Response) {
     await em.flush();
 
     res.status(201).json({ message: 'Imagen creada y guardada', data: imagen });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error al crear imagen:', error);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 }
 
-async function update(req: Request, res: Response) {
+async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id;
     const imagenToUpdate = await em.findOneOrFail(Imagen, { id: Number(id) });
     em.assign(imagenToUpdate, req.body.sanitizedInput);
     await em.flush();
     res.status(200).json({ message: 'imagen updated', data: imagenToUpdate });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 }
 
-async function remove(req: Request, res: Response) {
+async function remove(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id;
     const imagen = await em.findOneOrFail(Imagen, { id: Number(id) });
@@ -91,8 +99,8 @@ async function remove(req: Request, res: Response) {
     
     await em.removeAndFlush(imagen);
     res.status(200).json({ message: 'imagen removed' });
-  } catch (error: any) {
-    res.status(500).json({ message: error.message });
+  } catch (error) {
+    next(error);
   }
 }
 

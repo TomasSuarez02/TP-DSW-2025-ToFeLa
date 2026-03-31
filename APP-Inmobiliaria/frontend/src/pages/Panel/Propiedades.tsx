@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
 export interface Propiedad {
   id: number;
@@ -59,6 +60,8 @@ export default function Propiedades() {
 
   const [tiposPropiedad, setTiposPropiedad] = useState<TipoPropiedad[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Cargar datos
   const fetchPropiedades = useCallback(async () => {
@@ -113,6 +116,13 @@ export default function Propiedades() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setSubmitError(null);
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,6 +137,8 @@ export default function Propiedades() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+    setFieldErrors({});
     try {
       const payload = {
         direccion: formData.direccion,
@@ -178,7 +190,9 @@ export default function Propiedades() {
       fetchPropiedades();
     } catch (error) {
       console.error("Error al guardar propiedad:", error);
-      alert("Error al guardar propiedad. Revisá la consola.");
+      const parsed = parseApiError(error);
+      setSubmitError(parsed.message);
+      setFieldErrors(parsed.fieldErrors);
     }
   };
 
@@ -276,6 +290,8 @@ export default function Propiedades() {
     setSelectedImages([]);
     setEditingProperty(null);
     setShowForm(false);
+    setSubmitError(null);
+    setFieldErrors({});
   };
 
   // Utils
@@ -337,8 +353,14 @@ export default function Propiedades() {
         <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
           <form
             onSubmit={handleSubmit}
+            noValidate
             className="grid grid-cols-1 md:grid-cols-2 gap-4"
           >
+            {submitError && (
+              <div className="col-span-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
+                {submitError}
+              </div>
+            )}
             {/* Campos existentes */}
             <div>
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
@@ -349,9 +371,10 @@ export default function Propiedades() {
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.direccion ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.direccion && <p className="mt-1 text-sm text-red-600">{fieldErrors.direccion}</p>}
             </div>
 
             <div>
@@ -363,9 +386,10 @@ export default function Propiedades() {
                 name="precio"
                 value={formData.precio}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.precio ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.precio && <p className="mt-1 text-sm text-red-600">{fieldErrors.precio}</p>}
             </div>
 
             <div>
@@ -376,12 +400,13 @@ export default function Propiedades() {
                 name="estado"
                 value={formData.estado}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.estado ? "border-red-400" : "border-[#e5d8c2]"}`}
               >
                 <option value="disponible">Disponible</option>
                 <option value="reservada">Reservada</option>
                 <option value="alquilada">Alquilada</option>
               </select>
+              {fieldErrors.estado && <p className="mt-1 text-sm text-red-600">{fieldErrors.estado}</p>}
             </div>
 
             <div>
@@ -392,7 +417,7 @@ export default function Propiedades() {
                 name="tipoPropiedad"
                 value={formData.tipoPropiedad}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.tipoPropiedad ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               >
                 <option value="">Seleccionar tipo...</option>
@@ -402,6 +427,7 @@ export default function Propiedades() {
                   </option>
                 ))}
               </select>
+              {fieldErrors.tipoPropiedad && <p className="mt-1 text-sm text-red-600">{fieldErrors.tipoPropiedad}</p>}
             </div>
 
             <div>
@@ -413,9 +439,10 @@ export default function Propiedades() {
                 name="hora_desde"
                 value={formData.hora_desde}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.hora_desde ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.hora_desde && <p className="mt-1 text-sm text-red-600">{fieldErrors.hora_desde}</p>}
             </div>
 
             <div>
@@ -427,9 +454,10 @@ export default function Propiedades() {
                 name="hora_hasta"
                 value={formData.hora_hasta}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.hora_hasta ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.hora_hasta && <p className="mt-1 text-sm text-red-600">{fieldErrors.hora_hasta}</p>}
             </div>
 
             <div className="col-span-2">

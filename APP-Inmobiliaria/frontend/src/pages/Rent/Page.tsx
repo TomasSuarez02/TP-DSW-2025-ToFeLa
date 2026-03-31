@@ -3,7 +3,7 @@ import Header from "../../components/Header.tsx";
 import type { Propiedades } from "./Card.tsx";
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
+import apiClient from '../../utils/apiClient';
 
 export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const { id } = useParams<{ id?: string }>();
@@ -16,12 +16,13 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const [horaHasta, setHoraHasta] = useState<string>('');
     const [slotSel, setSlotSel] = useState('');
     const [fecha, setFecha] = useState<string>(() => new Date().toISOString().slice(0, 10));
+    const [visitError, setVisitError] = useState<string | null>(null);
 
 
     useEffect(() => {
         setLoading(true);
         setError(null);
-        axios.get(`http://localhost:3000/api/propiedades/${id}`)
+        apiClient.get(`/propiedades/${id}`)
             .then(res => {
                 const payload = res.data?.data ?? res.data;
                 setProp(payload);
@@ -76,22 +77,33 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
 
     const setVisita = useCallback((data: { propiedad?: number; fecha_hora?: string; cliente?: number | null } | null) => {
         if (data) {
+            setVisitError(null);
 
             if (!data.cliente) {
                 alert('Debes iniciar sesión para agendar una visita.');
                 return;
             }
 
-            axios.post('http://localhost:3000/api/visitas', data)
+            apiClient.post('/visitas', data)
                 .then(res => {
                     console.log('Visita agendada:', res.data);
                     alert('Visita agendada con éxito');
                     setOpen(false);
                     setSlotSel('');
                 })
-                .catch(err => {
+                .catch((err: unknown) => {
                     console.error('Error agendando visita', err);
-                    alert('No se pudo agendar la visita')
+                    const parsedError =
+                        typeof err === 'object' &&
+                        err !== null &&
+                        'parsedError' in err &&
+                        typeof (err as { parsedError?: unknown }).parsedError === 'object' &&
+                        (err as { parsedError?: unknown }).parsedError !== null
+                            ? (err as { parsedError: { message?: string; fieldErrors?: Record<string, string> } }).parsedError
+                            : null;
+
+                    const parsed = parsedError ?? { message: 'Error inesperado', fieldErrors: {} as Record<string, string> };
+                    setVisitError(parsed.fieldErrors?.fecha_hora ?? parsed.message ?? 'Error inesperado');
                 });
         }
     }, []);
@@ -211,7 +223,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                     <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
                                         <div
                                             className="fixed inset-0 bg-[#f5f2ed] bg-opacity-95 backdrop-blur-sm"
-                                            onClick={() => { setOpen(false); setSlotSel(''); }}
+                                            onClick={() => { setOpen(false); setSlotSel(''); setVisitError(null); }}
                                         />
 
                                         <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
@@ -248,11 +260,14 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                         </>
                                                     )}
                                                 </select>
+                                                {visitError && (
+                                                    <p className="mt-2 text-sm text-red-600">{visitError}</p>
+                                                )}
                                             </div>
 
                                             <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
                                                 <button
-                                                    onClick={() => { setOpen(false); setSlotSel(''); }}
+                                                    onClick={() => { setOpen(false); setSlotSel(''); setVisitError(null); }}
                                                     className="rounded-md border border-transparent py-2 px-4 text-center text-sm transition-all text-slate-600 hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
                                                     type="button"
                                                 >
@@ -260,6 +275,8 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                 </button>
                                                 <button
                                                     onClick={() => {
+                                                        setVisitError(null);
+
                                                         if (!slotSel) {
                                                             alert('Selecciona un horario.');
                                                             return;
@@ -270,7 +287,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                         const now = new Date();
 
                                                         if (selectedDate < now) {
-                                                            alert('La fecha y hora deben ser iguales o posteriores al dia de hoy.');
+                                                            alert('La fecha y hora deben ser iguales o posteriores al día de hoy.');
                                                             return;
                                                         }
 

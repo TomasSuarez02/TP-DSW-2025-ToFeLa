@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
+import { parseApiError } from '../../utils/apiErrors';
 
 interface Visita {
   id: number;
@@ -44,7 +45,8 @@ export default function Visitas() {
       setVisitas(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching visitas:', err);
-      setError('Error al cargar las visitas');
+      const parsed = parseApiError(err);
+      setError(parsed.message || 'Error al cargar las visitas');
       setVisitas([]);
     } finally {
       setLoading(false);
@@ -63,7 +65,8 @@ export default function Visitas() {
       alert('Visita eliminada correctamente');
     } catch (err) {
       console.error('Error al eliminar visita:', err);
-      alert('Error al eliminar visita');
+      const parsed = parseApiError(err);
+      alert(parsed.message || 'Error al eliminar visita');
     }
   };
 

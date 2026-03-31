@@ -44,7 +44,7 @@ export default function Contact() {
                         <p className="font-playfair text-black text-[0.98rem] text-center mb-5 p-3">
                             Déjanos tus datos, te contactaremos a la brevedad.
                         </p>
-                        <form>
+                        <form noValidate>
                             <input
                                 type="text"
                                 placeholder="Nombre"
@@ -62,7 +62,7 @@ export default function Contact() {
                             />
                             <input
                                 type="email"
-                                placeholder="Email"
+                                placeholder="Correo electrónico"
                                 className="w-full px-4 py-3 mb-2 text-[1.03rem] rounded-[10px] border border-[#e3d4c2] bg-[#fffdfa] text-[#a08e7a] outline-none font-sans font-normal"
                             />
                             <textarea

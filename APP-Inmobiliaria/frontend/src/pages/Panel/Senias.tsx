@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import type { Senia, Propiedad } from "./Propiedades.tsx";
+import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
 
 export default function Senias() {
@@ -16,6 +17,8 @@ export default function Senias() {
   });
 
   const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   // Cargar señas
   const fetchSenias = async () => {
@@ -49,11 +52,31 @@ export default function Senias() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setSubmitError(null);
+    setFieldErrors((prev) => {
+      if (!prev[name]) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+    setFieldErrors({});
     try {
+      const requiredErrors: FieldErrors = {};
+      if (!formData.propiedad.trim()) requiredErrors.propiedad = "La propiedad es obligatoria";
+      if (!formData.cliente.trim()) requiredErrors.cliente = "El cliente es obligatorio";
+      if (!formData.importe.trim()) requiredErrors.importe = "El importe es obligatorio";
+
+      if (Object.keys(requiredErrors).length > 0) {
+        setFieldErrors(requiredErrors);
+        setSubmitError("Completá los campos obligatorios");
+        return;
+      }
+
       // determine the property id we are working with
       let propiedadIdNum: number | undefined;
       if (formData.propiedad) propiedadIdNum = Number(formData.propiedad);
@@ -74,7 +97,12 @@ export default function Senias() {
         propiedadPrecio = (editingSenia.propiedad as unknown as { precio?: number }).precio;
       }
 
-      const importeNum = formData.importe ? Number(formData.importe) : undefined;
+      const importeNum = Number(formData.importe);
+      if (Number.isNaN(importeNum) || importeNum <= 0) {
+        setFieldErrors({ importe: "El importe debe ser mayor a cero" });
+        setSubmitError("Revisá los datos ingresados");
+        return;
+      }
       if (importeNum !== undefined && propiedadPrecio !== undefined && importeNum > propiedadPrecio) {
         alert(`El importe de la seña no puede ser mayor que el precio de la propiedad (${propiedadPrecio}).`);
         return;
@@ -82,7 +110,7 @@ export default function Senias() {
 
       const payload = {
         propiedad: propiedadIdNum,
-        cliente: formData.cliente ? Number(formData.cliente) : undefined,
+        cliente: Number(formData.cliente),
         importe: importeNum,
       };
 
@@ -98,7 +126,9 @@ export default function Senias() {
       fetchSenias();
     } catch (error) {
       console.error("Error al guardar seña:", error);
-      alert("Error al guardar seña. Revisá la consola.");
+      const parsed = parseApiError(error);
+      setSubmitError(parsed.message);
+      setFieldErrors(parsed.fieldErrors);
     }
   };
 
@@ -154,6 +184,8 @@ export default function Senias() {
     setFormData({ propiedad: "", cliente: "", importe: "" });
     setEditingSenia(null);
     setShowForm(false);
+    setSubmitError(null);
+    setFieldErrors({});
   };
 
   return (
@@ -172,7 +204,12 @@ export default function Senias() {
 
       {showForm && (
         <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {submitError && (
+              <div className="col-span-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
+                {submitError}
+              </div>
+            )}
             <div>
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Propiedad *</label>
               {editingSenia ? (
@@ -192,10 +229,11 @@ export default function Senias() {
                   name="propiedad"
                   value={formData.propiedad}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                  className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.propiedad ? "border-red-400" : "border-[#e5d8c2]"}`}
                   required
                 />
               )}
+              {fieldErrors.propiedad && <p className="mt-1 text-sm text-red-600">{fieldErrors.propiedad}</p>}
             </div>
 
             <div>
@@ -217,10 +255,11 @@ export default function Senias() {
                   name="cliente"
                   value={formData.cliente}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                  className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.cliente ? "border-red-400" : "border-[#e5d8c2]"}`}
                   required
                 />
               )}
+              {fieldErrors.cliente && <p className="mt-1 text-sm text-red-600">{fieldErrors.cliente}</p>}
             </div>
 
             <div>
@@ -230,9 +269,10 @@ export default function Senias() {
                 name="importe"
                 value={formData.importe}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
+                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.importe ? "border-red-400" : "border-[#e5d8c2]"}`}
                 required
               />
+              {fieldErrors.importe && <p className="mt-1 text-sm text-red-600">{fieldErrors.importe}</p>}
             </div>
 
             <div className="col-span-3 flex justify-end gap-3 mt-4">
