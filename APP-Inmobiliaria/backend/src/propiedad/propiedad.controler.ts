@@ -1,29 +1,10 @@
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response } from 'express'
 import { Propiedad } from './propiedad.entity.js'
 import { orm } from '../shared/db/orm.js'
 import fs from 'fs'
 import path from 'path'
 
 const em = orm.em;
-
-function sanitizePropiedadInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    direccion: req.body.direccion,
-    precio: req.body.precio,
-    estado: req.body.estado,
-    hora_desde: req.body.hora_desde,
-    hora_hasta: req.body.hora_hasta,
-    descripcion: req.body.descripcion,
-    tipoPropiedad: req.body.tipoPropiedad,
-    inmobiliaria: req.body.inmobiliaria
-  }
-  Object.keys(req.body.sanitizedInput).forEach((key) => {
-    if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key]
-    }
-  })
-  next()
-}
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -126,4 +107,4 @@ async function remove(req: Request, res: Response) {
   }
 }
 
-export { sanitizePropiedadInput, findAll, findOne, add, update, remove };
+export { findAll, findOne, add, update, remove };

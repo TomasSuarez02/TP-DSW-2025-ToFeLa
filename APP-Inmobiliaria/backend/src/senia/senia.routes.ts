@@ -4,9 +4,9 @@ import {
   findOne,
   add,
   update,
-  remove,
-  sanitizeSeniaInput
+  remove
 } from './senia.controler.js';
+import { sanitizeSeniaInput } from '../shared/middlewares/sanitization.middleware.js';
 
 const router = Router();
 

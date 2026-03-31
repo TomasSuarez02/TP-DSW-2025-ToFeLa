@@ -1,25 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { AgenteInmobiliario } from './agenteinmobiliario.entity.js';
 import { orm } from '../shared/db/orm.js';
 
 const em = orm.em;
-
-function sanitizeAgenteInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    id: req.body.id,
-    nombre: req.body.nombre,
-    apellido: req.body.apellido,
-    email: req.body.email,
-    telefono: req.body.telefono,
-    fechaIngreso: req.body.fechaIngreso,
-  };
-  Object.keys(req.body.sanitizedInput).forEach((key) => {
-    if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key];
-    }
-  });
-  next();
-}
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -73,4 +56,4 @@ async function remove(req: Request, res: Response) {
   }
 }
 
-export { sanitizeAgenteInput, findAll, findOne, add, update, remove };
+export { findAll, findOne, add, update, remove };

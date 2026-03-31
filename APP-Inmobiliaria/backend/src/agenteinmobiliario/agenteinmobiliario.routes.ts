@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { sanitizeAgenteInput, findAll, findOne, add, update, remove } from './agenteinmobiliario.controler.js'
+import { findAll, findOne, add, update, remove } from './agenteinmobiliario.controler.js'
+import { sanitizeAgenteInput } from '../shared/middlewares/sanitization.middleware.js'
 
 export const agenteInmobiliarioRouter = Router()
 

@@ -4,9 +4,9 @@ import {
   findOne,
   add,
   update,
-  remove,
-  sanitizeImagenInput
+  remove
 } from './imagen.controler.js';
+import { sanitizeImagenInput } from '../shared/middlewares/sanitization.middleware.js';
 
 const router = Router();
 

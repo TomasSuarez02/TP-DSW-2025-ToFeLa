@@ -1,23 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { orm } from '../shared/db/orm.js'
 import { Senia } from './senia.entity.js';
 
 const em = orm.em;
-
-function sanitizeSeniaInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    importe: req.body.importe,
-    propiedad: req.body.propiedad,
-    cliente: req.body.cliente,
-  };
-  
-  Object.keys(req.body.sanitizedInput).forEach((key) => {
-    if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key];
-    }
-  });
-  next();
-}
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -81,4 +66,4 @@ async function remove(req: Request, res: Response) {
     }
 }
 
-export { sanitizeSeniaInput, findAll, findOne, add, update, remove };
+export { findAll, findOne, add, update, remove };

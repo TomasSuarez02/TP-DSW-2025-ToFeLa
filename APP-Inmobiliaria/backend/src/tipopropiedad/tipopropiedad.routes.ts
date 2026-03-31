@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { sanitizeTipoPropiedadInput, findAll, findOne, add, update, remove } from './tipopropiedad.controler.js'
+import { findAll, findOne, add, update, remove } from './tipopropiedad.controler.js'
+import { sanitizeTipoPropiedadInput } from '../shared/middlewares/sanitization.middleware.js'
 
 export const tipopropiedadRouter = Router()
 

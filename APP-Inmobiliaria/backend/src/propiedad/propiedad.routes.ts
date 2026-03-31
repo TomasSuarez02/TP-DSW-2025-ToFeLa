@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
-  sanitizePropiedadInput,
   findAll,
   findOne,
   add,
   update,
   remove
 } from './propiedad.controler.js';
+import { sanitizePropiedadInput } from '../shared/middlewares/sanitization.middleware.js';
 
 const router = Router();
 

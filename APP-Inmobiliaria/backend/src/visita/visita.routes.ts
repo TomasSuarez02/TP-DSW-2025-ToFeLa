@@ -4,9 +4,9 @@ import {
   findOne,
   add,
   update,
-  remove,
-  sanitizeVisitaInput
+  remove
 } from './visita.controler.js';
+import { sanitizeVisitaInput } from '../shared/middlewares/sanitization.middleware.js';
 
 const router = Router();
 

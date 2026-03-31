@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
-  sanitizeTipoDocumentacionInput,
   findAll,
   findOne,
   add,
   update,
   remove
 } from './tipodocumentacion.controler.js';
+import { sanitizeTipoDocumentacionInput } from '../shared/middlewares/sanitization.middleware.js';
 
 const router = Router();
 

@@ -1,24 +1,8 @@
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response } from 'express'
 import { Inmobiliaria } from './inmobiliaria.entity.js'
 import { orm } from '../shared/db/orm.js'
 
 const em = orm.em
-
-function sanitizeInmobiliariaInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    nombre: req.body.nombre,
-    direccion: req.body.direccion,
-    telefono: req.body.telefono,
-  }
-  //more checks here
-
-  Object.keys(req.body.sanitizedInput).forEach((key) => {
-    if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key]
-    }
-  })
-  next()
-}
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -72,4 +56,4 @@ async function remove(req: Request, res: Response) {
   }
 }
 
-export { sanitizeInmobiliariaInput, findAll, findOne, add, update, remove }
+export { findAll, findOne, add, update, remove }

@@ -1,17 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { TipoDocumentacion } from './tipodocumentacion.entity.js';
 import { orm } from '../shared/db/orm.js';
 
 const em = orm.em;
-
-async function sanitizeTipoDocumentacionInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    nombre: req.body.nombre,
-    descripcion: req.body.descripcion,
-    fechaVencimiento: req.body.fechaVencimiento,
-  };
-  next();
-}
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -66,4 +57,4 @@ async function remove(req: Request, res: Response) {
   }
 }
 
-export { sanitizeTipoDocumentacionInput, findAll, findOne, add, update, remove };
+export { findAll, findOne, add, update, remove };

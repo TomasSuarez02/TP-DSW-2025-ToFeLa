@@ -1,21 +1,8 @@
-import { Request, Response, NextFunction } from 'express'
+import { Request, Response } from 'express'
 import { TipoPropiedad } from './tipopropiedad.entity.js'
 import { orm } from '../shared/db/orm.js'
 
 const em = orm.em
-
-function sanitizeTipoPropiedadInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    nombre: req.body.nombre,
-    estado: req.body.estado,
-  }
-  Object.keys(req.body.sanitizedInput).forEach((key) => {
-    if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key]
-    }
-  })
-  next()
-}
 
 
 async function findAll(req: Request, res: Response) {
@@ -70,4 +57,4 @@ async function remove(req: Request, res: Response) {
     }
 }
 
-export { sanitizeTipoPropiedadInput, findAll, findOne, add, update, remove };
+export { findAll, findOne, add, update, remove };

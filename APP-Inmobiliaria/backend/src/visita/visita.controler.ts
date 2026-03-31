@@ -1,23 +1,8 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { orm } from '../shared/db/orm.js'
 import { Visita } from './visita.entity.js';
 
 const em = orm.em;
-
-function sanitizeVisitaInput(req: Request, res: Response, next: NextFunction) {
-  req.body.sanitizedInput = {
-    fecha_hora: req.body.fecha_hora,
-    propiedad: req.body.propiedad,
-    cliente: req.body.cliente,
-  };
-  
-  Object.keys(req.body.sanitizedInput).forEach((key) => {
-    if (req.body.sanitizedInput[key] === undefined) {
-      delete req.body.sanitizedInput[key];
-    }
-  });
-  next();
-}
 
 async function findAll(req: Request, res: Response) {
   try {
@@ -81,4 +66,4 @@ async function remove(req: Request, res: Response) {
     }
 }
 
-export { sanitizeVisitaInput, findAll, findOne, add, update, remove };
+export { findAll, findOne, add, update, remove };
