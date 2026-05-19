@@ -12,7 +12,7 @@
 
 ## REPOSITORIES
 * [ Frontend app ]
-* [ Backentd app ]
+* [ Backend app ]
 
 
 
@@ -47,7 +47,7 @@ Requisitos para la regularidad:
 Requisitos para AD:
 |Req|Detail|
 |:-|:-|
-|CUU/Epic|1. Confirmar alquiler<br>2. Registrar un pago de alquiler|
+|CUU/Epic|1. Confirmar alquiler<br>2. Registrar un pago de seña|
 
 
 ### ALCANCE FUNCIONAL ADICIONAL VOLUNTARIO
