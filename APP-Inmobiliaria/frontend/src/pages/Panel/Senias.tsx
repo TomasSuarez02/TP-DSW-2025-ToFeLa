@@ -219,17 +219,6 @@ export default function Senias({ isAgent = true }: SeniasProps) {
           <h2 className="text-3xl font-semibold text-neutral-900">Gestión de Señas</h2>
         )}
         
-        {/* 4. El botón superior para crear/cerrar formularios SOLO lo ve el agente */}
-        {isAgent && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowForm((s) => !s)}
-              className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-2 rounded-lg font-medium"
-            >
-              {showForm ? "Cerrar" : "Nueva Seña"}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Formulario (Solo para agentes administradores si showForm está activo) */}
