@@ -3,8 +3,12 @@ import axios from "axios";
 import type { Senia, Propiedad } from "./Propiedades.tsx";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
+// 1. Agregamos la interfaz para recibir la prop isAgent
+interface SeniasProps {
+  isAgent?: boolean;
+}
 
-export default function Senias() {
+export default function Senias({ isAgent = true }: SeniasProps) {
   const [senias, setSenias] = useState<Senia[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -20,11 +24,23 @@ export default function Senias() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // Cargar señas
+  // 2. Modificamos la carga de señas según el rol
   const fetchSenias = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/senias");
-      setSenias(res.data.data || []);
+      setLoading(true);
+      const token = localStorage.getItem("accessToken");
+      
+      if (!isAgent) {
+        // RUTA CLIENTE: Trae solo las señas del usuario logueado usando su token
+        const res = await axios.get("http://localhost:3000/api/senias/mis-senias", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setSenias(res.data.data || []);
+      } else {
+        // RUTA AGENTE: Trae el listado completo de la inmobiliaria
+        const res = await axios.get("http://localhost:3000/api/senias");
+        setSenias(res.data.data || []);
+      }
     } catch (error) {
       console.error("Error al cargar señas:", error);
     } finally {
@@ -43,8 +59,11 @@ export default function Senias() {
 
   useEffect(() => {
     fetchSenias();
-    fetchPropiedades();
-  }, []);
+    // Solo cargamos propiedades en modo agente para alimentar el formulario
+    if (isAgent) {
+      fetchPropiedades();
+    }
+  }, [isAgent]); // Se vuelve a ejecutar si muta el modo
 
   // Handlers
   const handleInputChange = (
@@ -77,7 +96,6 @@ export default function Senias() {
         return;
       }
 
-      // determine the property id we are working with
       let propiedadIdNum: number | undefined;
       if (formData.propiedad) propiedadIdNum = Number(formData.propiedad);
       else if (editingSenia) {
@@ -86,13 +104,11 @@ export default function Senias() {
         else if (editingSenia.propiedad && typeof editingSenia.propiedad === "object" && "id" in editingSenia.propiedad) propiedadIdNum = (editingSenia.propiedad as unknown as { id: number }).id;
       }
 
-      // resolve property price if possible
       let propiedadPrecio: number | undefined;
       if (propiedadIdNum) {
         const found = propiedades.find((p) => p.id === propiedadIdNum);
         if (found && typeof found.precio === "number") propiedadPrecio = found.precio;
       }
-      // fallback: if editingSenia.propiedad is object with precio
       if (propiedadPrecio === undefined && editingSenia && editingSenia.propiedad && typeof editingSenia.propiedad === "object" && "precio" in editingSenia.propiedad) {
         propiedadPrecio = (editingSenia.propiedad as unknown as { precio?: number }).precio;
       }
@@ -136,7 +152,6 @@ export default function Senias() {
     if (!id) return;
     if (confirm("¿Seguro que querés eliminar esta seña?")) {
       try {
-        // localizar la seña para extraer la propiedad vinculada (si existe)
         const seniaObj = senias.find(s => s.id === id);
         let propiedadId: number | undefined;
         if (seniaObj) {
@@ -148,13 +163,11 @@ export default function Senias() {
 
         await axios.delete(`http://localhost:3000/api/senias/${id}`);
 
-        // Si había una propiedad vinculada, intentar marcarla como disponible
         if (propiedadId) {
           try {
             await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'disponible' });
           } catch (err) {
             console.error('Error actualizando estado de propiedad a disponible', err);
-            // no rompemos el flujo principal por esto
           }
         }
 
@@ -180,6 +193,13 @@ export default function Senias() {
     setShowForm(true);
   };
 
+  const handleCompletarSenia = (id?: number) => {
+    if (!id) return;
+    // Lógica temporal antes de conectar la API de Stripe
+    alert(`Redirigiendo a la pasarela de pago para completar la seña #${id}...`);
+    // Acá meterás la navegación hacia Stripe: navigate(`/checkout/${id}`)
+  };
+
   const resetForm = () => {
     setFormData({ propiedad: "", cliente: "", importe: "" });
     setEditingSenia(null);
@@ -190,19 +210,27 @@ export default function Senias() {
 
   return (
     <div className="p-6">
+      {/* 3. Título dinámico basado en el rol */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h2 className="text-3xl font-semibold text-neutral-900">Gestión de Señas</h2>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowForm((s) => !s)}
-            className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-2 rounded-lg font-medium"
-          >
-            Cerrar
-          </button>
-        </div>
+        <h2 className="text-3xl font-semibold text-neutral-900">
+          {isAgent ? "Gestión de Señas" : "Mis Señas"}
+        </h2>
+        
+        {/* 4. El botón superior para crear/cerrar formularios SOLO lo ve el agente */}
+        {isAgent && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowForm((s) => !s)}
+              className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-2 rounded-lg font-medium"
+            >
+              {showForm ? "Cerrar" : "Nueva Seña"}
+            </button>
+          </div>
+        )}
       </div>
 
-      {showForm && (
+      {/* Formulario (Solo para agentes administradores si showForm está activo) */}
+      {isAgent && showForm && (
         <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
           <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {submitError && (
@@ -277,7 +305,9 @@ export default function Senias() {
 
             <div className="col-span-3 flex justify-end gap-3 mt-4">
               <button type="button" onClick={resetForm} className="px-4 py-2 border border-[#e5d8c2] rounded-lg text-[#1a1a1a]">Cancelar</button>
-              <button type="submit" className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] rounded-lg font-medium text-neutral-900">Editar</button>
+              <button type="submit" className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] rounded-lg font-medium text-neutral-900">
+                {editingSenia ? "Editar" : "Guardar"}
+              </button>
             </div>
           </form>
         </div>
@@ -289,7 +319,7 @@ export default function Senias() {
       ) : senias.length === 0 ? (
         <div className="text-center py-12">
           <h3 className="text-xl font-medium text-neutral-700">No hay señas registradas</h3>
-          <p className="text-neutral-500 mb-4">Creá la primera seña</p>
+          {isAgent && <p className="text-neutral-500 mb-4">Creá la primera seña</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -297,17 +327,36 @@ export default function Senias() {
             <div key={s.id} className="bg-white rounded-xl shadow-md border p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="font-semibold text-lg text-neutral-900">Seña #{s.id}</h3>
-                <span className="text-sm text-neutral-500">Propiedad: {typeof s.propiedad === 'object' && s.propiedad ? ((s.propiedad as { direccion?: string }).direccion ?? `#${(s.propiedad as { id?: number }).id ?? ''}`) : (typeof s.propiedad === 'number' ? `#${s.propiedad}` : 'N/A')}</span>
+                <span className="text-sm text-neutral-500">
+                  Propiedad: {typeof s.propiedad === 'object' && s.propiedad ? ((s.propiedad as { direccion?: string }).direccion ?? `#${(s.propiedad as { id?: number }).id ?? ''}`) : (typeof s.propiedad === 'number' ? `#${s.propiedad}` : 'N/A')}
+                </span>
               </div>
 
               <div className="space-y-2 mb-4">
-                <p className="text-sm text-neutral-600">Cliente: {typeof s.cliente === 'object' && s.cliente ? `${(s.cliente as { nombre?: string; apellido?: string }).nombre ?? ''} ${(s.cliente as { nombre?: string; apellido?: string }).apellido ?? ''}`.trim() : (typeof s.cliente === 'number' ? `#${s.cliente}` : 'N/A')}</p>
-                <p className="text-sm text-neutral-600">Importe: ${s.importe}</p>
+                {/* Al cliente le ocultamos el ID de cliente ya que es obvio que es él */}
+                {isAgent && (
+                  <p className="text-sm text-neutral-600">
+                    Cliente: {typeof s.cliente === 'object' && s.cliente ? `${(s.cliente as { nombre?: string; apellido?: string }).nombre ?? ''} ${(s.cliente as { nombre?: string; apellido?: string }).apellido ?? ''}`.trim() : (typeof s.cliente === 'number' ? `#${s.cliente}` : 'N/A')}
+                  </p>
+                )}
+                <p className="text-sm text-neutral-600">Importe a favor: ${s.importe}</p>
               </div>
 
+              {/* 5. BOTONES CONDICIONALES SEGÚN ROL */}
               <div className="flex gap-2">
-                <button onClick={() => handleEdit(s)} className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg text-sm font-medium">Editar</button>
-                <button onClick={() => handleDelete(s.id)} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg text-sm font-medium">Eliminar</button>
+                {isAgent ? (
+                  <>
+                    <button onClick={() => handleEdit(s)} className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg text-sm font-medium">Editar</button>
+                    <button onClick={() => handleDelete(s.id)} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg text-sm font-medium">Eliminar</button>
+                  </>
+                ) : (
+                  <button 
+                    onClick={() => handleCompletarSenia(s.id)} 
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Completar Seña
+                  </button>
+                )}
               </div>
             </div>
           ))}

@@ -21,6 +21,7 @@ export const AppRouter = () => {
         <Route path="/Panel" element={<Panel/>}/>
         <Route path="/register" element={<Register  />}/>
         <Route path="/Rent/property/:id" element={<Page/>}/>
+        <Route path="/MisSenias" element={<Panel isAgent={false} />} />
 
     </Routes>
     )

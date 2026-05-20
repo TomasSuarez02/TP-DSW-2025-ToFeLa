@@ -6,25 +6,27 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  // Links dinámicos basados en el rol
- const getLeftLinks = () => {
-  if (userRole === "agente") {
-    return ["Panel"];  // Para admin
-  } else {
-    return ["Alquilar", "Contacto"];  // Para cliente/público
-  }
-};
+  // Links dinámicos basados en el rol exacto
+  const getLeftLinks = () => {
+    if (userRole === "agente") {
+      return ["Panel"];  // Para admin / agente
+    } else if (userRole === "cliente") {
+      return ["Alquilar", "Contacto", "Mis Señas"];  // Solo para cliente registrado
+    } else {
+      return ["Alquilar", "Contacto"];  // Para público no logueado
+    }
+  };
 
   const leftLinks = getLeftLinks();
 
   useEffect(() => {
-      const token = localStorage.getItem("accessToken");
-      const role = localStorage.getItem("role");
-      if (token) {
-        setIsLoggedIn(true);
-        setUserRole(role);
-      }
-    }, [])
+    const token = localStorage.getItem("accessToken");
+    const role = localStorage.getItem("role");
+    if (token) {
+      setIsLoggedIn(true);
+      setUserRole(role);
+    }
+  }, [])
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
@@ -51,7 +53,8 @@ export default function Header() {
                 if (label === "Alquilar") linkPath = "/Rent";
                 else if (label === "Contacto") linkPath = "/Contact";
                 else if (label === "Panel") linkPath = "/Panel";
-                else if (label === "Propiedades") linkPath = "/Panel"; // Por ahora van al mismo lado
+                else if (label === "Propiedades") linkPath = "/Panel";
+                else if (label === "Mis Señas") linkPath = "/MisSenias"; // Nueva ruta asignada
                 
                 return (
                   <Link
@@ -108,7 +111,8 @@ export default function Header() {
               if (label === "Alquilar") linkPath = "/Rent";
               else if (label === "Contacto") linkPath = "/Contact";
               else if (label === "Panel") linkPath = "/Panel";
-              else if (label === "Propiedades") linkPath = "/Panel"; // Por ahora van al mismo lado
+              else if (label === "Propiedades") linkPath = "/Panel";
+              else if (label === "Mis Señas") linkPath = "/MisSenias"; // Nueva ruta asignada para mobile
               
               return (
                 <Link
