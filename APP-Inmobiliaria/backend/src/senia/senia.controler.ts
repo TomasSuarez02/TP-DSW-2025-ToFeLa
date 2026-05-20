@@ -66,4 +66,23 @@ async function remove(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export { findAll, findOne, add, update, remove };
+async function findByClient(req: Request, res: Response, next: NextFunction) {
+  try {
+      const authReq = req as Request & { user?: { sub: number } };
+      const clientId = authReq.user?.sub;
+      if (!clientId) {
+        return res.status(401).json({ message: 'No autorizado', data: [] });
+      }
+
+      const senias = await em.find(
+        Senia,
+        { cliente: clientId },
+        { populate: ['propiedad', 'cliente'] }
+      );
+      res.status(200).json({ message: 'found client senias', data: senias });
+    } catch (error) {
+      next(error);
+    }
+}
+
+export { findAll, findOne, add, update, remove, findByClient };

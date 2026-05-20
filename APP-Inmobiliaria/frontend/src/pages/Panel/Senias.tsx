@@ -31,18 +31,21 @@ export default function Senias({ isAgent = true }: SeniasProps) {
       const token = localStorage.getItem("accessToken");
       
       if (!isAgent) {
-        // RUTA CLIENTE: Trae solo las señas del usuario logueado usando su token
+        if (!token) {
+          setSenias([]);
+          return;
+        }
         const res = await axios.get("http://localhost:3000/api/senias/mis-senias", {
           headers: { Authorization: `Bearer ${token}` }
         });
         setSenias(res.data.data || []);
       } else {
-        // RUTA AGENTE: Trae el listado completo de la inmobiliaria
         const res = await axios.get("http://localhost:3000/api/senias");
         setSenias(res.data.data || []);
       }
     } catch (error) {
       console.error("Error al cargar señas:", error);
+      setSenias([]);
     } finally {
       setLoading(false);
     }
@@ -212,9 +215,9 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     <div className="p-6">
       {/* 3. Título dinámico basado en el rol */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h2 className="text-3xl font-semibold text-neutral-900">
-          {isAgent ? "Gestión de Señas" : "Mis Señas"}
-        </h2>
+        {isAgent && (
+          <h2 className="text-3xl font-semibold text-neutral-900">Gestión de Señas</h2>
+        )}
         
         {/* 4. El botón superior para crear/cerrar formularios SOLO lo ve el agente */}
         {isAgent && (
