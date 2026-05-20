@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import { orm } from '../shared/db/orm.js'
 import { Senia } from './senia.entity.js';
+import { Propiedad } from '../propiedad/propiedad.entity.js';
+import { Cliente } from '../cliente/cliente.entity.js';
 
 const em = orm.em;
 
@@ -35,6 +37,43 @@ async function add(req: Request, res: Response, next: NextFunction) {
   try {
       const senia = em.create(Senia, req.body.sanitizedInput);
       await em.flush();
+      res.status(201).json({ message: 'senia created', data: senia });
+    } catch (error) {
+      next(error);
+    }
+}
+
+async function createForClient(req: Request, res: Response, next: NextFunction) {
+  try {
+      const authReq = req as Request & { user?: { sub?: number; role?: string } };
+      const clientId = authReq.user?.sub;
+      const role = authReq.user?.role;
+
+      if (!clientId || role !== 'cliente') {
+        return res.status(403).json({ message: 'Acceso restringido' });
+      }
+
+      const { propiedad, importe } = req.body.sanitizedInput;
+      if (!propiedad || importe == null) {
+        return res.status(400).json({ message: 'Propiedad e importe son obligatorios' });
+      }
+
+      const propiedadEntity = await em.findOneOrFail(Propiedad, { id: Number(propiedad) });
+      if (['reservada', 'alquilada'].includes((propiedadEntity.estado || '').toLowerCase())) {
+        return res.status(400).json({ message: 'La propiedad no está disponible para señar' });
+      }
+
+      const clienteEntity = await em.findOneOrFail(Cliente, { id: clientId });
+
+      const senia = em.create(Senia, {
+        propiedad: propiedadEntity,
+        cliente: clienteEntity,
+        importe: Number(importe),
+      });
+
+      propiedadEntity.estado = 'reservada';
+      await em.flush();
+
       res.status(201).json({ message: 'senia created', data: senia });
     } catch (error) {
       next(error);
@@ -85,4 +124,4 @@ async function findByClient(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export { findAll, findOne, add, update, remove, findByClient };
+export { findAll, findOne, add, createForClient, update, remove, findByClient };

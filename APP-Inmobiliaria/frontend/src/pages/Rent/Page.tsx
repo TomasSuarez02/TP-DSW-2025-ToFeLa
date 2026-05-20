@@ -12,6 +12,11 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [open, setOpen] = useState<boolean>(false);
+    const [showSeniaModal, setShowSeniaModal] = useState<boolean>(false);
+    const [loggedClient, setLoggedClient] = useState<{ id: number; nombre?: string; apellido?: string; email?: string } | null>(null);
+    const [seniaImporte, setSeniaImporte] = useState<number>(0);
+    const [seniaError, setSeniaError] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
     const [horaDesde, setHoraDesde] = useState<string>('');
     const [horaHasta, setHoraHasta] = useState<string>('');
     const [slotSel, setSlotSel] = useState('');
@@ -39,22 +44,43 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     useEffect(() => {
         try {
             const token = localStorage.getItem('accessToken');
-            if (!token) return console.debug('No accessToken in localStorage');
+            const role = localStorage.getItem('role');
+            setUserRole(role);
+            if (!token || role !== 'cliente') return;
 
             const parts = token.split('.');
             if (parts.length < 2) return console.warn('Invalid JWT token format');
 
             const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
             const userId = payload.id ?? payload.userId ?? payload.sub ?? payload.usuarioId ?? null;
-            if (userId) {
-                console.log('Logged-in user id:', userId);
-            } else {
+            if (!userId) {
                 console.debug('No user id found inside JWT payload', payload);
+                return;
             }
+
+            apiClient.get(`/clientes/${userId}`)
+                .then(res => {
+                    const clientPayload = res.data?.data ?? res.data;
+                    setLoggedClient({
+                        id: clientPayload.id,
+                        nombre: clientPayload.nombre,
+                        apellido: clientPayload.apellido,
+                        email: clientPayload.email,
+                    });
+                })
+                .catch(err => {
+                    console.warn('Error fetching client data', err);
+                    setLoggedClient({ id: Number(userId), email: payload.email ?? '' });
+                });
         } catch (err) {
             console.error('Error decoding accessToken for user id', err);
         }
     }, []);
+
+    useEffect(() => {
+        if (!prop?.precio) return;
+        setSeniaImporte(Math.round(prop.precio * 0.1));
+    }, [prop]);
 
     const slots =
         !horaDesde || !horaHasta
@@ -201,7 +227,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                             </p>
                                         </div>
 
-                                        <div className="pt-4">
+                                        <div className="pt-4 space-y-3">
                                             <button
                                                 onClick={() => { console.log('Open modal click'); setOpen(true); }}
                                                 aria-haspopup="dialog"
@@ -212,6 +238,15 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                             >
                                                 AGENDAR VISITA
                                             </button>
+                                            {userRole === 'cliente' && loggedClient && prop.estado?.toLowerCase() === 'disponible' && (
+                                                <button
+                                                    onClick={() => setShowSeniaModal(true)}
+                                                    className="w-full px-6 py-3 bg-[#d97706] text-white text-lg font-semibold rounded-lg hover:bg-[#b45309] transition-colors duration-200 shadow-md hover:shadow-lg"
+                                                    type="button"
+                                                >
+                                                    Señar
+                                                </button>
+                                            )}
                                         </div>
                                     </>
                                 ) : (
@@ -305,6 +340,57 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                     type="button"
                                                 >
                                                     Agendar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {showSeniaModal && loggedClient && (
+                                    <div className="fixed inset-0 z-[1000] grid h-screen w-screen place-items-center">
+                                        <div
+                                            className="fixed inset-0 bg-[#000000]/40 backdrop-blur-sm"
+                                            onClick={() => { setShowSeniaModal(false); setSeniaError(null); }}
+                                        />
+                                        <div className="relative m-4 w-11/12 max-w-xl rounded-lg bg-white p-5 shadow-xl z-10">
+                                            <div className="mb-4 text-xl font-semibold text-slate-800">Confirmar seña</div>
+                                            <p className="text-sm text-slate-600">Propiedad: <strong>{prop?.direccion || 'sin dirección'}</strong></p>
+                                            <p className="text-sm text-slate-600">Cliente: <strong>{loggedClient.nombre ?? loggedClient.email}</strong></p>
+                                            <p className="text-sm text-slate-600">Importe de seña: <strong>${seniaImporte.toFixed(2)}</strong></p>
+                                            <p className="mt-3 text-sm text-slate-500">La seña se crea con la propiedad actual y el cliente autenticado.</p>
+                                            {seniaError && <p className="mt-3 text-sm text-red-600">{seniaError}</p>}
+                                            <div className="mt-5 flex justify-end gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setShowSeniaModal(false); setSeniaError(null); }}
+                                                    className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try {
+                                                            setSeniaError(null);
+                                                            if (!prop?.id || !loggedClient?.id) {
+                                                                setSeniaError('No se puede crear la seña sin propiedad o cliente.');
+                                                                return;
+                                                            }
+                                                            await apiClient.post('/senias/cliente', {
+                                                                propiedad: prop.id,
+                                                                cliente: loggedClient.id,
+                                                                importe: seniaImporte,
+                                                            });
+                                                            setShowSeniaModal(false);
+                                                            window.alert('Seña creada correctamente.');
+                                                        } catch (error) {
+                                                            console.error('Error creating seña', error);
+                                                            setSeniaError('No se pudo crear la seña. Intenta nuevamente.');
+                                                        }
+                                                    }}
+                                                    className="rounded-md bg-[#d97706] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b45309]"
+                                                >
+                                                    Confirmar seña
                                                 </button>
                                             </div>
                                         </div>

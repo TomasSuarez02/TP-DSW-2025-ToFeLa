@@ -23,6 +23,17 @@ export interface ApiErrorResponse extends AxiosError {
  * Cuando hay un error en una request, se parsea automáticamente
  * usando parseApiError y se agrega a error.parsedError
  */
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('accessToken')
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
