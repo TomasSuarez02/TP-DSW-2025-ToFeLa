@@ -14,9 +14,9 @@ import { visitaCreateSchema, visitaUpdateSchema } from '../shared/validation/sch
 const router = Router();
 
 router.get('/', findAll);
-router.get('/:id', findOne);
+router.get('/:clave', findOne);
 router.post('/', sanitizeVisitaInput, validateBody(visitaCreateSchema), validateVisitaFutureDate, add);
-router.put('/:id', sanitizeVisitaInput, validateBody(visitaUpdateSchema), validateVisitaFutureDate, update);
-router.delete('/:id', remove);
+router.put('/:clave', sanitizeVisitaInput, validateBody(visitaUpdateSchema), validateVisitaFutureDate, update);
+router.delete('/:clave', remove);
 
 export { router as visitaRouter };

@@ -4,30 +4,28 @@ import { EntityManager } from "@mikro-orm/mysql";
 import jwt from "jsonwebtoken";
 import { Cliente } from "../cliente/cliente.entity.js";
 import { AgenteInmobiliario } from "../agenteinmobiliario/agenteinmobiliario.entity.js";
-import { orm } from "../shared/db/orm.js"; 
+import { orm } from "../shared/db/orm.js";
 import { HttpError } from "../shared/errors/http.error.js";
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body; // password es nro_doc en este caso
+  const { mail, contrasenia } = req.body;
   const em = orm.em as EntityManager;
 
   try {
-
     let role: "cliente" | "agente" | null = null;
-    let user:
-      | (Cliente & { password: string; email: string; id: number })
-      | (AgenteInmobiliario & { password: string; email: string; id: number })
-      | null = null;
+    let user: Cliente | AgenteInmobiliario | null = null;
 
-    const cliente = await em.findOne(Cliente, { email });
+    // Cliente y AgenteInmobiliario comparten la tabla `usuario`; el discriminador
+    // `rol` hace que cada búsqueda traiga solo las filas de ese tipo.
+    const cliente = await em.findOne(Cliente, { mail });
     if (cliente) {
       role = "cliente";
-      user = cliente as any;
+      user = cliente;
     } else {
-      const agente = await em.findOne(AgenteInmobiliario, { email });
+      const agente = await em.findOne(AgenteInmobiliario, { mail });
       if (agente) {
         role = "agente";
-        user = agente as any;
+        user = agente;
       }
     }
 
@@ -35,12 +33,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return next(new HttpError(401, "Credenciales inválidas", [{ path: "general", message: "Credenciales inválidas" }], "AUTH_ERROR"));
     }
 
-
-    if (String(user.password) !== String(password)) {
+    if (String(user.contrasenia) !== String(contrasenia)) {
       return next(new HttpError(401, "Credenciales inválidas", [{ path: "general", message: "Credenciales inválidas" }], "AUTH_ERROR"));
     }
+
     const accessToken = jwt.sign(
-      { sub: user.id, email: user.email, role },
+      { sub: user.id, email: user.mail, role },
       process.env.JWT_SECRET || "secret",
       { expiresIn: "1h" }
     );

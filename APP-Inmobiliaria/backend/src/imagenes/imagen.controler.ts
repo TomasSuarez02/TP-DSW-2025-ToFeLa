@@ -60,8 +60,14 @@ async function add(req: Request, res: Response, next: NextFunction) {
     const base64Data = base64.replace(/^data:image\/\w+;base64,/, '');
     fs.writeFileSync(imagePath, base64Data, 'base64');
 
+    // Imagen es entidad débil: su PK es (id, propiedad), así que el id no es
+    // autoincremental y se numera dentro de cada propiedad.
+    const existentes = await em.find(Imagen, { propiedad: Number(propiedad) });
+    const siguienteId = existentes.reduce((max, img) => Math.max(max, img.id), 0) + 1;
+
     // Guardar referencia en BD
     const imagen = em.create(Imagen, {
+      id: siguienteId,
       propiedad,
       path: `/images/${filename}`
     });

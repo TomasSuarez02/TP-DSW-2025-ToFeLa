@@ -3,6 +3,7 @@ import { Contact, Home, Login, Rent, Reserv, Visit } from "../pages/index.tsx";
 import Panel from "../pages/Panel/Panel.tsx";
 import { Register } from "../pages/Login/Register.tsx";
 import Page from "../pages/Rent/Page.tsx";
+import Checkout from "../pages/Checkout/Checkout.tsx";
 
 
 export const AppRouter = () => {
@@ -22,6 +23,7 @@ export const AppRouter = () => {
         <Route path="/register" element={<Register  />}/>
         <Route path="/Rent/property/:id" element={<Page/>}/>
         <Route path="/MisSenias" element={<Panel isAgent={false} />} />
+        <Route path="/checkout/:clave" element={<Checkout/>}/>
 
     </Routes>
     )

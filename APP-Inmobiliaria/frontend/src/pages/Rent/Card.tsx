@@ -1,10 +1,10 @@
 type Inmobiliaria = {
-  nombre: string
+  descripcion: string
 }
 
 type TipoPropiedad = {
   id: number
-  nombre: string
+  descripcion: string
 }
 
 type Imagenes = {
@@ -58,7 +58,7 @@ export default function Card({id, direccion, precio, estado, descripcion, tipoPr
         
         {tipoPropiedad ? (
           <span className="inline-block bg-[#dcc7af] text-[#846a41] px-3 py-1 rounded-full text-sm font-medium mb-3">
-            {tipoPropiedad.nombre}
+            {tipoPropiedad.descripcion}
           </span>
         ) : (
           <span className="text-xs text-gray-400 mb-3 block">Sin tipo de propiedad</span>

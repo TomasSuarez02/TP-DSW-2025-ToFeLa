@@ -3,13 +3,14 @@ import axios from 'axios';
 import { parseApiError } from '../../utils/apiErrors';
 
 interface Visita {
-  id: number;
+  /** PK compuesta (propiedad + cliente + fecha) codificada por el backend. */
+  clave: string;
   fecha_hora: string;
   cliente: {
     id: number;
     nombre: string;
     apellido: string;
-    email: string;
+    mail: string;
     telefono?: string;
   };
   propiedad: {
@@ -54,12 +55,12 @@ export default function Visitas() {
   };
 
   // Eliminar visita (similar a la lógica en Senias.tsx)
-  const handleDelete = async (id?: number) => {
-    if (!id) return;
+  const handleDelete = async (clave?: string) => {
+    if (!clave) return;
     if (!confirm('¿Seguro que querés eliminar esta visita?')) return;
 
     try {
-      await axios.delete(`http://localhost:3000/api/visitas/${id}`);
+      await axios.delete(`http://localhost:3000/api/visitas/${clave}`);
       // refrescar lista
       fetchVisitas();
       alert('Visita eliminada correctamente');
@@ -346,7 +347,7 @@ export default function Visitas() {
 
                   return (
                     <tr
-                      key={visita.id}
+                      key={visita.clave}
                       className={`hover:bg-neutral-50 transition-colors ${proxima ? 'bg-red-50' : pasada ? 'bg-gray-50' : hoy ? 'bg-yellow-50' : ''
                         }`}
                     >
@@ -375,7 +376,7 @@ export default function Visitas() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-neutral-600">{visita.cliente?.email || 'N/A'}</div>
+                        <div className="text-sm text-neutral-600">{visita.cliente?.mail || 'N/A'}</div>
                         {visita.cliente?.telefono && (
                           <div className="text-xs text-neutral-500">📞 {visita.cliente.telefono}</div>
                         )}
@@ -386,7 +387,7 @@ export default function Visitas() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
-                          onClick={() => handleDelete(visita.id)}
+                          onClick={() => handleDelete(visita.clave)}
                           className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium"
                           type="button"
                         >

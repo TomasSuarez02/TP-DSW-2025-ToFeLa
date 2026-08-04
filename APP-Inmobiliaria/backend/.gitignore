@@ -3,6 +3,9 @@ node_modules/
 dist/
 .env
 coverage/
+*.tsbuildinfo
+backups/
+uploads/
 
 # VSCode y archivos temporales
 .vscode/

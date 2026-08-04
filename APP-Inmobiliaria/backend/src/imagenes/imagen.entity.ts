@@ -1,22 +1,15 @@
-import { Entity, ManyToOne, Property, Collection, Cascade, ManyToMany, Rel } from "@mikro-orm/core";
-import { BaseEntity } from '../shared/db/baseEntity.entity.js'
+import { Entity, ManyToOne, PrimaryKey, Property, Rel } from "@mikro-orm/core";
 import { Propiedad } from "../propiedad/propiedad.entity.js";
 
-
+/** Entidad débil: su identidad depende de la propiedad a la que pertenece. */
 @Entity()
-export class Imagen extends BaseEntity {
+export class Imagen {
+    @PrimaryKey()
+    id!: number;
+
+    @ManyToOne(() => Propiedad, { nullable: false, primary: true })
+    propiedad!: Rel<Propiedad>;
+
     @Property({ nullable: false })
     path!: string;
-
-    @ManyToOne(() => Propiedad, { nullable: false })
-    propiedad!: Rel<Propiedad>;
 }
-
-/*constructor(
-    public id: string,
-    public direccion: string,
-    public precio: number,
-    public estado: string,
-    public tipoPropiedadId: string,
-    public inmobiliariaCuit: string // Relación con inmobiliaria
-  )*/

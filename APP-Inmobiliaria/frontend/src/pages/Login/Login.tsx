@@ -36,8 +36,8 @@ export default function Login() {
 
     try {
       const res = await apiClient.post("/auth/login", {
-        email: user.email,
-        password: user.password,
+        mail: user.email,
+        contrasenia: user.password,
       });
 
       localStorage.setItem("accessToken", res.data.accessToken);

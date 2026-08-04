@@ -37,7 +37,15 @@ export function Register() {
         setSuccess(null);
         setFieldErrors({});
         try {
-            const res = await apiClient.post("/clientes", user);
+            const res = await apiClient.post("/clientes", {
+                nombre: user.nombre,
+                apellido: user.apellido,
+                mail: user.email,
+                telefono: user.telefono,
+                tipo_doc: user.tipo_documento,
+                nro_doc: user.nro_doc,
+                contrasenia: user.password,
+            });
             setSuccess("Usuario registrado correctamente");
             if (res) {
                 window.location.href = "/";

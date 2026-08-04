@@ -7,21 +7,33 @@ import {
   remove,
   findByClient,
   createForClient,
+  cancel,
+  changeEstado,
 } from './senia.controler.js';
-import { sanitizeSeniaInput } from '../shared/middlewares/sanitization.middleware.js';
+import {
+  sanitizeSeniaInput,
+  sanitizeEstadoInput,
+} from '../shared/middlewares/sanitization.middleware.js';
 import { validateBody } from '../shared/middlewares/validation.middleware.js';
 import { validateSeniaAmountAgainstProperty } from '../shared/middlewares/business-rules.middleware.js';
-import { seniaCreateSchema, seniaUpdateSchema } from '../shared/validation/schemas.js';
+import {
+  seniaClienteCreateSchema,
+  seniaCreateSchema,
+  seniaEstadoSchema,
+  seniaUpdateSchema,
+} from '../shared/validation/schemas.js';
 import { authenticateToken } from '../shared/middlewares/auth.middleware.js';
 
 const router = Router();
 
 router.get('/', findAll);
 router.get('/mis-senias', authenticateToken, findByClient);
-router.get('/:id', findOne);
-router.post('/cliente', authenticateToken, sanitizeSeniaInput, validateBody(seniaCreateSchema), validateSeniaAmountAgainstProperty, createForClient);
+router.get('/:clave', authenticateToken, findOne);
+router.post('/cliente', authenticateToken, sanitizeSeniaInput, validateBody(seniaClienteCreateSchema), validateSeniaAmountAgainstProperty, createForClient);
 router.post('/', sanitizeSeniaInput, validateBody(seniaCreateSchema), validateSeniaAmountAgainstProperty, add);
-router.put('/:id', sanitizeSeniaInput, validateBody(seniaUpdateSchema), validateSeniaAmountAgainstProperty, update);
-router.delete('/:id', remove);
+router.put('/:clave', sanitizeSeniaInput, validateBody(seniaUpdateSchema), validateSeniaAmountAgainstProperty, update);
+router.patch('/:clave/cancelar', authenticateToken, cancel);
+router.patch('/:clave/estado', authenticateToken, sanitizeEstadoInput, validateBody(seniaEstadoSchema), changeEstado);
+router.delete('/:clave', remove);
 
 export { router as seniaRouter };

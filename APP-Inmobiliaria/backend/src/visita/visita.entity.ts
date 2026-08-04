@@ -1,27 +1,24 @@
-import { Entity, ManyToOne, Property, Collection, Cascade, ManyToMany, Rel, Unique } from "@mikro-orm/core";
+import { Entity, ManyToOne, Opt, PrimaryKey, Property, Rel } from "@mikro-orm/core";
 import { Propiedad } from "../propiedad/propiedad.entity.js";
 import { Cliente } from "../cliente/cliente.entity.js";
-import { BaseEntity } from "../shared/db/baseEntity.entity.js";
+import { serializarClave } from "../shared/db/clave-compuesta.js";
 
-
+/** PK compuesta (propiedad, cliente, fecha_hora), como en el modelo de datos. */
 @Entity()
-@Unique({ properties: ['fecha_hora', 'cliente'] })
-export class Visita extends BaseEntity {
-    @Property({ nullable: false})
-    fecha_hora!: Date;
-
-    @ManyToOne(() => Propiedad, { nullable: false })
+export class Visita {
+    @ManyToOne(() => Propiedad, { primary: true })
     propiedad!: Rel<Propiedad>;
 
-    @ManyToOne(() => Cliente, { nullable: false })
+    @ManyToOne(() => Cliente, { primary: true })
     cliente!: Rel<Cliente>;
-}
 
-/*constructor(
-    public id: string,
-    public direccion: string,
-    public precio: number,
-    public estado: string,
-    public tipoPropiedadId: string,
-    public inmobiliariaCuit: string // Relación con inmobiliaria
-  )*/
+    // datetime(3): ver la nota en senia.entity.ts
+    @PrimaryKey({ type: 'datetime', columnType: 'datetime(3)' })
+    fecha_hora!: Date;
+
+    /** Clave compuesta codificada para las rutas REST. Derivada: no se persiste. */
+    @Property({ persist: false })
+    get clave(): Opt<string> {
+      return serializarClave(this.propiedad.id!, this.cliente.id!, this.fecha_hora);
+    }
+}

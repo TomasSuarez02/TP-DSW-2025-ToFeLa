@@ -150,7 +150,7 @@ export async function validateClienteUniqueFields(
 ) {
   try {
     const input = req.body?.sanitizedInput
-    const email = typeof input?.email === 'string' ? input.email : undefined
+    const email = typeof input?.mail === 'string' ? input.mail : undefined
     const nroDoc =
       input?.nro_doc !== undefined && input?.nro_doc !== null
         ? Number(input.nro_doc)
@@ -158,13 +158,13 @@ export async function validateClienteUniqueFields(
     const currentId = req.params.id ? Number(req.params.id) : undefined
 
     if (email) {
-      const existingByEmail = await orm.em.findOne(Cliente, { email })
+      const existingByEmail = await orm.em.findOne(Cliente, { mail: email })
       if (existingByEmail && existingByEmail.id !== currentId) {
         return next(
           new HttpError(
             409,
             'Ya existe un cliente con ese email',
-            [{ path: 'email', message: 'Ya existe un cliente con ese email' }],
+            [{ path: 'mail', message: 'Ya existe un cliente con ese email' }],
             'BUSINESS_RULE_ERROR',
           ),
         )

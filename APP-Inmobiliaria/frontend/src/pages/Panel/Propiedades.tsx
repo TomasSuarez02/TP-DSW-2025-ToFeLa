@@ -10,7 +10,7 @@ export interface Propiedad {
   hora_desde?: string;
   hora_hasta?: string;
   descripcion?: string;
-  tipoPropiedad?: { id: number; nombre: string; descripcion?: string };
+  tipoPropiedad?: { id: number; descripcion: string };
   imagenes?: { id: number; path: string }[];
 }
 
@@ -259,7 +259,7 @@ export default function Propiedades() {
 
       if (propiedadId) {
         try {
-          await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'reservada' });
+          await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'señada' });
           fetchPropiedades();
         } catch (err) {
           console.error('Error actualizando estado de propiedad', err);
@@ -573,7 +573,7 @@ export default function Propiedades() {
               </div>
               <p className="text-sm text-neutral-600">📍 {p.direccion}</p>
               <p className="text-sm text-neutral-600">
-                🏠 {p.tipoPropiedad?.nombre || "Sin tipo"}
+                🏠 {p.tipoPropiedad?.descripcion || "Sin tipo"}
               </p>
               <p className="text-sm text-neutral-600">
                 🕐 {p.hora_desde} - {p.hora_hasta}

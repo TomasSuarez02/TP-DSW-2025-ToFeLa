@@ -6,7 +6,7 @@ const em = orm.em
 
 async function findAll(req: Request, res: Response, next: NextFunction) {
   try {
-    const inmobiliarias = await em.find(Inmobiliaria, {}, {populate: ['clientes']})
+    const inmobiliarias = await em.find(Inmobiliaria, {}, {populate: ['propiedades', 'agentes']})
     res.status(200).json({ message: 'found all inmobiliarias', data: inmobiliarias })
   } catch (error) {
     next(error)
@@ -16,7 +16,7 @@ async function findAll(req: Request, res: Response, next: NextFunction) {
 async function findOne(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id
-    const inmobiliaria = await em.findOneOrFail(Inmobiliaria, { id: Number(id) }, {populate: ['clientes']})
+    const inmobiliaria = await em.findOneOrFail(Inmobiliaria, { id: Number(id) }, {populate: ['propiedades', 'agentes']})
     res.status(200).json({ message: 'found inmobiliaria', data: inmobiliaria })
   } catch (error) {
     next(error)

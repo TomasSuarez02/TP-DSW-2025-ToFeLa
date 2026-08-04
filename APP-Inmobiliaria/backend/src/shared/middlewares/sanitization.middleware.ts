@@ -22,20 +22,24 @@ export const sanitizeAgenteInput = buildSanitizer([
   'id',
   'nombre',
   'apellido',
-  'email',
+  'mail',
   'telefono',
-  'fechaIngreso',
+  'tipo_doc',
+  'nro_doc',
+  'contrasenia',
+  'fecha_ingreso',
+  'inmobiliaria',
 ])
 
 export const sanitizeClienteInput = buildSanitizer([
   'id',
   'nombre',
   'apellido',
-  'email',
+  'mail',
   'telefono',
-  'tipo_documento',
+  'tipo_doc',
   'nro_doc',
-  'password',
+  'contrasenia',
 ])
 
 export const sanitizeImagenInput = buildSanitizer([
@@ -45,13 +49,14 @@ export const sanitizeImagenInput = buildSanitizer([
 ])
 
 export const sanitizeInmobiliariaInput = buildSanitizer([
-  'nombre',
+  'descripcion',
   'direccion',
   'telefono',
 ])
 
 export const sanitizePropiedadInput = buildSanitizer([
   'direccion',
+  'superficie',
   'precio',
   'estado',
   'hora_desde',
@@ -65,17 +70,39 @@ export const sanitizeSeniaInput = buildSanitizer([
   'importe',
   'propiedad',
   'cliente',
+  'estado',
 ])
 
-export const sanitizeTipoDocumentacionInput = buildSanitizer([
-  'nombre',
+export const sanitizeAlquilerInput = buildSanitizer([
+  'propiedad',
+  'cliente',
+  'fecha_inicio',
+  'fecha_fin',
+  'monto_mensual',
+  'estado',
+])
+
+/** Para los endpoints PATCH /:clave/estado, que solo aceptan el estado. */
+export const sanitizeEstadoInput = buildSanitizer([
+  'estado',
+])
+
+export const sanitizePagoInput = buildSanitizer([
+  'senia',
+  'numeroTarjeta',
+  'titular',
+  'vencimiento',
+  'cvv',
+])
+
+export const sanitizeDocumentacionInput = buildSanitizer([
   'descripcion',
-  'fechaVencimiento',
+  'fecha_vencimiento',
+  'path',
 ])
 
 export const sanitizeTipoPropiedadInput = buildSanitizer([
-  'nombre',
-  'estado',
+  'descripcion',
 ])
 
 export const sanitizeVisitaInput = buildSanitizer([

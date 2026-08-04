@@ -13,9 +13,9 @@ interface Cliente {
   id: number;
   nombre: string;
   apellido: string;
-  email: string;
+  mail: string;
   telefono: string;
-  tipo_documento: string;
+  tipo_doc: string;
   nro_doc: string;
   documentaciones?: TipoDocumentacion[];
 }
@@ -90,16 +90,16 @@ export default function Clientes() {
       const basePayload = {
         nombre: String(formData.nombre ?? "").trim(),
         apellido: String(formData.apellido ?? "").trim(),
-        email: String(formData.email ?? "").trim(),
+        mail: String(formData.email ?? "").trim(),
         telefono: String(formData.telefono ?? "").trim(),
-        tipo_documento: String(formData.tipo_documento ?? "").trim(),
+        tipo_doc: String(formData.tipo_documento ?? "").trim(),
         nro_doc: String(formData.nro_doc ?? "").trim(),
       };
 
       const payload =
         editingCliente && !formData.password.trim()
           ? basePayload
-          : { ...basePayload, password: formData.password };
+          : { ...basePayload, contrasenia: formData.password };
 
       if (editingCliente) {
         await axios.put(
@@ -140,9 +140,9 @@ export default function Clientes() {
     setFormData({
       nombre: String(cliente.nombre ?? ""),
       apellido: String(cliente.apellido ?? ""),
-      email: String(cliente.email ?? ""),
+      email: String(cliente.mail ?? ""),
       telefono: String(cliente.telefono ?? ""),
-      tipo_documento: String(cliente.tipo_documento ?? ""),
+      tipo_documento: String(cliente.tipo_doc ?? ""),
       nro_doc: String(cliente.nro_doc ?? ""),
       password: "", 
     });
@@ -182,7 +182,7 @@ export default function Clientes() {
     tipoDocumentoFiltro === "todos"
       ? clientes
       : clientes.filter(
-          (c) => c.tipo_documento.toLowerCase() === tipoDocumentoFiltro.toLowerCase()
+          (c) => c.tipo_doc.toLowerCase() === tipoDocumentoFiltro.toLowerCase()
         );
 
   // Render
@@ -412,7 +412,7 @@ export default function Clientes() {
 
               <div className="space-y-2 mb-4">
                 <p className="text-sm text-neutral-600">
-                  📧 {cliente.email}
+                  📧 {cliente.mail}
                 </p>
                 <p className="text-sm text-neutral-600">
                   📱 {cliente.telefono}
@@ -420,10 +420,10 @@ export default function Clientes() {
                 <div className="flex items-center gap-2">
                   <span
                     className={`px-2 py-1 text-xs font-medium rounded-full ${getTipoDocumentoColor(
-                      cliente.tipo_documento
+                      cliente.tipo_doc
                     )}`}
                   >
-                    {cliente.tipo_documento.toUpperCase()}
+                    {cliente.tipo_doc.toUpperCase()}
                   </span>
                   <span className="text-sm text-neutral-600">
                     {cliente.nro_doc}
