@@ -1,18 +1,50 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import type { Senia, Propiedad } from "./Propiedades.tsx";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import apiClient from "../../utils/apiClient";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
+import {
+  actualizarEstadoSenia,
+  cancelarSenia,
+  eliminarSenia,
+  liberarPropiedad,
+  marcarPropiedadAlquilada,
+  obtenerMisSenias,
+  obtenerSenias,
+} from "../../services/senias";
+import { diasRestantes, formatearFecha, formatearMoneda } from "../../config/senia";
+import {
+  ESTILOS_ESTADO_SENIA,
+  ETIQUETAS_ESTADO_SENIA,
+  refId,
+  refObjeto,
+  type ClienteRef,
+  type EstadoSenia,
+  type PropiedadRef,
+  type Senia,
+} from "../../types/senia";
 
-// 1. Agregamos la interfaz para recibir la prop isAgent
 interface SeniasProps {
   isAgent?: boolean;
 }
 
+type Filtro = 'todos' | EstadoSenia;
+
+const FILTROS: { id: Filtro; nombre: string }[] = [
+  { id: 'todos', nombre: 'Todas' },
+  { id: 'pendiente_pago', nombre: 'Pendientes de pago' },
+  { id: 'confirmada', nombre: 'Confirmadas' },
+  { id: 'vencida', nombre: 'Vencidas' },
+  { id: 'cancelada', nombre: 'Canceladas' },
+];
+
 export default function Senias({ isAgent = true }: SeniasProps) {
+  const navigate = useNavigate();
+
   const [senias, setSenias] = useState<Senia[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSenia, setEditingSenia] = useState<Senia | null>(null);
+  const [filtro, setFiltro] = useState<Filtro>('todos');
 
   const [formData, setFormData] = useState({
     propiedad: "",
@@ -20,45 +52,30 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     importe: "",
   });
 
-  const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
+  const [propiedades, setPropiedades] = useState<PropiedadRef[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // 2. Modificamos la carga de señas según el rol
-  const fetchSenias = async () => {
+  const fetchSenias = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("accessToken");
-      
-      if (!isAgent) {
-        if (!token) {
-          setSenias([]);
-          return;
-        }
-        const res = await axios.get("http://localhost:3000/api/senias/mis-senias", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setSenias(res.data.data || []);
-      } else {
-        const res = await axios.get("http://localhost:3000/api/senias");
-        setSenias(res.data.data || []);
-      }
+      setSenias(isAgent ? await obtenerSenias() : await obtenerMisSenias());
     } catch (error) {
       console.error("Error al cargar señas:", error);
       setSenias([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAgent]);
 
-  const fetchPropiedades = async () => {
+  const fetchPropiedades = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/propiedades");
-      setPropiedades(res.data.data || []);
+      const res = await apiClient.get("/propiedades");
+      setPropiedades(res.data?.data || []);
     } catch (err) {
       console.error("Error cargando propiedades:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSenias();
@@ -66,9 +83,8 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     if (isAgent) {
       fetchPropiedades();
     }
-  }, [isAgent]); // Se vuelve a ejecutar si muta el modo
+  }, [isAgent, fetchSenias, fetchPropiedades]);
 
-  // Handlers
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -87,58 +103,46 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     e.preventDefault();
     setSubmitError(null);
     setFieldErrors({});
+
+    const requiredErrors: FieldErrors = {};
+    if (!formData.propiedad.trim()) requiredErrors.propiedad = "La propiedad es obligatoria";
+    if (!formData.cliente.trim()) requiredErrors.cliente = "El cliente es obligatorio";
+    if (!formData.importe.trim()) requiredErrors.importe = "El importe es obligatorio";
+
+    if (Object.keys(requiredErrors).length > 0) {
+      setFieldErrors(requiredErrors);
+      setSubmitError("Completá los campos obligatorios");
+      return;
+    }
+
+    const propiedadIdNum = Number(formData.propiedad) || refId(editingSenia?.propiedad);
+    const propiedadPrecio =
+      propiedades.find((p) => p.id === propiedadIdNum)?.precio ??
+      refObjeto<PropiedadRef>(editingSenia?.propiedad)?.precio;
+
+    const importeNum = Number(formData.importe);
+    if (Number.isNaN(importeNum) || importeNum <= 0) {
+      setFieldErrors({ importe: "El importe debe ser mayor a cero" });
+      setSubmitError("Revisá los datos ingresados");
+      return;
+    }
+    if (propiedadPrecio !== undefined && importeNum > propiedadPrecio) {
+      setFieldErrors({ importe: `No puede superar el precio de la propiedad (${formatearMoneda(propiedadPrecio)})` });
+      setSubmitError("Revisá los datos ingresados");
+      return;
+    }
+
     try {
-      const requiredErrors: FieldErrors = {};
-      if (!formData.propiedad.trim()) requiredErrors.propiedad = "La propiedad es obligatoria";
-      if (!formData.cliente.trim()) requiredErrors.cliente = "El cliente es obligatorio";
-      if (!formData.importe.trim()) requiredErrors.importe = "El importe es obligatorio";
-
-      if (Object.keys(requiredErrors).length > 0) {
-        setFieldErrors(requiredErrors);
-        setSubmitError("Completá los campos obligatorios");
-        return;
-      }
-
-      let propiedadIdNum: number | undefined;
-      if (formData.propiedad) propiedadIdNum = Number(formData.propiedad);
-      else if (editingSenia) {
-        if (typeof editingSenia.idPropiedad === "number") propiedadIdNum = editingSenia.idPropiedad;
-        else if (typeof editingSenia.propiedad === "number") propiedadIdNum = editingSenia.propiedad;
-        else if (editingSenia.propiedad && typeof editingSenia.propiedad === "object" && "id" in editingSenia.propiedad) propiedadIdNum = (editingSenia.propiedad as unknown as { id: number }).id;
-      }
-
-      let propiedadPrecio: number | undefined;
-      if (propiedadIdNum) {
-        const found = propiedades.find((p) => p.id === propiedadIdNum);
-        if (found && typeof found.precio === "number") propiedadPrecio = found.precio;
-      }
-      if (propiedadPrecio === undefined && editingSenia && editingSenia.propiedad && typeof editingSenia.propiedad === "object" && "precio" in editingSenia.propiedad) {
-        propiedadPrecio = (editingSenia.propiedad as unknown as { precio?: number }).precio;
-      }
-
-      const importeNum = Number(formData.importe);
-      if (Number.isNaN(importeNum) || importeNum <= 0) {
-        setFieldErrors({ importe: "El importe debe ser mayor a cero" });
-        setSubmitError("Revisá los datos ingresados");
-        return;
-      }
-      if (importeNum !== undefined && propiedadPrecio !== undefined && importeNum > propiedadPrecio) {
-        alert(`El importe de la seña no puede ser mayor que el precio de la propiedad (${propiedadPrecio}).`);
-        return;
-      }
-
       const payload = {
         propiedad: propiedadIdNum,
         cliente: Number(formData.cliente),
         importe: importeNum,
       };
 
-      if (editingSenia && editingSenia.id) {
-        await axios.put(`http://localhost:3000/api/senias/${editingSenia.id}`, payload);
-        alert("Seña actualizada correctamente");
+      if (editingSenia?.id) {
+        await apiClient.put(`/senias/${editingSenia.id}`, payload);
       } else {
-        await axios.post("http://localhost:3000/api/senias", payload);
-        alert("Seña creada correctamente");
+        await apiClient.post("/senias", payload);
       }
 
       resetForm();
@@ -151,56 +155,81 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     }
   };
 
-  const handleDelete = async (id?: number) => {
-    if (!id) return;
-    if (confirm("¿Seguro que querés eliminar esta seña?")) {
-      try {
-        const seniaObj = senias.find(s => s.id === id);
-        let propiedadId: number | undefined;
-        if (seniaObj) {
-          if (typeof seniaObj.propiedad === 'number') propiedadId = seniaObj.propiedad;
-          else if (seniaObj.propiedad && typeof seniaObj.propiedad === 'object' && 'id' in seniaObj.propiedad) {
-            propiedadId = (seniaObj.propiedad as { id: number }).id;
-          }
+  const handleDelete = async (senia: Senia) => {
+    if (!confirm("¿Seguro que querés eliminar esta seña?")) return;
+
+    try {
+      await eliminarSenia(senia.id);
+
+      // Si la seña reservaba la propiedad, la volvemos a dejar disponible.
+      const propiedadId = refId(senia.propiedad);
+      if (propiedadId && senia.estado === 'confirmada') {
+        try {
+          await liberarPropiedad(propiedadId);
+        } catch (err) {
+          console.error("Error liberando la propiedad", err);
         }
-
-        await axios.delete(`http://localhost:3000/api/senias/${id}`);
-
-        if (propiedadId) {
-          try {
-            await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'disponible' });
-          } catch (err) {
-            console.error('Error actualizando estado de propiedad a disponible', err);
-          }
-        }
-
-        fetchSenias();
-        alert("Seña eliminada correctamente");
-      } catch (error) {
-        console.error("Error al eliminar seña:", error);
-        alert("Error al eliminar seña");
       }
+
+      fetchSenias();
+    } catch (error) {
+      console.error("Error al eliminar seña:", error);
+      alert(parseApiError(error).message);
     }
   };
 
   const handleEdit = (s: Senia) => {
     setEditingSenia(s);
-    const propId = typeof s.propiedad === "number" ? String(s.propiedad) : (s.propiedad && typeof s.propiedad === 'object' && 'id' in s.propiedad ? String((s.propiedad as { id: number }).id) : "");
-    const cliId = typeof s.cliente === "number" ? String(s.cliente) : (s.cliente && typeof s.cliente === 'object' && 'id' in s.cliente ? String((s.cliente as { id: number }).id) : "");
-
     setFormData({
-      propiedad: propId ,
-      cliente: cliId,
+      propiedad: String(refId(s.propiedad) ?? ""),
+      cliente: String(refId(s.cliente) ?? ""),
       importe: s.importe?.toString() || "",
     });
     setShowForm(true);
   };
 
-  const handleCompletarSenia = (id?: number) => {
-    if (!id) return;
-    // Lógica temporal antes de conectar la API de Stripe
-    alert(`Redirigiendo a la pasarela de pago para completar la seña #${id}...`);
-    // Acá meterás la navegación hacia Stripe: navigate(`/checkout/${id}`)
+  /** El cliente va a la pasarela de pago para confirmar su seña. */
+  const handleCompletarSenia = (id: number) => {
+    navigate(`/checkout/${id}`);
+  };
+
+  const handleCancelar = async (senia: Senia) => {
+    if (!confirm("¿Querés cancelar esta seña?")) return;
+    try {
+      await cancelarSenia(senia.id);
+      fetchSenias();
+    } catch (error) {
+      console.error("Error al cancelar la seña:", error);
+      alert(parseApiError(error).message);
+    }
+  };
+
+  /** El admin concreta el alquiler tras recibir papeles y saldo. */
+  const handleMarcarAlquilada = async (senia: Senia) => {
+    const propiedadId = refId(senia.propiedad);
+    if (!propiedadId) return;
+    if (!confirm("¿Confirmás que el cliente presentó la documentación y el saldo restante?")) return;
+
+    try {
+      await marcarPropiedadAlquilada(propiedadId);
+      fetchSenias();
+    } catch (error) {
+      console.error("Error al marcar la propiedad como alquilada:", error);
+      alert(parseApiError(error).message);
+    }
+  };
+
+  const handleMarcarVencida = async (senia: Senia) => {
+    if (!confirm("¿Marcar la seña como vencida y liberar la propiedad?")) return;
+    try {
+      await actualizarEstadoSenia(senia.id, 'vencida');
+      const propiedadId = refId(senia.propiedad);
+      if (propiedadId) await liberarPropiedad(propiedadId);
+      fetchSenias();
+    } catch (error) {
+      console.error("Error al vencer la seña:", error);
+      alert(parseApiError(error).message);
+    }
   };
 
   const resetForm = () => {
@@ -211,17 +240,30 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     setFieldErrors({});
   };
 
+  const seniasVisibles = filtro === 'todos' ? senias : senias.filter((s) => s.estado === filtro);
+
   return (
     <div className="p-6">
-      {/* 3. Título dinámico basado en el rol */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         {isAgent && (
           <h2 className="text-3xl font-semibold text-neutral-900">Gestión de Señas</h2>
         )}
-        
+
+        {senias.length > 0 && (
+          <select
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value as Filtro)}
+            className="px-3 py-2 border border-[#e5d8c2] rounded-lg bg-white text-neutral-900"
+            aria-label="Filtrar señas por estado"
+          >
+            {FILTROS.map((f) => (
+              <option key={f.id} value={f.id}>{f.nombre}</option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Formulario (Solo para agentes administradores si showForm está activo) */}
+      {/* Formulario (solo administración) */}
       {isAgent && showForm && (
         <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
           <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -236,11 +278,7 @@ export default function Senias({ isAgent = true }: SeniasProps) {
                 <input
                   type="text"
                   readOnly
-                  value={
-                    typeof editingSenia.propiedad === 'object' && editingSenia.propiedad
-                      ? ((editingSenia.propiedad as { direccion?: string }).direccion ?? `#${(editingSenia.propiedad as { id?: number }).id ?? ''}`)
-                      : (typeof editingSenia.propiedad === 'number' ? `#${editingSenia.propiedad}` : '')
-                  }
+                  value={refObjeto<PropiedadRef>(editingSenia.propiedad)?.direccion ?? `#${refId(editingSenia.propiedad) ?? ''}`}
                   className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
                 />
               ) : (
@@ -262,11 +300,7 @@ export default function Senias({ isAgent = true }: SeniasProps) {
                 <input
                   type="text"
                   readOnly
-                  value={
-                    typeof editingSenia.cliente === 'object' && editingSenia.cliente
-                      ? `${(editingSenia.cliente as { nombre?: string }).nombre ?? ''} ${(editingSenia.cliente as { apellido?: string }).apellido ?? ''}`.trim()
-                      : (typeof editingSenia.cliente === 'number' ? `#${editingSenia.cliente}` : '')
-                  }
+                  value={nombreCliente(editingSenia.cliente)}
                   className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
                 />
               ) : (
@@ -308,52 +342,148 @@ export default function Senias({ isAgent = true }: SeniasProps) {
       {/* Lista de señas */}
       {loading ? (
         <div className="text-center py-10 text-neutral-600">Cargando señas...</div>
-      ) : senias.length === 0 ? (
+      ) : seniasVisibles.length === 0 ? (
         <div className="text-center py-12">
-          <h3 className="text-xl font-medium text-neutral-700">No hay señas registradas</h3>
-          {isAgent && <p className="text-neutral-500 mb-4">Creá la primera seña</p>}
+          <h3 className="text-xl font-medium text-neutral-700">
+            {senias.length === 0 ? "No hay señas registradas" : "No hay señas con ese estado"}
+          </h3>
+          {isAgent && senias.length === 0 && <p className="text-neutral-500 mb-4">Creá la primera seña</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {senias.map((s) => (
-            <div key={s.id} className="bg-white rounded-xl shadow-md border p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="font-semibold text-lg text-neutral-900">Seña #{s.id}</h3>
-                <span className="text-sm text-neutral-500">
-                  Propiedad: {typeof s.propiedad === 'object' && s.propiedad ? ((s.propiedad as { direccion?: string }).direccion ?? `#${(s.propiedad as { id?: number }).id ?? ''}`) : (typeof s.propiedad === 'number' ? `#${s.propiedad}` : 'N/A')}
-                </span>
-              </div>
-
-              <div className="space-y-2 mb-4">
-                {/* Al cliente le ocultamos el ID de cliente ya que es obvio que es él */}
-                {isAgent && (
-                  <p className="text-sm text-neutral-600">
-                    Cliente: {typeof s.cliente === 'object' && s.cliente ? `${(s.cliente as { nombre?: string; apellido?: string }).nombre ?? ''} ${(s.cliente as { nombre?: string; apellido?: string }).apellido ?? ''}`.trim() : (typeof s.cliente === 'number' ? `#${s.cliente}` : 'N/A')}
-                  </p>
-                )}
-                <p className="text-sm text-neutral-600">Importe a favor: ${s.importe}</p>
-              </div>
-
-              {/* 5. BOTONES CONDICIONALES SEGÚN ROL */}
-              <div className="flex gap-2">
-                {isAgent ? (
-                  <>
-                    <button onClick={() => handleEdit(s)} className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg text-sm font-medium">Editar</button>
-                    <button onClick={() => handleDelete(s.id)} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg text-sm font-medium">Eliminar</button>
-                  </>
-                ) : (
-                  <button 
-                    onClick={() => handleCompletarSenia(s.id)} 
-                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    Completar Seña
-                  </button>
-                )}
-              </div>
-            </div>
+          {seniasVisibles.map((s) => (
+            <TarjetaSenia
+              key={s.id}
+              senia={s}
+              isAgent={isAgent}
+              onEditar={() => handleEdit(s)}
+              onEliminar={() => handleDelete(s)}
+              onCompletar={() => handleCompletarSenia(s.id)}
+              onCancelar={() => handleCancelar(s)}
+              onMarcarAlquilada={() => handleMarcarAlquilada(s)}
+              onMarcarVencida={() => handleMarcarVencida(s)}
+            />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function nombreCliente(cliente?: number | ClienteRef): string {
+  const obj = refObjeto<ClienteRef>(cliente);
+  if (obj) {
+    const nombre = `${obj.nombre ?? ''} ${obj.apellido ?? ''}`.trim();
+    return nombre || obj.email || `#${obj.id}`;
+  }
+  const id = refId(cliente);
+  return id ? `#${id}` : 'N/A';
+}
+
+function nombrePropiedad(propiedad?: number | PropiedadRef): string {
+  const obj = refObjeto<PropiedadRef>(propiedad);
+  if (obj) return obj.direccion ?? `#${obj.id}`;
+  const id = refId(propiedad);
+  return id ? `#${id}` : 'N/A';
+}
+
+function BadgeEstado({ estado }: { estado: EstadoSenia }) {
+  return (
+    <span className={`inline-block rounded-full border px-3 py-1 text-xs font-medium ${ESTILOS_ESTADO_SENIA[estado]}`}>
+      {ETIQUETAS_ESTADO_SENIA[estado]}
+    </span>
+  );
+}
+
+function TarjetaSenia({
+  senia,
+  isAgent,
+  onEditar,
+  onEliminar,
+  onCompletar,
+  onCancelar,
+  onMarcarAlquilada,
+  onMarcarVencida,
+}: {
+  senia: Senia;
+  isAgent: boolean;
+  onEditar: () => void;
+  onEliminar: () => void;
+  onCompletar: () => void;
+  onCancelar: () => void;
+  onMarcarAlquilada: () => void;
+  onMarcarVencida: () => void;
+}) {
+  const dias = diasRestantes(senia.fechaVencimiento);
+  const vencida = dias !== null && dias < 0;
+
+  return (
+    <div className="bg-white rounded-xl shadow-md border p-6 flex flex-col">
+      <div className="flex justify-between items-start mb-3 gap-2">
+        <h3 className="font-semibold text-lg text-neutral-900">Seña #{senia.id}</h3>
+        <BadgeEstado estado={senia.estado} />
+      </div>
+
+      <div className="space-y-2 mb-4 flex-1">
+        <p className="text-sm text-neutral-600">Propiedad: {nombrePropiedad(senia.propiedad)}</p>
+        {isAgent && (
+          <p className="text-sm text-neutral-600">Cliente: {nombreCliente(senia.cliente)}</p>
+        )}
+        <p className="text-sm text-neutral-600">Importe: {formatearMoneda(senia.importe)}</p>
+
+        {senia.estado === 'confirmada' && senia.fechaVencimiento && (
+          <p className={`text-sm ${vencida ? 'text-red-600' : 'text-neutral-600'}`}>
+            {vencida
+              ? `Reserva vencida el ${formatearFecha(senia.fechaVencimiento)}`
+              : `Reservada hasta el ${formatearFecha(senia.fechaVencimiento)} · ${dias} ${dias === 1 ? 'día restante' : 'días restantes'}`}
+          </p>
+        )}
+
+        {senia.pago?.estado === 'aprobado' && (
+          <p className="text-xs text-neutral-500">
+            Pago aprobado el {formatearFecha(senia.pago.fecha)} · tarjeta ****{senia.pago.ultimosCuatro}
+            {senia.pago.referencia && ` · ${senia.pago.referencia}`}
+          </p>
+        )}
+
+        {!isAgent && senia.estado === 'pendiente_pago' && (
+          <p className="text-sm text-amber-700">
+            Todavía no pagaste esta seña. La propiedad no queda reservada hasta que el pago se apruebe.
+          </p>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {isAgent ? (
+          <>
+            <button onClick={onEditar} className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg text-sm font-medium">Editar</button>
+            <button onClick={onEliminar} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg text-sm font-medium">Eliminar</button>
+            {senia.estado === 'confirmada' && (
+              <>
+                <button onClick={onMarcarAlquilada} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium">
+                  Marcar como alquilada
+                </button>
+                {vencida && (
+                  <button onClick={onMarcarVencida} className="w-full border border-neutral-300 hover:bg-neutral-100 text-neutral-700 py-2 rounded-lg text-sm font-medium">
+                    Vencer y liberar propiedad
+                  </button>
+                )}
+              </>
+            )}
+          </>
+        ) : (
+          senia.estado === 'pendiente_pago' && (
+            <>
+              <button onClick={onCompletar} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                Pagar seña
+              </button>
+              <button onClick={onCancelar} className="flex-1 border border-neutral-300 hover:bg-neutral-100 text-neutral-700 py-2 rounded-lg text-sm font-medium">
+                Cancelar
+              </button>
+            </>
+          )
+        )}
+      </div>
     </div>
   );
 }

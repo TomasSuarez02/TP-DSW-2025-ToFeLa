@@ -1,12 +1,21 @@
 import Footer from "../../components/Footer.tsx";
 import Header from "../../components/Header.tsx";
 import type { Propiedades } from "./Card.tsx";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from 'react';
 import apiClient from '../../utils/apiClient';
+import { crearSenia } from '../../services/senias';
+import { parseApiError } from '../../utils/apiErrors';
+import {
+    SENIA_DIAS_VENCIMIENTO,
+    SENIA_PORCENTAJE,
+    calcularSeniaMinima,
+    formatearMoneda,
+} from '../../config/senia';
 
 export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const { id } = useParams<{ id?: string }>();
+    const navigate = useNavigate();
 
     const [prop, setProp] = useState<Propiedades | null>(propiedad ?? null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -16,6 +25,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const [loggedClient, setLoggedClient] = useState<{ id: number; nombre?: string; apellido?: string; email?: string } | null>(null);
     const [seniaImporte, setSeniaImporte] = useState<number>(0);
     const [seniaError, setSeniaError] = useState<string | null>(null);
+    const [creandoSenia, setCreandoSenia] = useState<boolean>(false);
     const [userRole, setUserRole] = useState<string | null>(null);
     const [horaDesde, setHoraDesde] = useState<string>('');
     const [horaHasta, setHoraHasta] = useState<string>('');
@@ -79,7 +89,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
 
     useEffect(() => {
         if (!prop?.precio) return;
-        setSeniaImporte(Math.round(prop.precio * 0.1));
+        setSeniaImporte(calcularSeniaMinima(prop.precio));
     }, [prop]);
 
     const slots =
@@ -356,41 +366,49 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                             <div className="mb-4 text-xl font-semibold text-slate-800">Confirmar seña</div>
                                             <p className="text-sm text-slate-600">Propiedad: <strong>{prop?.direccion || 'sin dirección'}</strong></p>
                                             <p className="text-sm text-slate-600">Cliente: <strong>{loggedClient.nombre ?? loggedClient.email}</strong></p>
-                                            <p className="text-sm text-slate-600">Importe de seña: <strong>${seniaImporte.toFixed(2)}</strong></p>
-                                            <p className="mt-3 text-sm text-slate-500">La seña se crea con la propiedad actual y el cliente autenticado.</p>
+                                            <p className="text-sm text-slate-600">
+                                                Importe de seña ({Math.round(SENIA_PORCENTAJE * 100)}% del valor): <strong>{formatearMoneda(seniaImporte)}</strong>
+                                            </p>
+                                            <p className="mt-3 text-sm text-slate-500">
+                                                Al confirmar vas a pasar al pago. Una vez aprobado, la propiedad queda
+                                                reservada a tu nombre durante <strong>{SENIA_DIAS_VENCIMIENTO} días corridos</strong> para
+                                                que presentes la documentación y el saldo restante en la inmobiliaria.
+                                            </p>
                                             {seniaError && <p className="mt-3 text-sm text-red-600">{seniaError}</p>}
                                             <div className="mt-5 flex justify-end gap-2">
                                                 <button
                                                     type="button"
+                                                    disabled={creandoSenia}
                                                     onClick={() => { setShowSeniaModal(false); setSeniaError(null); }}
-                                                    className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                                                    className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
                                                 >
                                                     Cancelar
                                                 </button>
                                                 <button
                                                     type="button"
+                                                    disabled={creandoSenia}
                                                     onClick={async () => {
+                                                        setSeniaError(null);
+                                                        if (!prop?.id || !loggedClient?.id) {
+                                                            setSeniaError('No se puede crear la seña sin propiedad o cliente.');
+                                                            return;
+                                                        }
+
+                                                        setCreandoSenia(true);
                                                         try {
-                                                            setSeniaError(null);
-                                                            if (!prop?.id || !loggedClient?.id) {
-                                                                setSeniaError('No se puede crear la seña sin propiedad o cliente.');
-                                                                return;
-                                                            }
-                                                            await apiClient.post('/senias/cliente', {
-                                                                propiedad: prop.id,
-                                                                cliente: loggedClient.id,
-                                                                importe: seniaImporte,
-                                                            });
+                                                            const senia = await crearSenia(prop.id, seniaImporte);
                                                             setShowSeniaModal(false);
-                                                            window.alert('Seña creada correctamente.');
+                                                            navigate(`/checkout/${senia.id}`);
                                                         } catch (error) {
                                                             console.error('Error creating seña', error);
-                                                            setSeniaError('No se pudo crear la seña. Intenta nuevamente.');
+                                                            setSeniaError(parseApiError(error).message);
+                                                        } finally {
+                                                            setCreandoSenia(false);
                                                         }
                                                     }}
-                                                    className="rounded-md bg-[#d97706] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b45309]"
+                                                    className="rounded-md bg-[#d97706] px-4 py-2 text-sm font-semibold text-white hover:bg-[#b45309] disabled:opacity-60"
                                                 >
-                                                    Confirmar seña
+                                                    {creandoSenia ? 'Creando...' : 'Continuar al pago'}
                                                 </button>
                                             </div>
                                         </div>
