@@ -1,6 +1,7 @@
 import { useState } from "react";
 import apiClient from "../../utils/apiClient";
 import Header from "../../components/Header.tsx";
+import { useAuth } from "../../auth/useAuth";
 export type UserInput ={
   email: string;
   password: string;
@@ -14,6 +15,7 @@ export default function Login() {
   });
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const { login } = useAuth();
 
   const handleFieldChange = (name: keyof UserInput, value: string) => {
     setUser((prev) => ({ ...prev, [name]: value }));
@@ -40,8 +42,10 @@ export default function Login() {
         contrasenia: user.password,
       });
 
-      localStorage.setItem("accessToken", res.data.accessToken);
-      localStorage.setItem("role", res.data.role);
+      if (!login(res.data.accessToken, res.data.role)) {
+        setError("La sesión no pudo iniciarse. Intentá de nuevo.");
+        return;
+      }
 
       if (res.data.role === "cliente") {
         window.location.href = "/";

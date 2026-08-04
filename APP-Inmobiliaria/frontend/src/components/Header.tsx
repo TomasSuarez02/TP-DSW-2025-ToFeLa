@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Link } from 'react-router-dom'
+import { useAuth } from '../auth/useAuth'
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { isLoggedIn, rol: userRole, logout } = useAuth();
 
   // Links dinámicos basados en el rol exacto
   const getLeftLinks = () => {
@@ -18,15 +18,6 @@ export default function Header() {
   };
 
   const leftLinks = getLeftLinks();
-
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const role = localStorage.getItem("role");
-    if (token) {
-      setIsLoggedIn(true);
-      setUserRole(role);
-    }
-  }, [])
 
   return (
     <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
@@ -89,9 +80,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => {
-                  localStorage.removeItem("accessToken");
-                  localStorage.removeItem("role");
-                  setIsLoggedIn(false);
+                  logout();
                   window.location.href = "/login";
                 }}
                 className="text-sm tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
@@ -138,9 +127,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => {
-                  localStorage.removeItem("accessToken");
-                  localStorage.removeItem("role");
-                  setIsLoggedIn(false);
+                  logout();
                   setOpen(false);
                   window.location.href = "/login";
                 }}

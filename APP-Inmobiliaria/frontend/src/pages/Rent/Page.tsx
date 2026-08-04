@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import apiClient from '../../utils/apiClient';
 import { crearSenia } from '../../services/senias';
 import { parseApiError } from '../../utils/apiErrors';
+import { useAuth } from '../../auth/useAuth';
 import {
     SENIA_DIAS_VENCIMIENTO,
     SENIA_PORCENTAJE,
@@ -16,6 +17,7 @@ import {
 export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const { id } = useParams<{ id?: string }>();
     const navigate = useNavigate();
+    const { sesion, rol: userRole, userId } = useAuth();
 
     const [prop, setProp] = useState<Propiedades | null>(propiedad ?? null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -26,7 +28,6 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     const [seniaImporte, setSeniaImporte] = useState<number>(0);
     const [seniaError, setSeniaError] = useState<string | null>(null);
     const [creandoSenia, setCreandoSenia] = useState<boolean>(false);
-    const [userRole, setUserRole] = useState<string | null>(null);
     const [horaDesde, setHoraDesde] = useState<string>('');
     const [horaHasta, setHoraHasta] = useState<string>('');
     const [slotSel, setSlotSel] = useState('');
@@ -52,40 +53,26 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     }, [id]);
 
     useEffect(() => {
-        try {
-            const token = localStorage.getItem('accessToken');
-            const role = localStorage.getItem('role');
-            setUserRole(role);
-            if (!token || role !== 'cliente') return;
-
-            const parts = token.split('.');
-            if (parts.length < 2) return console.warn('Invalid JWT token format');
-
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            const userId = payload.id ?? payload.userId ?? payload.sub ?? payload.usuarioId ?? null;
-            if (!userId) {
-                console.debug('No user id found inside JWT payload', payload);
-                return;
-            }
-
-            apiClient.get(`/clientes/${userId}`)
-                .then(res => {
-                    const clientPayload = res.data?.data ?? res.data;
-                    setLoggedClient({
-                        id: clientPayload.id,
-                        nombre: clientPayload.nombre,
-                        apellido: clientPayload.apellido,
-                        email: clientPayload.email,
-                    });
-                })
-                .catch(err => {
-                    console.warn('Error fetching client data', err);
-                    setLoggedClient({ id: Number(userId), email: payload.email ?? '' });
-                });
-        } catch (err) {
-            console.error('Error decoding accessToken for user id', err);
+        if (userRole !== 'cliente' || !userId) {
+            setLoggedClient(null);
+            return;
         }
-    }, []);
+
+        apiClient.get(`/clientes/${userId}`)
+            .then(res => {
+                const clientPayload = res.data?.data ?? res.data;
+                setLoggedClient({
+                    id: clientPayload.id,
+                    nombre: clientPayload.nombre,
+                    apellido: clientPayload.apellido,
+                    email: clientPayload.email,
+                });
+            })
+            .catch(err => {
+                console.warn('Error fetching client data', err);
+                setLoggedClient({ id: userId, email: sesion?.email ?? '' });
+            });
+    }, [userRole, userId, sesion?.email]);
 
     useEffect(() => {
         if (!prop?.precio) return;
@@ -144,27 +131,6 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
         }
     }, []);
 
-
-    const getLoggedUserId = useCallback((): number | null => {
-        const fromStorage = localStorage.getItem('userId');
-        if (fromStorage) {
-            const n = Number(fromStorage);
-            if (!Number.isNaN(n) && n > 0) return n;
-        }
-
-        try {
-            const token = localStorage.getItem('accessToken');
-            if (!token) return null;
-            const parts = token.split('.');
-            if (parts.length < 2) return null;
-            const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-            const userId = payload.id ?? payload.userId ?? payload.sub ?? payload.usuarioId ?? null;
-            if (userId) return Number(userId);
-        } catch (err) {
-            console.debug('Failed to decode token for user id', err);
-        }
-        return null;
-    }, []);
 
     return (
         <>
@@ -336,13 +302,12 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                                                             return;
                                                         }
 
-                                                        const clienteId = getLoggedUserId();
                                                         const fecha_hora = `${fecha} ${slotSel}:00`;
 
                                                         setVisita({
                                                             propiedad: prop?.id,
                                                             fecha_hora,
-                                                            cliente: clienteId
+                                                            cliente: userId
                                                         });
                                                     }}
                                                     disabled={!slotSel}
