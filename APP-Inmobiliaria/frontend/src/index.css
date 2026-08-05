@@ -40,9 +40,18 @@
   --color-salvia-500: #7d9478;
   --color-salvia-700: #4f6849;
 
+  /* --- Ámbar: en revisión, pendiente. Ni error ni aprobación. ---
+     Es el tercer estado del sistema de badges: lo que todavía está
+     esperando una decisión de alguien.                            */
+  --color-ambar-50:  #fdf5e7;
+  --color-ambar-100: #f8e9cd;  /* fondo de badge                 */
+  --color-ambar-700: #8a5a18;  /* 5.9:1 sobre blanco — AA        */
+
   /* --- Rojo: sólo error. Cálido, para no caer del mundo arena. --- */
   --color-alerta-50:  #fbecea;
+  --color-alerta-100: #f6d9d5;  /* fondo de badge                */
   --color-alerta-700: #a33b30;  /* 5.4:1 sobre blanco — AA        */
+  --color-alerta-800: #822e25;  /* hover de la acción destructiva */
 
   --font-display: "Playfair Display", "Iowan Old Style", Georgia, serif;
 
@@ -55,6 +64,10 @@
   --shadow-dialog:     0 2px 6px rgb(51 41 31 / 0.08), 0 24px 60px rgb(51 41 31 / 0.22);
   /* La barra fija de mobile proyecta hacia arriba, contra el contenido. */
   --shadow-bar:        0 -1px 2px rgb(51 41 31 / 0.04), 0 -8px 24px rgb(51 41 31 / 0.08);
+  /* Relieve mínimo: una pieza que sobresale un milímetro del papel.
+     La luz interior superior es lo que la levanta; la caída sola no
+     alcanza sobre crema. Para filas, celdas y controles, no tarjetas. */
+  --shadow-raised:     inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 2px rgb(51 41 31 / 0.06);
 
   /* Salida exponencial: arranca rápido y frena. Todo lo que se abre
      en este sitio usa esta curva, para que se lea como un solo gesto. */
@@ -208,6 +221,28 @@
   .accion-fantasma:hover:not(:disabled) {
     background-color: var(--color-arena-100);
     color: var(--color-tinta-900);
+  }
+
+  /* Destructiva: borrar, cancelar una seña, rechazar un documento.
+     Sólida y no contorneada, porque siempre es la acción confirmada
+     dentro de un diálogo que el usuario ya decidió abrir. */
+  .accion-peligro {
+    background-color: var(--color-alerta-700);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+
+  .accion-peligro:hover:not(:disabled) {
+    background-color: var(--color-alerta-800);
+  }
+
+  /* Modificador de tamaño: acciones dentro de una fila de tabla, donde
+     el botón grande compite con el contenido en vez de servirlo. */
+  .accion-sm {
+    gap: 0.375rem;
+    border-radius: 0.5rem;
+    padding: 0.4375rem 0.75rem;
+    font-size: 0.8125rem;
   }
 }
 

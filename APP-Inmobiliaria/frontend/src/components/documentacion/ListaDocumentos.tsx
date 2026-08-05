@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { formatearFecha } from "../../config/senia";
+import { formatearFecha } from "../../utils/formato";
+import Badge from "../ui/Badge";
+import { TONO_ESTADO_DOC } from "../../lib/estados";
 import { parseApiError } from "../../utils/apiErrors";
 import { eliminarPresentacion, revisarDocumentacion } from "../../services/documentacionCliente";
 import VisorDocumento from "./VisorDocumento";
 import {
-  ESTILOS_ESTADO_DOC,
   ETIQUETAS_ESTADO_DOC,
   refId,
   refObjeto,
@@ -107,9 +108,7 @@ export default function ListaDocumentos({
               </p>
             </div>
 
-            <span className={`text-xs px-2 py-1 rounded-full border ${ESTILOS_ESTADO_DOC[dc.estado]}`}>
-              {ETIQUETAS_ESTADO_DOC[dc.estado]}
-            </span>
+            <Badge tono={TONO_ESTADO_DOC[dc.estado]}>{ETIQUETAS_ESTADO_DOC[dc.estado]}</Badge>
 
             {doc?.path && (
               <button

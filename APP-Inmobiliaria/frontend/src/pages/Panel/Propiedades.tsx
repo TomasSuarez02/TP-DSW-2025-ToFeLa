@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 import apiClient from "../../utils/apiClient";
-import { formatearFecha as formatearFechaCorta } from "../../config/senia";
+import { formatearFecha as formatearFechaCorta } from "../../utils/formato";
 
 /** Quién tiene tomada la propiedad. Solo viene si el pedido lo hace un agente. */
 export interface Ocupacion {

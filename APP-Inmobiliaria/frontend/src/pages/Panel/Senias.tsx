@@ -17,10 +17,12 @@ import {
 } from "../../services/documentacionCliente";
 import FormularioDocumento from "../../components/documentacion/FormularioDocumento";
 import ListaDocumentos from "../../components/documentacion/ListaDocumentos";
-import { diasRestantes, formatearFecha, formatearMoneda } from "../../config/senia";
+import { diasRestantes } from "../../config/senia";
+import { formatearFecha, formatearMoneda } from "../../utils/formato";
+import Badge from "../../components/ui/Badge";
+import { TONO_ESTADO_SENIA } from "../../lib/estados";
 import {
   documentacionEnRegla,
-  ESTILOS_ESTADO_SENIA,
   ETIQUETAS_ESTADO_SENIA,
   refId,
   refObjeto,
@@ -615,9 +617,7 @@ function nombrePropiedad(propiedad?: number | PropiedadRef): string {
 
 function BadgeEstado({ estado }: { estado: EstadoSenia }) {
   return (
-    <span className={`inline-block rounded-full border px-3 py-1 text-xs font-medium ${ESTILOS_ESTADO_SENIA[estado]}`}>
-      {ETIQUETAS_ESTADO_SENIA[estado]}
-    </span>
+    <Badge tono={TONO_ESTADO_SENIA[estado]}>{ETIQUETAS_ESTADO_SENIA[estado]}</Badge>
   );
 }
 

@@ -8,12 +8,12 @@ import {
 } from "../../services/documentacionCliente";
 import {
   documentacionEnRegla,
-  ESTILOS_ESTADO_DOC,
   refId,
   refObjeto,
   type ClienteRef,
   type DocumentacionCliente,
 } from "../../types/senia";
+import Badge from "../../components/ui/Badge";
 
 interface Cliente {
   id: number;
@@ -197,11 +197,9 @@ export default function Documentacion() {
                 <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
                   <h3 className="font-semibold text-neutral-900">{nombreCompleto(cliente)}</h3>
                   <div className="flex items-center gap-3">
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full border ${enRegla ? ESTILOS_ESTADO_DOC.aprobada : ESTILOS_ESTADO_DOC.pendiente}`}
-                    >
+                    <Badge tono={enRegla ? "salvia" : "ambar"}>
                       {enRegla ? "Documentación en regla" : "Falta documentación"}
-                    </span>
+                    </Badge>
                     <button
                       onClick={() => abrirFormulario(cliente.id)}
                       className="text-xs px-3 py-1 rounded-lg bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-800"

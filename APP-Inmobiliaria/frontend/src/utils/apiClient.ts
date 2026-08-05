@@ -9,7 +9,10 @@ import { limpiarSesion, obtenerTokenValido } from '../auth/session'
  * para normalizar automáticamente errores de API
  */
 const apiClient: AxiosInstance = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  // El host estaba fijo en el código, así que cualquier despliegue que no
+  // fuera localhost obligaba a editar el fuente. El fallback mantiene el
+  // comportamiento actual para quien clona el repo y corre `npm run dev`.
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
 })
 
 /**

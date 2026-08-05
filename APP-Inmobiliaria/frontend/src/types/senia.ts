@@ -112,19 +112,8 @@ export const ETIQUETAS_ESTADO_DOC: Record<EstadoDocumentacionCliente, string> = 
   rechazada: 'Rechazada',
 }
 
-export const ESTILOS_ESTADO_DOC: Record<EstadoDocumentacionCliente, string> = {
-  pendiente: 'bg-amber-100 text-amber-800 border-amber-200',
-  aprobada: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  rechazada: 'bg-red-100 text-red-800 border-red-200',
-}
-
-/** Clases de Tailwind para el badge de cada estado. */
-export const ESTILOS_ESTADO_SENIA: Record<EstadoSenia, string> = {
-  pendiente_pago: 'bg-amber-100 text-amber-800 border-amber-200',
-  confirmada: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  vencida: 'bg-neutral-200 text-neutral-700 border-neutral-300',
-  cancelada: 'bg-red-100 text-red-800 border-red-200',
-}
+/* Los colores de cada estado ya no viven acá: un tipo de dominio no decide
+   clases de Tailwind. El mapeo estado → tono está en lib/estados.ts. */
 
 /** Extrae el id de una relación que puede venir como número o como objeto populado. */
 export function refId(rel?: number | { id?: number } | null): number | undefined {

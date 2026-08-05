@@ -13,13 +13,8 @@ import {
   TARJETA_RECHAZADA,
 } from '../../utils/tarjeta'
 import { parseApiError, type FieldErrors } from '../../utils/apiErrors'
-import {
-  SENIA_DIAS_VENCIMIENTO,
-  SENIA_PORCENTAJE,
-  calcularSeniaMinima,
-  formatearFecha,
-  formatearMoneda,
-} from '../../config/senia'
+import { SENIA_DIAS_VENCIMIENTO, SENIA_PORCENTAJE, calcularSeniaMinima } from '../../config/senia'
+import { formatearFecha, formatearMoneda } from '../../utils/formato'
 import { refObjeto, type DatosTarjeta, type PropiedadRef, type Senia } from '../../types/senia'
 
 type Estado = 'cargando' | 'formulario' | 'procesando' | 'aprobado' | 'rechazado'

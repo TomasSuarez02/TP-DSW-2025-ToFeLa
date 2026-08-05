@@ -4,7 +4,7 @@ import {
   descargarDocumentacion,
   obtenerArchivoDocumentacion,
 } from "../../services/documentaciones";
-import { formatearFecha } from "../../config/senia";
+import { formatearFecha } from "../../utils/formato";
 import type { DocumentacionRef, EstadoDocumentacionCliente } from "../../types/senia";
 
 /**

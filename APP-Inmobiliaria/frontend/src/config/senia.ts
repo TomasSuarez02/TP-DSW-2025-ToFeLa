@@ -46,13 +46,5 @@ export function diasRestantes(fechaVencimiento?: string | null): number | null {
   return Math.ceil((vencimiento.getTime() - Date.now()) / msPorDia)
 }
 
-export function formatearMoneda(monto: number): string {
-  return monto.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 })
-}
-
-export function formatearFecha(fecha?: string | null): string {
-  if (!fecha) return '—'
-  const parsed = new Date(fecha)
-  if (Number.isNaN(parsed.getTime())) return '—'
-  return parsed.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
+/* formatearMoneda y formatearFecha se mudaron a utils/formato.ts: son formato
+   de presentación, no reglas de la seña, y las usan pantallas ajenas a esto. */

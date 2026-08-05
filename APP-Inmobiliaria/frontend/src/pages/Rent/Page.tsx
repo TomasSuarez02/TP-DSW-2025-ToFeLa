@@ -22,8 +22,8 @@ import {
   SENIA_PORCENTAJE,
   calcularSaldo,
   calcularSeniaMinima,
-  formatearMoneda,
 } from '../../config/senia'
+import { formatearMoneda } from '../../utils/formato'
 
 /** Un dato de la ficha. Sin valor no se dibuja: una fila con "—" no informa nada. */
 function Dato({
