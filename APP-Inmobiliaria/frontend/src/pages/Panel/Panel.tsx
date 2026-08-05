@@ -6,6 +6,7 @@ import Visitas from "./Visitas";
 import Senias from "./Senias.tsx";
 import Documentacion from "./Documentacion";
 import MiDocumentacion from "./MiDocumentacion";
+import Agentes from "./Agentes";
 
 // 1. Declaramos la interfaz para recibir la prop desde el Router
 interface PanelProps {
@@ -22,6 +23,7 @@ export default function Panel({ isAgent = true }: PanelProps) {
     { id: 'visitas', name: 'Visitas', icon: '📅' },
     { id: 'senias', name: 'Señas', icon: '💰' },
     { id: 'documentacion', name: 'Documentación', icon: '📄' },
+    { id: 'agentes', name: 'Agentes', icon: '🧑‍💼' },
   ];
 
   /** El cliente no tiene sidebar: navega con las pestañas de arriba. */
@@ -45,6 +47,8 @@ export default function Panel({ isAgent = true }: PanelProps) {
         case 'documentacion':
           // El agente ve la de todos los clientes; el cliente, solo la suya.
           return isAgent ? <Documentacion /> : <MiDocumentacion />;
+        case 'agentes':
+          return <Agentes />;
         default:
           return isAgent ? <Propiedades /> : <Senias isAgent={isAgent} />;
       }

@@ -4,6 +4,7 @@ import { sanitizeAgenteInput } from '../shared/middlewares/sanitization.middlewa
 import { validateBody } from '../shared/middlewares/validation.middleware.js'
 import { agenteCreateSchema, agenteUpdateSchema } from '../shared/validation/schemas.js'
 import { soloAgente } from '../shared/middlewares/auth.middleware.js'
+import { validateAgenteUniqueFields } from '../shared/middlewares/business-rules.middleware.js'
 
 export const agenteInmobiliarioRouter = Router()
 
@@ -11,6 +12,6 @@ export const agenteInmobiliarioRouter = Router()
 // otro agente, no hay registro abierto.
 agenteInmobiliarioRouter.get('/', soloAgente, findAll)
 agenteInmobiliarioRouter.get('/:id', soloAgente, findOne)
-agenteInmobiliarioRouter.post('/', soloAgente, sanitizeAgenteInput, validateBody(agenteCreateSchema), add)
-agenteInmobiliarioRouter.put('/:id', soloAgente, sanitizeAgenteInput, validateBody(agenteUpdateSchema), update)
+agenteInmobiliarioRouter.post('/', soloAgente, sanitizeAgenteInput, validateBody(agenteCreateSchema), validateAgenteUniqueFields, add)
+agenteInmobiliarioRouter.put('/:id', soloAgente, sanitizeAgenteInput, validateBody(agenteUpdateSchema), validateAgenteUniqueFields, update)
 agenteInmobiliarioRouter.delete('/:id', soloAgente, remove)

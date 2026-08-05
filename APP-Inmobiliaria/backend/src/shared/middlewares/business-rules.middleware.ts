@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { orm } from '../db/orm.js'
 import { Propiedad } from '../../propiedad/propiedad.entity.js'
 import { Cliente } from '../../cliente/cliente.entity.js'
+import { AgenteInmobiliario } from '../../agenteinmobiliario/agenteinmobiliario.entity.js'
 import { HttpError } from '../errors/http.error.js'
 
 function parseTimeToMinutes(time: string): number {
@@ -179,6 +180,61 @@ export async function validateClienteUniqueFields(
             409,
             'Ya existe un cliente con ese número de documento',
             [{ path: 'nro_doc', message: 'Ya existe un cliente con ese número de documento' }],
+            'BUSINESS_RULE_ERROR',
+          ),
+        )
+      }
+    }
+
+    next()
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * Mismo chequeo que `validateClienteUniqueFields`, para el alta de agentes.
+ * Nota: el mail es único a nivel de tabla `usuario` (Cliente y AgenteInmobiliario
+ * la comparten), pero este chequeo solo mira agentes — un duplicado contra un
+ * cliente existente lo termina rechazando la constraint de MySQL con un mensaje
+ * menos amigable. Igual gap que ya tenía `validateClienteUniqueFields`.
+ */
+export async function validateAgenteUniqueFields(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
+  try {
+    const input = req.body?.sanitizedInput
+    const email = typeof input?.mail === 'string' ? input.mail : undefined
+    const nroDoc =
+      input?.nro_doc !== undefined && input?.nro_doc !== null
+        ? Number(input.nro_doc)
+        : undefined
+    const currentId = req.params.id ? Number(req.params.id) : undefined
+
+    if (email) {
+      const existingByEmail = await orm.em.findOne(AgenteInmobiliario, { mail: email })
+      if (existingByEmail && existingByEmail.id !== currentId) {
+        return next(
+          new HttpError(
+            409,
+            'Ya existe un agente con ese email',
+            [{ path: 'mail', message: 'Ya existe un agente con ese email' }],
+            'BUSINESS_RULE_ERROR',
+          ),
+        )
+      }
+    }
+
+    if (nroDoc !== undefined && Number.isFinite(nroDoc)) {
+      const existingByDoc = await orm.em.findOne(AgenteInmobiliario, { nro_doc: nroDoc })
+      if (existingByDoc && existingByDoc.id !== currentId) {
+        return next(
+          new HttpError(
+            409,
+            'Ya existe un agente con ese número de documento',
+            [{ path: 'nro_doc', message: 'Ya existe un agente con ese número de documento' }],
             'BUSINESS_RULE_ERROR',
           ),
         )
