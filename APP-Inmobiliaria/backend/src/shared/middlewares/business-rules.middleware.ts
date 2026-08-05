@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { orm } from '../db/orm.js'
 import { Propiedad } from '../../propiedad/propiedad.entity.js'
-import { Cliente } from '../../cliente/cliente.entity.js'
-import { AgenteInmobiliario } from '../../agenteinmobiliario/agenteinmobiliario.entity.js'
+import { Usuario } from '../db/usuario.entity.js'
 import { HttpError } from '../errors/http.error.js'
 
 function parseTimeToMinutes(time: string): number {
@@ -148,51 +147,47 @@ export async function validatePropiedadTimeRange(
  * Rechaza un mail o un número de documento que ya esté tomado, con un mensaje
  * legible. Sin esto lo frena la constraint de MySQL, pero con un texto genérico.
  *
- * Ojo con el alcance: Cliente y AgenteInmobiliario comparten la tabla `usuario`,
- * así que el mail es único entre los dos, pero cada chequeo mira solo su propio
- * rol. Un agente que use el mail de un cliente pasa por acá y lo termina
- * rechazando la base con el mensaje feo.
+ * Consulta `Usuario`, no `Cliente` ni `AgenteInmobiliario`: los dos comparten la
+ * tabla `usuario`, así que la unicidad es entre ambos. Mirando un solo rol, un
+ * agente podía usar el mail de un cliente, pasar por acá y romper recién contra
+ * la base. Por eso el mensaje habla de "una cuenta" y no del rol: el conflicto
+ * puede ser con el otro tipo de usuario.
  */
-function validarUsuarioUnico<T extends { id?: number }>(
-  entidad: { new (...args: never[]): T },
-  etiqueta: string,
+export async function validateUsuarioUniqueFields(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
 ) {
-  return async (req: Request, _res: Response, next: NextFunction) => {
-    try {
-      const input = req.body?.sanitizedInput
-      const email = typeof input?.mail === 'string' ? input.mail : undefined
-      const nroDoc =
-        input?.nro_doc !== undefined && input?.nro_doc !== null
-          ? Number(input.nro_doc)
-          : undefined
-      const currentId = req.params.id ? Number(req.params.id) : undefined
+  try {
+    const input = req.body?.sanitizedInput
+    const email = typeof input?.mail === 'string' ? input.mail : undefined
+    const nroDoc =
+      input?.nro_doc !== undefined && input?.nro_doc !== null
+        ? Number(input.nro_doc)
+        : undefined
+    const currentId = req.params.id ? Number(req.params.id) : undefined
 
-      const enConflicto = async (filtro: Record<string, unknown>) => {
-        const existente = await orm.em.findOne(entidad, filtro)
-        return existente !== null && existente.id !== currentId
-      }
-
-      if (email && (await enConflicto({ mail: email }))) {
-        const mensaje = `Ya existe un ${etiqueta} con ese email`
-        return next(
-          new HttpError(409, mensaje, [{ path: 'mail', message: mensaje }], 'BUSINESS_RULE_ERROR'),
-        )
-      }
-
-      if (nroDoc !== undefined && Number.isFinite(nroDoc) && (await enConflicto({ nro_doc: nroDoc }))) {
-        const mensaje = `Ya existe un ${etiqueta} con ese número de documento`
-        return next(
-          new HttpError(409, mensaje, [{ path: 'nro_doc', message: mensaje }], 'BUSINESS_RULE_ERROR'),
-        )
-      }
-
-      next()
-    } catch (error) {
-      next(error)
+    const enConflicto = async (filtro: Record<string, unknown>) => {
+      const existente = await orm.em.findOne(Usuario, filtro)
+      return existente !== null && existente.id !== currentId
     }
+
+    if (email && (await enConflicto({ mail: email }))) {
+      const mensaje = 'Ya existe una cuenta con ese email'
+      return next(
+        new HttpError(409, mensaje, [{ path: 'mail', message: mensaje }], 'BUSINESS_RULE_ERROR'),
+      )
+    }
+
+    if (nroDoc !== undefined && Number.isFinite(nroDoc) && (await enConflicto({ nro_doc: nroDoc }))) {
+      const mensaje = 'Ya existe una cuenta con ese número de documento'
+      return next(
+        new HttpError(409, mensaje, [{ path: 'nro_doc', message: mensaje }], 'BUSINESS_RULE_ERROR'),
+      )
+    }
+
+    next()
+  } catch (error) {
+    next(error)
   }
 }
-
-export const validateClienteUniqueFields = validarUsuarioUnico(Cliente, 'cliente')
-
-export const validateAgenteUniqueFields = validarUsuarioUnico(AgenteInmobiliario, 'agente')

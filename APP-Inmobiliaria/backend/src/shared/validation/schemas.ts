@@ -183,7 +183,13 @@ const agenteBaseSchema = z.object({
   tipo_doc: z.string().trim().min(2, 'El tipo de documento es obligatorio'),
   nro_doc: z.coerce.number().int().positive('El número de documento es inválido'),
   contrasenia: z.string().trim().min(4, 'La contraseña debe tener al menos 4 caracteres'),
-  fecha_ingreso: z.coerce.date({ message: 'Fecha de ingreso invalida' }),
+  /**
+   * Se queda como string `YYYY-MM-DD` a propósito: la columna es `type: 'date'`,
+   * y MikroORM espera un string ahí. Con `z.coerce.date()` el PUT explotaba con
+   * "Trying to set AgenteInmobiliario.fecha_ingreso of type 'string' to ... of
+   * type 'Date'" — `em.create` lo toleraba, pero `em.assign` valida el tipo.
+   */
+  fecha_ingreso: z.iso.date('Fecha de ingreso invalida'),
   inmobiliaria: z.coerce.number().int().positive('La inmobiliaria es inválida').optional(),
 })
 

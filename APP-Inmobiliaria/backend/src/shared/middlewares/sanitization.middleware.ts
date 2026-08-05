@@ -18,8 +18,10 @@ function buildSanitizer(fields: string[]) {
   }
 }
 
+// `id` no va en la lista a propósito: llega por la URL. Si se aceptara del
+// cuerpo, un PUT con {"id": 999} terminaría en `em.assign` intentando reasignar
+// la clave primaria.
 export const sanitizeAgenteInput = buildSanitizer([
-  'id',
   'nombre',
   'apellido',
   'mail',
@@ -31,8 +33,8 @@ export const sanitizeAgenteInput = buildSanitizer([
   'inmobiliaria',
 ])
 
+/** Mismo criterio que arriba: `id` viene de la URL, no del cuerpo. */
 export const sanitizeClienteInput = buildSanitizer([
-  'id',
   'nombre',
   'apellido',
   'mail',
