@@ -26,8 +26,7 @@ A través de un sistema en línea moderno y fácil de usar, los clientes pueden 
 
 
 ## MODELO DE DATOS
-<img width="2422" height="1234" alt="ModeloDeDatosDdS drawio" src="https://github.com/user-attachments/assets/28328278-c06a-439c-a5ea-b490daabc95a" />
-
+<img width="2500" height="1400" alt="ModeloDeDatosDdS" src="https://github.com/user-attachments/assets/5dd51733-1852-4531-8448-06fb2f557dfe" />
 
 
 ## ALCANCE FUNCIONAL
