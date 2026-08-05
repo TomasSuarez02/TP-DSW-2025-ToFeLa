@@ -6,9 +6,10 @@ export default function Rent() {
   return (
     <>
       <Header/>
-      <div className="bg-gradient-to-t from-[#e4dfd5] to-white ">
-        <Grid/>
-      </div>
+      {/* El fondo lo pone la sección: antes acá había un degradado a un
+          hex suelto que quedaba por debajo del arena-50 de la grilla y
+          se veía como una banda de otro color. */}
+      <Grid/>
       <Footer/>
     </>
   )

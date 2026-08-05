@@ -1,3 +1,221 @@
 @import "tailwindcss";
 @plugin "daisyui";
 
+/* ============================================================
+   Sistema de diseño — "Arena & Salvia"
+   ------------------------------------------------------------
+   Antes los colores vivían hardcodeados en cada componente
+   (bg-[#dcc7af], text-[#493523], ...), copiados y pegados sin
+   criterio. Acá están una sola vez, con nombre.
+
+   Regla: en los componentes usá los tokens, nunca un hex suelto.
+   ============================================================ */
+
+@theme {
+  /* --- Neutros cálidos ---------------------------------------
+     No son grises puros: llevan un sesgo hacia el acento para
+     que el conjunto se lea elegido y no heredado.             */
+  --color-arena-50:  #faf6f0;  /* fondo de página              */
+  --color-arena-100: #f4ebe0;  /* superficie hundida, hover    */
+  --color-arena-200: #ede0cf;  /* bordes, separadores          */
+  --color-arena-300: #e0cdb5;  /* bordes con más presencia     */
+  --color-arena-400: #c9ae8e;  /* placeholder de imagen        */
+
+  /* --- Tinta ------------------------------------------------- */
+  --color-tinta-900: #33291f;  /* títulos                      */
+  --color-tinta-700: #574839;  /* texto de lectura             */
+  --color-tinta-500: #7a6a5a;  /* texto secundario, metadatos  */
+
+  /* --- Terracota: el acento. Precio, acción primaria. --------
+     Aparece poco a propósito. Cuando aparece, significa algo. */
+  --color-terra-50:  #f7ebe4;
+  --color-terra-100: #f0e2d2;  /* fondo de chip                */
+  --color-terra-500: #c4714f;
+  --color-terra-600: #a65a3e;  /* 5.05:1 sobre blanco — AA     */
+  --color-terra-700: #8a4831;  /* hover                        */
+  --color-terra-800: #6f3a28;  /* texto sobre terra-100        */
+
+  /* --- Salvia: estado disponible. Nunca decorativo. --------- */
+  --color-salvia-100: #e3eae1;
+  --color-salvia-500: #7d9478;
+  --color-salvia-700: #4f6849;
+
+  /* --- Rojo: sólo error. Cálido, para no caer del mundo arena. --- */
+  --color-alerta-50:  #fbecea;
+  --color-alerta-700: #a33b30;  /* 5.4:1 sobre blanco — AA        */
+
+  --font-display: "Playfair Display", "Iowan Old Style", Georgia, serif;
+
+  --radius-card: 1rem;
+
+  /* Sombras cálidas: una sombra gris sobre fondo arena se ve sucia. */
+  --shadow-card:       0 1px 2px rgb(51 41 31 / 0.04), 0 4px 12px rgb(51 41 31 / 0.06);
+  --shadow-card-hover: 0 2px 4px rgb(51 41 31 / 0.05), 0 12px 28px rgb(51 41 31 / 0.11);
+  /* Un diálogo flota por encima de todo: necesita más caída que una tarjeta. */
+  --shadow-dialog:     0 2px 6px rgb(51 41 31 / 0.08), 0 24px 60px rgb(51 41 31 / 0.22);
+  /* La barra fija de mobile proyecta hacia arriba, contra el contenido. */
+  --shadow-bar:        0 -1px 2px rgb(51 41 31 / 0.04), 0 -8px 24px rgb(51 41 31 / 0.08);
+
+  /* Salida exponencial: arranca rápido y frena. Todo lo que se abre
+     en este sitio usa esta curva, para que se lea como un solo gesto. */
+  --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Tema DaisyUI alineado a los tokens de arriba -------------
+   Sin esto, cualquier componente DaisyUI (btn, badge, modal)
+   sigue pintando con la paleta default y rompe la coherencia. */
+@plugin "daisyui/theme" {
+  name: "tofela";
+  default: true;
+  color-scheme: light;
+
+  --color-base-100: #ffffff;
+  --color-base-200: #faf6f0;
+  --color-base-300: #ede0cf;
+  --color-base-content: #33291f;
+
+  --color-primary: #a65a3e;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #7d9478;
+  --color-secondary-content: #ffffff;
+
+  --color-accent: #f0e2d2;
+  --color-accent-content: #6f3a28;
+
+  --color-neutral: #574839;
+  --color-neutral-content: #faf6f0;
+
+  --color-success: #4f6849;
+  --color-warning: #b8792c;
+  --color-error: #a33b30;
+
+  --radius-box: 1rem;
+  --radius-field: 0.5rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-arena-50);
+    color: var(--color-tinta-700);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* El foco era invisible en varias pantallas. Un solo lugar lo arregla. */
+  :focus-visible {
+    outline: 2px solid var(--color-terra-600);
+    outline-offset: 2px;
+  }
+
+  /* --- Superficies que dibuja el navegador ---------------------
+     Selección, cursor y scrollbar vienen con el azul del sistema.
+     Sobre un fondo arena eso se lee como una pieza ajena pegada
+     encima. Cuestan tres reglas y son la diferencia entre una
+     página construida y una ensamblada.                         */
+  ::selection {
+    background-color: var(--color-terra-100);
+    color: var(--color-terra-800);
+  }
+
+  :where(input, textarea) {
+    caret-color: var(--color-terra-600);
+  }
+
+  * {
+    scrollbar-color: var(--color-arena-300) transparent;
+    scrollbar-width: thin;
+  }
+
+  /* Firefox ya quedó cubierto arriba; esto es para WebKit. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-arena-300);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: content-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-arena-400);
+  }
+}
+
+/* --- Acciones -------------------------------------------------
+   Las mismas cuatro clases de botón estaban copiadas en cada
+   pantalla con hexes distintos, así que "el botón primario" no
+   tenía una definición: tenía versiones. Acá tiene una.
+
+   Jerarquía: primaria (terracota, una por vista), secundaria
+   (contorno) y fantasma (sólo texto, para cancelar).           */
+@layer components {
+  .accion {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.625rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease,
+      color 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .accion:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .accion-primaria {
+    background-color: var(--color-terra-600);
+    color: #fff;
+    box-shadow: var(--shadow-card);
+  }
+
+  .accion-primaria:hover:not(:disabled) {
+    background-color: var(--color-terra-700);
+  }
+
+  .accion-secundaria {
+    border: 1px solid var(--color-arena-300);
+    background-color: #fff;
+    color: var(--color-tinta-900);
+  }
+
+  .accion-secundaria:hover:not(:disabled) {
+    border-color: var(--color-arena-400);
+    background-color: var(--color-arena-50);
+  }
+
+  .accion-fantasma {
+    color: var(--color-tinta-700);
+  }
+
+  .accion-fantasma:hover:not(:disabled) {
+    background-color: var(--color-arena-100);
+    color: var(--color-tinta-900);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

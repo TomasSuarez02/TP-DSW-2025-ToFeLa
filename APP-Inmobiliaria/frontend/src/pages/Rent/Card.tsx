@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom'
+import notFound from '../../assets/notFound.webp'
+
 type Inmobiliaria = {
   descripcion: string
 }
@@ -25,57 +28,68 @@ export interface Propiedades {
   tipoPropiedad: TipoPropiedad
 }
 
-export default function Card({id, direccion, precio, estado, descripcion, tipoPropiedad, imagenes }: Propiedades) {
+export default function Card({ id, direccion, precio, estado, descripcion, tipoPropiedad, imagenes }: Propiedades) {
+  const disponible = String(estado).toLowerCase() === 'disponible'
+
   return (
-    <div className="bg-white group relative rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-      
-      <div className="relative">
-        <img
-          src={imagenes[0] ? imagenes[0].path : 'src/assets/notFound.webp'}
-          alt={direccion}
-          onClick={() => window.location.href = `/Rent/property/${id}`}
-          className="w-full h-64 object-cover group-hover:opacity-90 transition-opacity cursor-pointer"
-        />
-        
-        <div className="absolute top-4 right-4">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${
-            estado === 'disponible' 
-              ? 'bg-green-500 text-white' 
-              : 'bg-red-500 text-white'
-          }`}>
+    <article className="group h-full">
+      {/* La tarjeta entera es el destino, no sólo la imagen: el área
+          de click pasa a ser toda la pieza y se navega sin recargar. */}
+      <Link
+        to={`/Rent/property/${id}`}
+        className="flex h-full flex-col overflow-hidden rounded-card bg-white shadow-card transition-[box-shadow,transform] duration-300 hover:-translate-y-1 hover:shadow-card-hover"
+      >
+        <div className="relative overflow-hidden bg-arena-100">
+          <img
+            src={imagenes[0] ? imagenes[0].path : notFound}
+            alt={`Fachada de ${direccion}`}
+            loading="lazy"
+            className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          />
+
+          <span
+            className={`absolute top-3 right-3 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold tracking-wider uppercase backdrop-blur-sm ${
+              disponible
+                ? 'bg-salvia-500/95 text-white'
+                : 'bg-tinta-900/70 text-arena-100'
+            }`}
+          >
             {estado}
           </span>
         </div>
-      </div>
 
-      
-      <div className="p-4">
-        
-        <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-1">
-          {direccion}
-        </h3>
+        <div className="flex flex-1 flex-col p-5">
+          {tipoPropiedad ? (
+            <span className="mb-2 text-[0.7rem] font-semibold tracking-[0.12em] text-terra-800 uppercase">
+              {tipoPropiedad.descripcion}
+            </span>
+          ) : (
+            <span className="mb-2 text-[0.7rem] font-semibold tracking-[0.12em] text-tinta-500 uppercase">
+              Sin categoría
+            </span>
+          )}
 
-        
-        {tipoPropiedad ? (
-          <span className="inline-block bg-[#dcc7af] text-[#846a41] px-3 py-1 rounded-full text-sm font-medium mb-3">
-            {tipoPropiedad.descripcion}
-          </span>
-        ) : (
-          <span className="text-xs text-gray-400 mb-3 block">Sin tipo de propiedad</span>
-        )}
+          <h3 className="font-display text-xl leading-snug text-tinta-900">
+            {direccion}
+          </h3>
 
-        {descripcion && (
-          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-            {descripcion}
-          </p>
-        )}
+          {descripcion && (
+            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-tinta-500">
+              {descripcion}
+            </p>
+          )}
 
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <span className="text-2xl font-bold text-[#846a41]">
-            ${precio.toLocaleString('es-AR')}
-          </span>
+          {/* mt-auto ancla el precio abajo: en una grilla, las tarjetas
+              tienen descripciones de distinto largo y los precios deben
+              alinearse entre sí para poder compararse de un vistazo. */}
+          <div className="mt-auto flex items-baseline justify-between gap-2 border-t border-arena-200 pt-4">
+            <span className="font-display text-2xl text-terra-600 tabular-nums">
+              ${precio.toLocaleString('es-AR')}
+            </span>
+            <span className="text-xs text-tinta-500">por mes</span>
+          </div>
         </div>
-      </div>
-    </div>
+      </Link>
+    </article>
   )
 }
