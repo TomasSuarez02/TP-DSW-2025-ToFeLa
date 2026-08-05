@@ -1,13 +1,14 @@
 import { MikroORM } from '@mikro-orm/core'
 import { SqlHighlighter } from '@mikro-orm/sql-highlighter'
 import { MySqlDriver } from '@mikro-orm/mysql'
+import { DATABASE_URL } from '../config.js'
 
 export const orm = await MikroORM.init<MySqlDriver>({
   entities: ['dist/**/*.entity.js'],
   entitiesTs: ['src/**/*.entity.ts'],
   dbName: 'app-inmobiliaria',
   driver: MySqlDriver,
-  clientUrl: 'mysql://dsw:dsw@127.0.0.1:3307/app-inmobiliaria',
+  clientUrl: DATABASE_URL,
   highlighter: new SqlHighlighter(),
   debug: true,
   schemaGenerator: {

@@ -6,6 +6,8 @@ import { Cliente } from "../cliente/cliente.entity.js";
 import { AgenteInmobiliario } from "../agenteinmobiliario/agenteinmobiliario.entity.js";
 import { orm } from "../shared/db/orm.js";
 import { HttpError } from "../shared/errors/http.error.js";
+import { JWT_SECRET } from "../shared/config.js";
+import { verificarPassword } from "../shared/utils/password.js";
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const { mail, contrasenia } = req.body;
@@ -33,13 +35,13 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       return next(new HttpError(401, "Credenciales inválidas", [{ path: "general", message: "Credenciales inválidas" }], "AUTH_ERROR"));
     }
 
-    if (String(user.contrasenia) !== String(contrasenia)) {
+    if (!(await verificarPassword(String(contrasenia), user.contrasenia))) {
       return next(new HttpError(401, "Credenciales inválidas", [{ path: "general", message: "Credenciales inválidas" }], "AUTH_ERROR"));
     }
 
     const accessToken = jwt.sign(
       { sub: user.id, email: user.mail, role },
-      process.env.JWT_SECRET || "secret",
+      JWT_SECRET,
       { expiresIn: "1h" }
     );
 

@@ -7,6 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p ./tsconfig.json",
+    "migrate:passwords": "node ./dist/scripts/hashear-passwords.js",
     "start:dev": "tsc-watch --noClear -p ./tsconfig.json --onSuccess \"node ./dist/app.js\""
   },
   "keywords": [],
@@ -27,7 +28,9 @@
     "@mikro-orm/mysql": "^6.6.14",
     "@mikro-orm/reflection": "^6.6.14",
     "@mikro-orm/sql-highlighter": "1.0.1",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
     "express": "4.18.2",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",

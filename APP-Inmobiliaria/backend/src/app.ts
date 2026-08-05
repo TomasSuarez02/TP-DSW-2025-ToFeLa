@@ -20,6 +20,7 @@ import { pagoRouter } from './pago/pago.routes.js'
 import { alquilerRouter } from './alquiler/alquiler.routes.js'
 import { HttpError } from './shared/errors/http.error.js'
 import { ormErrorHandler } from './shared/middlewares/orm-error.middleware.js'
+import { PORT } from './shared/config.js'
 
 
 const app = express()
@@ -86,6 +87,6 @@ await syncSchema()
 await seedEstados(orm)
 
 
-app.listen(3000, () => {
-  console.log('Server runnning on http://localhost:3000/')
+app.listen(PORT, () => {
+  console.log(`Server runnning on http://localhost:${PORT}/`)
 })

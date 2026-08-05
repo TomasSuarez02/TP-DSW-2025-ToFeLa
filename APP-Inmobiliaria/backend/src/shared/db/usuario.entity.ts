@@ -41,7 +41,12 @@ export abstract class Usuario extends BaseEntity {
   @Property({ nullable: false, unique: true })
   mail!: string
 
-  @Property({ nullable: false })
+  /**
+   * `hidden` la saca de la serialización: sigue disponible en código (la usa el
+   * login) pero nunca sale en un JSON. Sin esto, GET /clientes devolvía la
+   * contraseña de todos los clientes.
+   */
+  @Property({ nullable: false, hidden: true })
   contrasenia!: string
 
   @Enum({ items: () => RolUsuario, nullable: false })

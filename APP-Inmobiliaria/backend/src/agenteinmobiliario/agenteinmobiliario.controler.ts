@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { AgenteInmobiliario } from './agenteinmobiliario.entity.js';
 import { orm } from '../shared/db/orm.js';
+import { conPasswordHasheada } from '../shared/utils/password.js';
 
 const em = orm.em;
 
@@ -25,7 +26,7 @@ async function findOne(req: Request, res: Response, next: NextFunction) {
 
 async function add(req: Request, res: Response, next: NextFunction) {
   try {
-    const agente = em.create(AgenteInmobiliario, req.body.sanitizedInput);
+    const agente = em.create(AgenteInmobiliario, await conPasswordHasheada(req.body.sanitizedInput));
     await em.flush();
     res.status(201).json({ message: 'agente inmobiliario created', data: agente });
   } catch (error) {
@@ -37,7 +38,7 @@ async function update(req: Request, res: Response, next: NextFunction) {
   try {
     const id = req.params.id;
     const agenteToUpdate = await em.findOneOrFail(AgenteInmobiliario, { id: Number(id) });
-    em.assign(agenteToUpdate, req.body.sanitizedInput);
+    em.assign(agenteToUpdate, await conPasswordHasheada(req.body.sanitizedInput));
     await em.flush();
     res.status(200).json({ message: 'agente inmobiliario updated', data: agenteToUpdate });
   } catch (error) {

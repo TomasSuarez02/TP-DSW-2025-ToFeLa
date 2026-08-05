@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { HttpError } from '../errors/http.error.js';
+import { JWT_SECRET } from '../config.js';
 
 export interface AuthPayload {
   sub: number;
@@ -9,8 +10,6 @@ export interface AuthPayload {
   iat?: number;
   exp?: number;
 }
-
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 /**
  * Deja `req.user` si vino un token válido, pero no exige que venga.

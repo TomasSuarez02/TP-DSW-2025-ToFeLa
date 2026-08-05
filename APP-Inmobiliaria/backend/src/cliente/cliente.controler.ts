@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { Cliente } from './cliente.entity.js'
 import { orm } from '../shared/db/orm.js'
 import { HttpError } from '../shared/errors/http.error.js'
+import { conPasswordHasheada } from '../shared/utils/password.js'
 
 
 const em = orm.em
@@ -58,7 +59,7 @@ async function findOne(req: Request, res: Response, next: NextFunction) {
 
 async function add(req: Request, res: Response, next: NextFunction) {
   try {
-    const cliente = em.create(Cliente, req.body.sanitizedInput)
+    const cliente = em.create(Cliente, await conPasswordHasheada(req.body.sanitizedInput))
     await em.flush()
     res.status(201).json({ message: 'cliente created', data: cliente })
   } catch (error) {
@@ -74,7 +75,7 @@ async function update(req: Request, res: Response, next: NextFunction) {
     exigirAgenteODuenio(req, id)
 
     const clienteToUpdate = await em.findOneOrFail(Cliente, { id })
-    em.assign(clienteToUpdate, req.body.sanitizedInput)
+    em.assign(clienteToUpdate, await conPasswordHasheada(req.body.sanitizedInput))
     await em.flush()
     res
       .status(200)
