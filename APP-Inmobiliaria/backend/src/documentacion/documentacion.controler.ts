@@ -6,7 +6,7 @@ const em = orm.em;
 
 async function findAll(_req: Request, res: Response, next: NextFunction) {
   try {
-    const documentaciones = await em.find(Documentacion, {}, { populate: ['clientes'] });
+    const documentaciones = await em.find(Documentacion, {}, { populate: ['clientes', 'clientes.cliente'] });
     res.status(200).json({ message: 'found all documentaciones', data: documentaciones });
   } catch (error) {
     next(error);

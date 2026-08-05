@@ -3,11 +3,17 @@ import { orm } from '../shared/db/orm.js'
 import { Senia } from './senia.entity.js';
 import { Propiedad } from '../propiedad/propiedad.entity.js';
 import { Cliente } from '../cliente/cliente.entity.js';
+import { Alquiler } from '../alquiler/alquiler.entity.js';
+import { Pago } from '../pago/pago.entity.js';
 import { HttpError } from '../shared/errors/http.error.js';
 import { parsearClave } from '../shared/db/clave-compuesta.js';
+import { estadoAlquiler, estadoPropiedad } from '../shared/db/estados.js';
+import { exigirDocumentacionAprobada } from '../documentacioncliente/documentacioncliente.rules.js';
+import { generarReferencia } from '../shared/utils/tarjeta.js';
 import {
   ESTADOS_SENIA_ACTIVOS,
   calcularFechaVencimiento,
+  calcularSaldo,
   calcularSeniaMinima,
   expirarSeniasVencidas,
   liberarPropiedad,
@@ -303,4 +309,106 @@ async function changeEstado(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-export { findAll, findOne, add, createForClient, update, remove, findByClient, cancel, changeEstado };
+/**
+ * Cierre del flujo: el cliente vino a la inmobiliaria con los papeles y el
+ * saldo, así que la seña se transforma en un alquiler.
+ *
+ * Es una sola operación porque las cuatro cosas van juntas: sin documentación
+ * aprobada no se firma, y si se firma tiene que quedar registrado el alquiler,
+ * el cobro del saldo y la propiedad ocupada.
+ */
+async function concretar(req: Request, res: Response, next: NextFunction) {
+  try {
+      const { role } = usuarioAutenticado(req);
+      if (role !== 'agente') {
+        throw new HttpError(
+          403,
+          'Solo un agente puede concretar un alquiler',
+          [{ path: 'general', message: 'Solo un agente puede concretar un alquiler' }],
+          'AUTH_ERROR',
+        );
+      }
+
+      const senia = await buscarPorClave(req.params.clave);
+
+      if (senia.estado !== 'confirmada') {
+        throw new HttpError(
+          409,
+          `No se puede concretar una seña ${senia.estado}`,
+          [{ path: 'estado', message: 'Solo se puede concretar una seña confirmada' }],
+          'BUSINESS_RULE_ERROR',
+        );
+      }
+
+      if (senia.fechaVencimiento && senia.fechaVencimiento < new Date()) {
+        throw new HttpError(
+          409,
+          'La seña venció: la propiedad ya volvió al mercado',
+          [{ path: 'estado', message: 'La seña venció' }],
+          'BUSINESS_RULE_ERROR',
+        );
+      }
+
+      const yaConcretada = await em.findOne(Alquiler, { senia });
+      if (yaConcretada) {
+        throw new HttpError(
+          409,
+          'Esta seña ya se concretó en un alquiler',
+          [{ path: 'general', message: 'Esta seña ya se concretó en un alquiler' }],
+          'BUSINESS_RULE_ERROR',
+        );
+      }
+
+      // Los papeles son la condición para firmar; si faltan, esto corta acá.
+      await exigirDocumentacionAprobada(em, senia.cliente.id!);
+
+      const { fecha_inicio, fecha_fin, medioPago } = req.body.sanitizedInput;
+      if (new Date(fecha_fin) <= new Date(fecha_inicio)) {
+        throw new HttpError(
+          400,
+          'La fecha de fin debe ser posterior a la de inicio',
+          [{ path: 'fecha_fin', message: 'La fecha de fin debe ser posterior a la de inicio' }],
+          'BUSINESS_RULE_ERROR',
+        );
+      }
+
+      const montoMensual = Number(senia.propiedad.precio);
+      const saldo = calcularSaldo(montoMensual, senia.importe);
+
+      const pagoSaldo = em.create(Pago, {
+        estado: 'aprobado' as const,
+        medio: medioPago,
+        monto: saldo,
+        fecha: new Date(),
+        referencia: generarReferencia(),
+      });
+
+      const alquiler = em.create(Alquiler, {
+        propiedad: senia.propiedad,
+        cliente: senia.cliente,
+        fecha_hora_firma: new Date(),
+        fecha_inicio: new Date(fecha_inicio),
+        fecha_fin: new Date(fecha_fin),
+        monto_mensual: montoMensual,
+        estadoAlquiler: await estadoAlquiler(em, 'confirmado'),
+        senia,
+        pagoSaldo,
+      });
+
+      senia.propiedad.estadoPropiedad = await estadoPropiedad(em, 'alquilada');
+      await em.flush();
+
+      res.status(201).json({
+        message: 'alquiler concretado',
+        data: {
+          alquiler: { clave: alquiler.clave, monto_mensual: montoMensual },
+          senia: { clave: senia.clave, importe: senia.importe },
+          saldoCobrado: saldo,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+}
+
+export { findAll, findOne, add, createForClient, update, remove, findByClient, cancel, changeEstado, concretar };

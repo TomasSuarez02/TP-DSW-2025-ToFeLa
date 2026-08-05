@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { Propiedad } from './propiedad.entity.js'
 import { orm } from '../shared/db/orm.js'
 import { estadoPropiedad } from '../shared/db/estados.js'
+import { expirarSeniasVencidas } from '../senia/senia.rules.js'
 import type { DescripcionEstadoPropiedad } from '../estadopropiedad/estadopropiedad.entity.js'
 import fs from 'fs'
 import path from 'path'
@@ -33,6 +34,9 @@ async function separarEstado(input: Record<string, unknown>) {
 
 async function findAll(req: Request, res: Response, next: NextFunction) {
   try {
+      // El catálogo es la vista donde importa que una seña vencida ya no
+      // retenga la propiedad, así que se barre antes de listar.
+      await expirarSeniasVencidas(em);
       const propiedades = await em.find(Propiedad, {}, { populate: [...POPULATE_PROPIEDAD] });
       res.status(200).json({ message: 'found all propiedades', data: propiedades });
     } catch (error) {
@@ -43,6 +47,7 @@ async function findAll(req: Request, res: Response, next: NextFunction) {
 async function findOne(req: Request, res: Response, next: NextFunction) {
   try {
       const id = req.params.id;
+      await expirarSeniasVencidas(em);
       const propiedad = await em.findOneOrFail(
         Propiedad,
         { id: Number(id) },

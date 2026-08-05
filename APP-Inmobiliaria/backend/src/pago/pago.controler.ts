@@ -21,6 +21,7 @@ function serializarPago(pago: Pago) {
   return {
     id: pago.id,
     estado: pago.estado,
+    medio: pago.medio,
     monto: pago.monto,
     ultimosCuatro: pago.ultimosCuatro,
     fecha: pago.fecha,
@@ -117,6 +118,7 @@ async function procesar(req: Request, res: Response, next: NextFunction) {
     const aprobado = tarjetaEsAprobada(numero)
     const datosPago = {
       estado: (aprobado ? 'aprobado' : 'rechazado') as EstadoPago,
+      medio: 'tarjeta' as const,
       monto: senia.importe,
       ultimosCuatro: ultimosCuatro(numero),
       titular: String(titular).trim(),

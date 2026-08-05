@@ -10,7 +10,7 @@ async function findAll(req: Request, res: Response, next: NextFunction) {
     const clientes = await em.find(
       Cliente,
       {},
-      { populate: ['documentaciones'] }
+      { populate: ['documentaciones', 'documentaciones.documentacion'] }
     )
     res.status(200).json({ message: 'found all clientes', data: clientes })
   } catch (error) {
@@ -25,7 +25,7 @@ async function findOne(req: Request, res: Response, next: NextFunction) {
     const cliente = await em.findOneOrFail(
       Cliente,
       { id: Number(id) }
-      , { populate: ['documentaciones'] }
+      , { populate: ['documentaciones', 'documentaciones.documentacion'] }
     )
     res.status(200).json({ message: 'found cliente', data: cliente })
   } catch (error) {

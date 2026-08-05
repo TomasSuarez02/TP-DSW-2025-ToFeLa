@@ -18,6 +18,15 @@ export function calcularSeniaMinima(precio: number): number {
   return Math.round(precio * SENIA_PORCENTAJE)
 }
 
+/**
+ * Saldo que el cliente todavía debe del primer mes: la seña es un adelanto
+ * sobre el alquiler mensual, así que lo que falta es la diferencia.
+ * Espejo de calcularSaldo en backend/src/senia/senia.rules.ts
+ */
+export function calcularSaldo(precio: number, importeSeniado: number): number {
+  return Math.max(0, precio - importeSeniado)
+}
+
 /** Fecha hasta la que queda reservada una propiedad señada hoy. */
 export function calcularFechaVencimiento(desde: Date = new Date()): Date {
   const vencimiento = new Date(desde)

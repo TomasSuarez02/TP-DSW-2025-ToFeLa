@@ -2,6 +2,8 @@ import { z } from 'zod'
 import { ESTADOS_SENIA } from '../../senia/senia.rules.js'
 import { ESTADOS_PROPIEDAD } from '../../estadopropiedad/estadopropiedad.entity.js'
 import { ESTADOS_ALQUILER } from '../../estadoalquiler/estadoalquiler.entity.js'
+import { ESTADOS_DOCUMENTACION_CLIENTE } from '../../documentacioncliente/documentacioncliente.entity.js'
+import { MEDIOS_PAGO } from '../../pago/pago.entity.js'
 
 const phoneRegex = /^[0-9+()\-\s]{6,20}$/
 const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/
@@ -109,6 +111,26 @@ export const alquilerUpdateSchema = alquilerBaseSchema
 
 export const alquilerEstadoSchema = z.object({
   estado: z.enum(ESTADOS_ALQUILER, { message: 'El estado es inválido' }),
+})
+
+/**
+ * Cierre de la seña. El monto no se recibe: el alquiler mensual sale del precio
+ * de la propiedad y el saldo se calcula contra lo ya señado.
+ */
+export const seniaConcretarSchema = z.object({
+  fecha_inicio: z.coerce.date({ message: 'La fecha de inicio es inválida' }),
+  fecha_fin: z.coerce.date({ message: 'La fecha de fin es inválida' }),
+  medioPago: z.enum(MEDIOS_PAGO, { message: 'El medio de pago es inválido' }),
+})
+
+export const documentacionClienteCreateSchema = z.object({
+  documentacion: z.coerce.number().int().positive('La documentación es inválida'),
+  cliente: z.coerce.number().int().positive('El cliente es inválido'),
+})
+
+export const documentacionClienteEstadoSchema = z.object({
+  estado: z.enum(ESTADOS_DOCUMENTACION_CLIENTE, { message: 'El estado es inválido' }),
+  observaciones: z.string().trim().max(500).optional(),
 })
 
 const propiedadBaseSchema = z.object({

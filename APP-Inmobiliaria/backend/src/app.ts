@@ -6,6 +6,7 @@ import { clienteRouter } from './cliente/cliente.routes.js'
 import { tipopropiedadRouter } from './tipopropiedad/tipopropiedad.routes.js'
 import { inmobiliariaRouter } from './inmobiliaria/inmobiliaria.routes.js'
 import { documentacionRouter } from './documentacion/documentacion.routes.js'
+import { documentacionClienteRouter } from './documentacioncliente/documentacioncliente.routes.js'
 import { propiedadRouter } from './propiedad/propiedad.routes.js'
 import { agenteInmobiliarioRouter } from './agenteinmobiliario/agenteinmobiliario.routes.js'
 import { orm, syncSchema } from './shared/db/orm.js'
@@ -25,7 +26,7 @@ const app = express()
 
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
@@ -42,6 +43,7 @@ app.use('/api/clientes', clienteRouter)
 app.use('/api/tipopropiedades', tipopropiedadRouter)
 app.use('/api/inmobiliarias', inmobiliariaRouter)
 app.use('/api/documentaciones', documentacionRouter)
+app.use('/api/documentacionclientes', documentacionClienteRouter)
 app.use('/api/propiedades', propiedadRouter)
 app.use('/api/agentesinmobiliarios', agenteInmobiliarioRouter)
 app.use('/api/imagenes', imagenRouter)

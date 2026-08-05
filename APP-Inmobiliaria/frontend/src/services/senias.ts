@@ -1,7 +1,14 @@
 import apiClient from '../utils/apiClient'
 import { USA_PAGO_MOCK } from '../config/senia'
 import { leerEstadoMock, guardarEstadoMock } from './mockPagos'
-import type { EstadoSenia, Senia } from '../types/senia'
+import type { EstadoSenia, MedioPago, Senia } from '../types/senia'
+
+/** Lo que devuelve el backend al concretar: el alquiler creado y el saldo cobrado. */
+export interface ResultadoConcretar {
+  alquiler: { clave: string; monto_mensual: number }
+  senia: { clave: string; importe: number }
+  saldoCobrado: number
+}
 
 /**
  * Acceso a la API de señas. Todos los componentes deben pasar por acá en vez de
@@ -93,9 +100,17 @@ export async function eliminarSenia(clave: string): Promise<void> {
   await apiClient.delete(`/senias/${clave}`)
 }
 
-/** Marca la propiedad como alquilada una vez presentados papeles y saldo. */
-export async function marcarPropiedadAlquilada(propiedadId: number): Promise<void> {
-  await apiClient.put(`/propiedades/${propiedadId}`, { estado: 'alquilada' })
+/**
+ * Cierra el flujo: convierte la seña en un alquiler.
+ * El backend crea el Alquiler, registra el cobro del saldo y pone la propiedad
+ * en `alquilada`, siempre que la documentación del cliente esté aprobada.
+ */
+export async function concretarAlquiler(
+  clave: string,
+  datos: { fecha_inicio: string; fecha_fin: string; medioPago: MedioPago },
+): Promise<ResultadoConcretar> {
+  const res = await apiClient.post(`/senias/${clave}/concretar`, datos)
+  return (res.data?.data ?? res.data) as ResultadoConcretar
 }
 
 /** Libera la propiedad, por ejemplo al eliminar o cancelar una seña. */

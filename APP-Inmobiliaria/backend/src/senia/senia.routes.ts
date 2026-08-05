@@ -9,15 +9,18 @@ import {
   createForClient,
   cancel,
   changeEstado,
+  concretar,
 } from './senia.controler.js';
 import {
   sanitizeSeniaInput,
   sanitizeEstadoInput,
+  sanitizeConcretarInput,
 } from '../shared/middlewares/sanitization.middleware.js';
 import { validateBody } from '../shared/middlewares/validation.middleware.js';
 import { validateSeniaAmountAgainstProperty } from '../shared/middlewares/business-rules.middleware.js';
 import {
   seniaClienteCreateSchema,
+  seniaConcretarSchema,
   seniaCreateSchema,
   seniaEstadoSchema,
   seniaUpdateSchema,
@@ -34,6 +37,7 @@ router.post('/', sanitizeSeniaInput, validateBody(seniaCreateSchema), validateSe
 router.put('/:clave', sanitizeSeniaInput, validateBody(seniaUpdateSchema), validateSeniaAmountAgainstProperty, update);
 router.patch('/:clave/cancelar', authenticateToken, cancel);
 router.patch('/:clave/estado', authenticateToken, sanitizeEstadoInput, validateBody(seniaEstadoSchema), changeEstado);
+router.post('/:clave/concretar', authenticateToken, sanitizeConcretarInput, validateBody(seniaConcretarSchema), concretar);
 router.delete('/:clave', remove);
 
 export { router as seniaRouter };

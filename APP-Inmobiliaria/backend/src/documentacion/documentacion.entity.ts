@@ -1,6 +1,6 @@
-import { Collection, Entity, ManyToMany, Property, Rel } from '@mikro-orm/core'
+import { Collection, Entity, OneToMany, Property } from '@mikro-orm/core'
 import { BaseEntity } from '../shared/db/baseEntity.entity.js'
-import { Cliente } from '../cliente/cliente.entity.js'
+import { DocumentacionCliente } from '../documentacioncliente/documentacioncliente.entity.js'
 
 @Entity()
 export class Documentacion extends BaseEntity {
@@ -14,6 +14,9 @@ export class Documentacion extends BaseEntity {
   @Property({ nullable: true })
   path?: string
 
-  @ManyToMany(() => Cliente, (cliente) => cliente.documentaciones, { nullable: true })
-  clientes = new Collection<Rel<Cliente>>(this)
+  @OneToMany(() => DocumentacionCliente, (dc) => dc.documentacion, {
+    nullable: true,
+    orphanRemoval: true,
+  })
+  clientes = new Collection<DocumentacionCliente>(this)
 }

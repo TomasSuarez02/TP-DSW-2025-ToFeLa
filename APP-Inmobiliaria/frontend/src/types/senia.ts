@@ -7,6 +7,10 @@ export type EstadoSenia = 'pendiente_pago' | 'confirmada' | 'vencida' | 'cancela
 
 export type EstadoPago = 'pendiente' | 'aprobado' | 'rechazado'
 
+export type MedioPago = 'tarjeta' | 'efectivo' | 'transferencia'
+
+export type EstadoDocumentacionCliente = 'pendiente' | 'aprobada' | 'rechazada'
+
 export interface PropiedadRef {
   id: number
   direccion?: string
@@ -24,10 +28,23 @@ export interface ClienteRef {
 export interface Pago {
   id?: number
   estado: EstadoPago
+  /** La seña se cobra con tarjeta; el saldo, presencialmente. */
+  medio?: MedioPago
   monto: number
-  ultimosCuatro: string
+  /** Solo en pagos con tarjeta. */
+  ultimosCuatro?: string | null
+  titular?: string | null
   fecha: string
   referencia?: string
+}
+
+/** Documento que el cliente presentó, con el resultado de su revisión. */
+export interface DocumentacionCliente {
+  documentacion: number | { id: number; descripcion?: string; fecha_vencimiento?: string }
+  cliente: number | ClienteRef
+  estado: EstadoDocumentacionCliente
+  fecha_carga?: string
+  observaciones?: string | null
 }
 
 export interface Senia {

@@ -25,6 +25,14 @@ export function calcularSeniaMinima(precio: number): number {
   return Math.round(Number(precio) * SENIA_PORCENTAJE)
 }
 
+/**
+ * Saldo que el cliente todavía debe del primer mes: la seña es un adelanto
+ * sobre el alquiler mensual, así que lo que falta es la diferencia.
+ */
+export function calcularSaldo(precio: number, importeSeniado: number): number {
+  return Math.max(0, Number(precio) - Number(importeSeniado))
+}
+
 /** Fecha hasta la que queda señada una propiedad cuya seña se aprueba ahora. */
 export function calcularFechaVencimiento(desde: Date = new Date()): Date {
   const vencimiento = new Date(desde)

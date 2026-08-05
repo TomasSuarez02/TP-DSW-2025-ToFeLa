@@ -9,12 +9,15 @@ sincronizados: `backend/src/senia/senia.rules.ts` y `frontend/src/config/senia.t
 
 ## Reglas de negocio acordadas
 
-- La seña mínima es el **20%** del precio de la propiedad.
+- `Propiedad.precio` es el **alquiler mensual**. La seña es un **adelanto del primer
+  mes**: el mínimo es el **20%** de ese precio y el máximo es el precio entero.
 - Una seña confirmada deja la propiedad **señada** durante **10 días** corridos.
-- Vencido ese plazo sin que el administrador la pase a `alquilada`, la seña queda
-  `vencida` y la propiedad vuelve a `disponible`.
-- El cliente completa el trámite presencialmente (papeles + saldo); el administrador
-  es quien marca la propiedad como `alquilada`.
+- Vencido ese plazo sin concretarse, la seña queda `vencida` y la propiedad vuelve
+  a `disponible`.
+- El cliente completa el trámite presencialmente: presenta los papeles y paga el
+  **saldo** (`precio − importe señado`). Ahí el agente concreta el alquiler.
+- **No se puede concretar sin la documentación aprobada.** Ese es el sentido del
+  plazo de 10 días: es la ventana en la que el agente revisa los papeles.
 
 ## Estados
 
@@ -136,15 +139,68 @@ actualizada. Si ya estaba `confirmada`, responder `409`.
 Solo para el rol `agente` (`403` en caso contrario). `confirmada` fija el vencimiento
 y deja la propiedad `señada`; `vencida` y `cancelada` la liberan.
 
-Cuando el agente concreta el alquiler usa el endpoint de propiedades ya existente
-(`PUT /api/propiedades/:id` con `{ "estado": "alquilada" }`).
+### `POST /api/senias/:clave/concretar` (agente)
+
+Cierra el flujo: convierte la seña en un alquiler. Es **una sola operación** porque
+las cuatro cosas van juntas.
+
+```jsonc
+// request
+{ "fecha_inicio": "2026-09-01", "fecha_fin": "2027-08-31", "medioPago": "efectivo" }
+
+// response 201
+{
+  "message": "alquiler concretado",
+  "data": {
+    "alquiler": { "clave": "19-12-1785877386888", "monto_mensual": 70000 },
+    "senia":    { "clave": "19-12-1785877948000", "importe": 7777 },
+    "saldoCobrado": 62223
+  }
+}
+```
+
+Efectos, en orden:
+
+1. Valida que la seña esté `confirmada` y no vencida, y que no se haya concretado ya.
+2. Exige que **toda** la documentación del cliente esté `aprobada` y sin vencer
+   (`409` con el detalle de lo que falta).
+3. Crea el `Alquiler` heredando propiedad y cliente de la seña, con
+   `monto_mensual = propiedad.precio` y estado `confirmado`.
+4. Registra un `Pago` por el saldo (`precio − importe`) con el `medioPago` recibido,
+   colgado del alquiler como `pagoSaldo`.
+5. Deja la propiedad en `alquilada`.
+
+El monto no se recibe del cliente: sale del precio de la propiedad. `medioPago` es
+`efectivo`, `transferencia` o `tarjeta`.
+
+## Documentación del cliente
+
+`DocumentacionCliente` es la entidad que vincula un documento con el cliente que lo
+presentó, y guarda el resultado de la revisión. Su PK es compuesta
+(`documentacion`, `cliente`), así que las rutas la reciben como dos parámetros.
+
+| Endpoint | Quién | Qué hace |
+| --- | --- | --- |
+| `GET /api/documentacionclientes` | agente | Todas las presentaciones |
+| `GET /api/documentacionclientes/mis-documentaciones` | cliente | Las propias |
+| `POST /api/documentacionclientes` | cliente / agente | Registra una presentación (`pendiente`) |
+| `PATCH /api/documentacionclientes/:documentacion/:cliente/revisar` | agente | `{ "estado": "aprobada" \| "rechazada", "observaciones"? }` |
+| `DELETE /api/documentacionclientes/:documentacion/:cliente` | — | Borra la presentación |
+
+Un cliente solo puede presentar documentación a su propio nombre (`403` si no).
+Repetir el mismo documento para el mismo cliente da `409`.
 
 ## Vencimiento de la reserva
 
-No hay tarea programada: al consultar señas (`GET /api/senias`, `/mis-senias`, `/:clave`)
-el backend barre las señas `confirmada` cuyo `fechaVencimiento` ya pasó, las marca
-`vencida` y devuelve la propiedad a `disponible`. Si el agente alcanzó a poner la
-propiedad en `alquilada`, la seña queda `confirmada` porque cumplió su función.
+No hay tarea programada: el backend barre las señas `confirmada` cuyo
+`fechaVencimiento` ya pasó, las marca `vencida` y devuelve la propiedad a
+`disponible`. Si el agente alcanzó a concretar el alquiler, la seña queda
+`confirmada` porque cumplió su función.
+
+El barrido corre al consultar señas (`GET /api/senias`, `/mis-senias`, `/:clave`)
+**y también al consultar propiedades** (`GET /api/propiedades`, `/:id`). Esto último
+es lo que garantiza que una propiedad cuya seña venció vuelva a aparecer disponible
+en el catálogo sin que nadie tenga que abrir el panel de señas.
 
 ## Forma de los objetos
 
@@ -163,10 +219,20 @@ type Senia = {
 type Pago = {
   id: number
   estado: 'pendiente' | 'aprobado' | 'rechazado'
+  medio: 'tarjeta' | 'efectivo' | 'transferencia'
   monto: number
-  ultimosCuatro: string
+  ultimosCuatro?: string | null   // solo en pagos con tarjeta
+  titular?: string | null         // idem
   fecha: string
   referencia?: string
+}
+
+type DocumentacionCliente = {
+  documentacion: number | Documentacion
+  cliente: number | Cliente
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  fecha_carga: string
+  observaciones?: string | null
 }
 ```
 

@@ -1,7 +1,9 @@
-import { Entity, ManyToOne, Opt, PrimaryKey, Property, Rel } from '@mikro-orm/core'
+import { Entity, ManyToOne, OneToOne, Opt, PrimaryKey, Property, Rel } from '@mikro-orm/core'
 import { Propiedad } from '../propiedad/propiedad.entity.js'
 import { Cliente } from '../cliente/cliente.entity.js'
 import { EstadoAlquiler } from '../estadoalquiler/estadoalquiler.entity.js'
+import { Senia } from '../senia/senia.entity.js'
+import { Pago } from '../pago/pago.entity.js'
 import { serializarClave } from '../shared/db/clave-compuesta.js'
 
 /** PK compuesta (propiedad, cliente, fecha_hora_firma), como en el modelo de datos. */
@@ -28,6 +30,20 @@ export class Alquiler {
 
   @ManyToOne(() => EstadoAlquiler, { nullable: false })
   estadoAlquiler!: Rel<EstadoAlquiler>
+
+  /**
+   * Seña que originó este alquiler. Nulable porque un agente puede cargar un
+   * alquiler a mano, sin que haya habido seña previa.
+   */
+  @ManyToOne(() => Senia, { nullable: true, unique: true })
+  senia?: Rel<Senia> | null
+
+  /**
+   * Cobro del saldo del primer mes (monto_mensual menos lo ya señado), que el
+   * cliente entrega presencialmente al firmar.
+   */
+  @OneToOne(() => Pago, { nullable: true, owner: true, orphanRemoval: true })
+  pagoSaldo?: Rel<Pago> | null
 
   /** Clave compuesta codificada para las rutas REST. Derivada: no se persiste. */
   @Property({ persist: false })

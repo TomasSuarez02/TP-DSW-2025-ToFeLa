@@ -87,6 +87,20 @@ export const sanitizeEstadoInput = buildSanitizer([
   'estado',
 ])
 
+/** Cierre de la seña: fechas del contrato y cómo se cobró el saldo. */
+export const sanitizeConcretarInput = buildSanitizer([
+  'fecha_inicio',
+  'fecha_fin',
+  'medioPago',
+])
+
+export const sanitizeDocumentacionClienteInput = buildSanitizer([
+  'documentacion',
+  'cliente',
+  'estado',
+  'observaciones',
+])
+
 export const sanitizePagoInput = buildSanitizer([
   'senia',
   'numeroTarjeta',

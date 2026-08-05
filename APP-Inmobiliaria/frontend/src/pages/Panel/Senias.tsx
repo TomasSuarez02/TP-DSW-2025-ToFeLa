@@ -5,9 +5,9 @@ import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 import {
   actualizarEstadoSenia,
   cancelarSenia,
+  concretarAlquiler,
   eliminarSenia,
   liberarPropiedad,
-  marcarPropiedadAlquilada,
   obtenerMisSenias,
   obtenerSenias,
 } from "../../services/senias";
@@ -19,6 +19,7 @@ import {
   refObjeto,
   type ClienteRef,
   type EstadoSenia,
+  type MedioPago,
   type PropiedadRef,
   type Senia,
 } from "../../types/senia";
@@ -55,6 +56,9 @@ export default function Senias({ isAgent = true }: SeniasProps) {
   const [propiedades, setPropiedades] = useState<PropiedadRef[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  /** Seña que el agente está por convertir en alquiler. */
+  const [concretando, setConcretando] = useState<Senia | null>(null);
 
   const fetchSenias = useCallback(async () => {
     try {
@@ -204,17 +208,25 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     }
   };
 
-  /** El admin concreta el alquiler tras recibir papeles y saldo. */
-  const handleMarcarAlquilada = async (senia: Senia) => {
-    const propiedadId = refId(senia.propiedad);
-    if (!propiedadId) return;
-    if (!confirm("¿Confirmás que el cliente presentó la documentación y el saldo restante?")) return;
-
+  /**
+   * El agente concreta el alquiler tras recibir papeles y saldo.
+   * El backend valida la documentación, crea el Alquiler y registra el cobro:
+   * acá solo se piden las fechas del contrato y cómo se cobró.
+   */
+  const handleConcretar = async (
+    senia: Senia,
+    datos: { fecha_inicio: string; fecha_fin: string; medioPago: MedioPago },
+  ) => {
     try {
-      await marcarPropiedadAlquilada(propiedadId);
+      const resultado = await concretarAlquiler(senia.clave, datos);
+      setConcretando(null);
+      alert(
+        `Alquiler registrado por ${formatearMoneda(resultado.alquiler.monto_mensual)} mensuales.\n` +
+          `Saldo cobrado: ${formatearMoneda(resultado.saldoCobrado)}.`,
+      );
       fetchSenias();
     } catch (error) {
-      console.error("Error al marcar la propiedad como alquilada:", error);
+      console.error("Error al concretar el alquiler:", error);
       alert(parseApiError(error).message);
     }
   };
@@ -360,12 +372,115 @@ export default function Senias({ isAgent = true }: SeniasProps) {
               onEliminar={() => handleDelete(s)}
               onCompletar={() => handleCompletarSenia(s.clave)}
               onCancelar={() => handleCancelar(s)}
-              onMarcarAlquilada={() => handleMarcarAlquilada(s)}
+              onConcretar={() => setConcretando(s)}
               onMarcarVencida={() => handleMarcarVencida(s)}
             />
           ))}
         </div>
       )}
+
+      {concretando && (
+        <ModalConcretar
+          senia={concretando}
+          onCancelar={() => setConcretando(null)}
+          onConfirmar={(datos) => handleConcretar(concretando, datos)}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Cierre del alquiler. La seña es un adelanto del primer mes, así que el saldo
+ * a cobrar es el precio de la propiedad menos lo ya señado.
+ */
+function ModalConcretar({
+  senia,
+  onCancelar,
+  onConfirmar,
+}: {
+  senia: Senia;
+  onCancelar: () => void;
+  onConfirmar: (datos: { fecha_inicio: string; fecha_fin: string; medioPago: MedioPago }) => void;
+}) {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const enUnAnio = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const [fechaInicio, setFechaInicio] = useState(hoy);
+  const [fechaFin, setFechaFin] = useState(enUnAnio);
+  const [medioPago, setMedioPago] = useState<MedioPago>('efectivo');
+
+  const precio = refObjeto<PropiedadRef>(senia.propiedad)?.precio;
+  const saldo = precio !== undefined ? Math.max(0, precio - senia.importe) : undefined;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md">
+        <h3 className="text-xl font-semibold text-neutral-800 mb-1">Concretar alquiler</h3>
+        <p className="text-sm text-neutral-500 mb-4">
+          Solo se puede concretar si la documentación del cliente está aprobada.
+        </p>
+
+        <div className="bg-[#f7f2ea] rounded-lg p-3 mb-4 text-sm space-y-1">
+          <div className="flex justify-between">
+            <span className="text-neutral-600">Alquiler mensual</span>
+            <span className="font-medium">{precio !== undefined ? formatearMoneda(precio) : '—'}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-neutral-600">Ya señado</span>
+            <span className="font-medium">− {formatearMoneda(senia.importe)}</span>
+          </div>
+          <div className="flex justify-between border-t border-[#e5d8c2] pt-1 mt-1">
+            <span className="text-neutral-700 font-medium">Saldo a cobrar</span>
+            <span className="font-semibold text-[#846a41]">
+              {saldo !== undefined ? formatearMoneda(saldo) : '—'}
+            </span>
+          </div>
+        </div>
+
+        <label className="block text-sm text-neutral-700 mb-1">Inicio del contrato</label>
+        <input
+          type="date"
+          value={fechaInicio}
+          onChange={(e) => setFechaInicio(e.target.value)}
+          className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg mb-3 bg-[#fffdf9]"
+        />
+
+        <label className="block text-sm text-neutral-700 mb-1">Fin del contrato</label>
+        <input
+          type="date"
+          value={fechaFin}
+          onChange={(e) => setFechaFin(e.target.value)}
+          className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg mb-3 bg-[#fffdf9]"
+        />
+
+        <label className="block text-sm text-neutral-700 mb-1">Cómo se cobró el saldo</label>
+        <select
+          value={medioPago}
+          onChange={(e) => setMedioPago(e.target.value as MedioPago)}
+          className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg mb-5 bg-[#fffdf9]"
+        >
+          <option value="efectivo">Efectivo</option>
+          <option value="transferencia">Transferencia</option>
+          <option value="tarjeta">Tarjeta</option>
+        </select>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onCancelar}
+            className="flex-1 border border-neutral-300 text-neutral-700 py-2 rounded-lg text-sm font-medium"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => onConfirmar({ fecha_inicio: fechaInicio, fecha_fin: fechaFin, medioPago })}
+            disabled={fechaFin <= fechaInicio}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-300 text-white py-2 rounded-lg text-sm font-medium"
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -402,7 +517,7 @@ function TarjetaSenia({
   onEliminar,
   onCompletar,
   onCancelar,
-  onMarcarAlquilada,
+  onConcretar,
   onMarcarVencida,
 }: {
   senia: Senia;
@@ -411,7 +526,7 @@ function TarjetaSenia({
   onEliminar: () => void;
   onCompletar: () => void;
   onCancelar: () => void;
-  onMarcarAlquilada: () => void;
+  onConcretar: () => void;
   onMarcarVencida: () => void;
 }) {
   const dias = diasRestantes(senia.fechaVencimiento);
@@ -460,8 +575,8 @@ function TarjetaSenia({
             <button onClick={onEliminar} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg text-sm font-medium">Eliminar</button>
             {senia.estado === 'confirmada' && (
               <>
-                <button onClick={onMarcarAlquilada} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium">
-                  Marcar como alquilada
+                <button onClick={onConcretar} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium">
+                  Concretar alquiler
                 </button>
                 {vencida && (
                   <button onClick={onMarcarVencida} className="w-full border border-neutral-300 hover:bg-neutral-100 text-neutral-700 py-2 rounded-lg text-sm font-medium">
