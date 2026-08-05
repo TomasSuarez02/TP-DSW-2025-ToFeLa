@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import apiClient from "../../utils/apiClient";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 import { useAuth } from "../../auth/useAuth";
 import {
@@ -8,9 +7,7 @@ import {
   eliminarAgente,
   obtenerAgentes,
   type Agente,
-  type InmobiliariaRef,
 } from "../../services/agentesInmobiliarios";
-import { refId, refObjeto } from "../../types/senia";
 
 /**
  * Alta de agentes del backoffice.
@@ -23,10 +20,10 @@ export default function Agentes() {
   const { userId } = useAuth();
 
   const [agentes, setAgentes] = useState<Agente[]>([]);
-  const [inmobiliarias, setInmobiliarias] = useState<InmobiliariaRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingAgente, setEditingAgente] = useState<Agente | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -36,7 +33,6 @@ export default function Agentes() {
     tipo_doc: "",
     nro_doc: "",
     fecha_ingreso: new Date().toISOString().slice(0, 10),
-    inmobiliaria: "",
     contrasenia: "",
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -53,18 +49,8 @@ export default function Agentes() {
     }
   };
 
-  const fetchInmobiliarias = async () => {
-    try {
-      const res = await apiClient.get("/inmobiliarias");
-      setInmobiliarias(res.data?.data ?? []);
-    } catch (error) {
-      console.error("Error al cargar inmobiliarias:", error);
-    }
-  };
-
   useEffect(() => {
     fetchAgentes();
-    fetchInmobiliarias();
   }, []);
 
   const handleInputChange = (
@@ -90,7 +76,6 @@ export default function Agentes() {
       tipo_doc: "",
       nro_doc: "",
       fecha_ingreso: new Date().toISOString().slice(0, 10),
-      inmobiliaria: "",
       contrasenia: "",
     });
     setEditingAgente(null);
@@ -111,6 +96,8 @@ export default function Agentes() {
       return;
     }
 
+    // Sin este guard, dos clicks seguidos dan de alta el agente dos veces.
+    setGuardando(true);
     try {
       if (editingAgente) {
         await actualizarAgente(editingAgente.id, formData);
@@ -126,6 +113,8 @@ export default function Agentes() {
       const parsed = parseApiError(error);
       setSubmitError(parsed.message);
       setFieldErrors(parsed.fieldErrors);
+    } finally {
+      setGuardando(false);
     }
   };
 
@@ -139,7 +128,6 @@ export default function Agentes() {
       tipo_doc: agente.tipo_doc,
       nro_doc: String(agente.nro_doc),
       fecha_ingreso: agente.fecha_ingreso ? agente.fecha_ingreso.slice(0, 10) : "",
-      inmobiliaria: String(refId(agente.inmobiliaria) ?? ""),
       contrasenia: "",
     });
     setShowForm(true);
@@ -279,24 +267,6 @@ export default function Agentes() {
               {fieldErrors.fecha_ingreso && <p className="mt-1 text-sm text-red-600">{fieldErrors.fecha_ingreso}</p>}
             </div>
 
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Inmobiliaria</label>
-              <select
-                name="inmobiliaria"
-                value={formData.inmobiliaria}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.inmobiliaria ? "border-red-400" : "border-[#e5d8c2]"}`}
-              >
-                <option value="">Sin asignar</option>
-                {inmobiliarias.map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.descripcion ?? `#${i.id}`}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.inmobiliaria && <p className="mt-1 text-sm text-red-600">{fieldErrors.inmobiliaria}</p>}
-            </div>
-
             <div className="col-span-2">
               <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
                 Contraseña {editingAgente ? "" : "*"}
@@ -323,9 +293,10 @@ export default function Agentes() {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] rounded-lg font-medium text-neutral-900"
+                disabled={guardando}
+                className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed rounded-lg font-medium text-neutral-900"
               >
-                {editingAgente ? "Actualizar" : "Crear"}
+                {guardando ? "Guardando…" : editingAgente ? "Actualizar" : "Crear"}
               </button>
             </div>
           </form>
@@ -348,7 +319,6 @@ export default function Agentes() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {agentes.map((agente) => {
-            const inmobiliaria = refObjeto<InmobiliariaRef>(agente.inmobiliaria ?? undefined);
             const esUnoMismo = agente.id === userId;
             return (
               <div key={agente.id} className="bg-white rounded-xl shadow-md border p-6">
@@ -367,9 +337,6 @@ export default function Agentes() {
                   <p className="text-sm text-neutral-600">
                     {agente.tipo_doc.toUpperCase()} {agente.nro_doc}
                   </p>
-                  {inmobiliaria && (
-                    <p className="text-sm text-neutral-600">🏢 {inmobiliaria.descripcion}</p>
-                  )}
                 </div>
 
                 <div className="flex gap-2">

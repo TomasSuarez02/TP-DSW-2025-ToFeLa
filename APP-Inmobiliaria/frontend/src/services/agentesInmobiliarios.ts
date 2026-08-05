@@ -5,11 +5,6 @@ import apiClient from '../utils/apiClient'
  * público: solo un agente ya logueado puede crear a otro.
  */
 
-export interface InmobiliariaRef {
-  id: number
-  descripcion?: string
-}
-
 export interface Agente {
   id: number
   nombre: string
@@ -19,7 +14,6 @@ export interface Agente {
   tipo_doc: string
   nro_doc: number
   fecha_ingreso?: string | null
-  inmobiliaria?: number | InmobiliariaRef | null
 }
 
 export interface DatosAgente {
@@ -30,7 +24,6 @@ export interface DatosAgente {
   tipo_doc: string
   nro_doc: string
   fecha_ingreso: string
-  inmobiliaria?: string
   /** Solo se manda si se está definiendo o cambiando la contraseña. */
   contrasenia?: string
 }
@@ -40,6 +33,11 @@ export async function obtenerAgentes(): Promise<Agente[]> {
   return (res.data?.data ?? []) as Agente[]
 }
 
+/**
+ * Los campos opcionales se omiten cuando vienen vacíos, no se mandan en blanco:
+ * en un PUT el backend hace `assign`, así que una clave ausente significa
+ * "dejalo como está" y una vacía sería un valor inválido.
+ */
 function aPayload(datos: DatosAgente) {
   return {
     nombre: datos.nombre.trim(),
@@ -48,8 +46,7 @@ function aPayload(datos: DatosAgente) {
     telefono: datos.telefono.trim(),
     tipo_doc: datos.tipo_doc.trim(),
     nro_doc: datos.nro_doc.trim(),
-    fecha_ingreso: datos.fecha_ingreso,
-    ...(datos.inmobiliaria ? { inmobiliaria: Number(datos.inmobiliaria) } : {}),
+    ...(datos.fecha_ingreso ? { fecha_ingreso: datos.fecha_ingreso } : {}),
     ...(datos.contrasenia ? { contrasenia: datos.contrasenia } : {}),
   }
 }
