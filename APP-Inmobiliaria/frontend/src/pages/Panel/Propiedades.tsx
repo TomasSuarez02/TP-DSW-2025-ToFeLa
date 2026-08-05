@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 import apiClient from "../../utils/apiClient";
 import { formatearFecha as formatearFechaCorta } from "../../config/senia";
@@ -91,7 +90,7 @@ export default function Propiedades() {
 
   const fetchClientes = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/clientes");
+      const res = await apiClient.get("/clientes");
       setClientes(res.data.data || []);
       console.log("Clientes cargados:", res.data.data);
     } catch (error) {
@@ -104,7 +103,7 @@ export default function Propiedades() {
 
   const fetchDependencias = useCallback(async () => {
     try {
-      const tipos = await axios.get("http://localhost:3000/api/tipopropiedades");
+      const tipos = await apiClient.get("/tipopropiedades");
       setTiposPropiedad(tipos.data.data || []);
       console.log("Tipos de propiedad cargados:", tipos.data.data);
     } catch (error) {
@@ -168,14 +167,14 @@ export default function Propiedades() {
       let propiedadId: number | null = null;
 
       if (editingProperty) {
-        await axios.put(
-          `http://localhost:3000/api/propiedades/${editingProperty.id}`,
+        await apiClient.put(
+          `/propiedades/${editingProperty.id}`,
           payload
         );
         propiedadId = editingProperty.id;
         alert("Propiedad actualizada correctamente");
       } else {
-        const res = await axios.post("http://localhost:3000/api/propiedades", payload);
+        const res = await apiClient.post("/propiedades", payload);
         propiedadId = res.data.data.id;
         alert("Propiedad creada correctamente");
 
@@ -190,7 +189,7 @@ export default function Propiedades() {
             });
 
             // Enviar con el formato correcto que espera el backend
-            await axios.post("http://localhost:3000/api/imagenes", {
+            await apiClient.post("/imagenes", {
               propiedad: propiedadId,
               base64: base64,
               filename: `${Date.now()}-${img.name}` // nombre único
@@ -212,7 +211,7 @@ export default function Propiedades() {
   const handleDelete = async (id: number) => {
     if (confirm("¿Seguro que querés eliminar esta propiedad?")) {
       try {
-        await axios.delete(`http://localhost:3000/api/propiedades/${id}`);
+        await apiClient.delete(`/propiedades/${id}`);
         fetchPropiedades();
         alert("Propiedad eliminada correctamente");
       } catch (error) {
@@ -250,7 +249,7 @@ export default function Propiedades() {
       if (!prop) {
         // intentar traer la propiedad puntual
         try {
-          const resp = await axios.get(`http://localhost:3000/api/propiedades/${propiedadId}`);
+          const resp = await apiClient.get(`/propiedades/${propiedadId}`);
           prop = resp.data.data;
         } catch (err) {
           console.warn('No se pudo cargar la propiedad para validación del importe', err);
@@ -266,13 +265,13 @@ export default function Propiedades() {
     }
 
     try {
-      const res = await axios.post('http://localhost:3000/api/senias', data);
+      const res = await apiClient.post('/senias', data);
       console.log('Senia guardada:', res.data);
       alert('Alquiler señado con éxito');
 
       if (propiedadId) {
         try {
-          await axios.put(`http://localhost:3000/api/propiedades/${propiedadId}`, { estado: 'señada' });
+          await apiClient.put(`/propiedades/${propiedadId}`, { estado: 'señada' });
           fetchPropiedades();
         } catch (err) {
           console.error('Error actualizando estado de propiedad', err);

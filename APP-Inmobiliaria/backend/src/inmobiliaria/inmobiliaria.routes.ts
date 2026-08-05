@@ -6,14 +6,17 @@ import {
   inmobiliariaCreateSchema,
   inmobiliariaUpdateSchema,
 } from '../shared/validation/schemas.js'
+import { soloAgente } from '../shared/middlewares/auth.middleware.js'
 
 export const inmobiliariaRouter = Router()
 
+// Datos de contacto de la sucursal: se muestran en el sitio.
 inmobiliariaRouter.get('/', findAll)
 inmobiliariaRouter.get('/:id', findOne)
-inmobiliariaRouter.post('/', sanitizeInmobiliariaInput, validateBody(inmobiliariaCreateSchema), add)
-inmobiliariaRouter.put('/:id', sanitizeInmobiliariaInput, validateBody(inmobiliariaUpdateSchema), update)
-inmobiliariaRouter.delete('/:id', remove)
+
+inmobiliariaRouter.post('/', soloAgente, sanitizeInmobiliariaInput, validateBody(inmobiliariaCreateSchema), add)
+inmobiliariaRouter.put('/:id', soloAgente, sanitizeInmobiliariaInput, validateBody(inmobiliariaUpdateSchema), update)
+inmobiliariaRouter.delete('/:id', soloAgente, remove)
 inmobiliariaRouter.delete('/', (req, res) => {
   res.status(405).send('Method Not Allowed')
 })

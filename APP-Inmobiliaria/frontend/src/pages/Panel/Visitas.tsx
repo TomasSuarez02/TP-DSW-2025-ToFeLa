@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import axios from 'axios';
+import apiClient from "../../utils/apiClient";
 import { parseApiError } from '../../utils/apiErrors';
 
 interface Visita {
@@ -41,7 +41,7 @@ export default function Visitas() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get('http://localhost:3000/api/visitas');
+      const response = await apiClient.get('/visitas');
       const data = response.data?.data ?? response.data;
       setVisitas(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -60,7 +60,7 @@ export default function Visitas() {
     if (!confirm('¿Seguro que querés eliminar esta visita?')) return;
 
     try {
-      await axios.delete(`http://localhost:3000/api/visitas/${clave}`);
+      await apiClient.delete(`/visitas/${clave}`);
       // refrescar lista
       fetchVisitas();
       alert('Visita eliminada correctamente');

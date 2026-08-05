@@ -4,26 +4,29 @@ import Panel from "../pages/Panel/Panel.tsx";
 import { Register } from "../pages/Login/Register.tsx";
 import Page from "../pages/Rent/Page.tsx";
 import Checkout from "../pages/Checkout/Checkout.tsx";
+import { RutaProtegida } from "../auth/RutaProtegida.tsx";
 
 
 export const AppRouter = () => {
   return (
     <Routes>
 
-        {/*Rutas Publicas*/}
+        {/*Rutas Publicas: el catálogo se navega sin cuenta, que es el punto del sitio*/}
         <Route path='/' element={<Home/>}/>
         <Route path="/login" element={<Login/>}/>
         <Route path="/contact" element={<Contact/>}/>
-
-        {/*Rutas Privadas*/}
-        <Route path="/Rent/visit" element={<Visit/>}/>
-        <Route path="/Rent/Reserv" element={<Reserv/>}/>
-        <Route path="/Rent" element={<Rent/>}/>
-        <Route path="/Panel" element={<Panel/>}/>
         <Route path="/register" element={<Register  />}/>
+        <Route path="/Rent" element={<Rent/>}/>
         <Route path="/Rent/property/:id" element={<Page/>}/>
-        <Route path="/MisSenias" element={<Panel isAgent={false} />} />
-        <Route path="/checkout/:clave" element={<Checkout/>}/>
+
+        {/*Rutas Privadas: hace falta sesión iniciada*/}
+        <Route path="/Rent/visit" element={<RutaProtegida><Visit/></RutaProtegida>}/>
+        <Route path="/Rent/Reserv" element={<RutaProtegida><Reserv/></RutaProtegida>}/>
+        <Route path="/checkout/:clave" element={<RutaProtegida><Checkout/></RutaProtegida>}/>
+        <Route path="/MisSenias" element={<RutaProtegida><Panel isAgent={false} /></RutaProtegida>} />
+
+        {/*Backoffice: además de sesión, rol de agente*/}
+        <Route path="/Panel" element={<RutaProtegida rol="agente"><Panel/></RutaProtegida>}/>
 
     </Routes>
     )

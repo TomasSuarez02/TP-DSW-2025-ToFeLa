@@ -18,11 +18,12 @@ import {
   alquilerEstadoSchema,
   alquilerUpdateSchema,
 } from '../shared/validation/schemas.js'
-import { authenticateToken } from '../shared/middlewares/auth.middleware.js'
+import { authenticateToken, soloAgente } from '../shared/middlewares/auth.middleware.js'
 
 const router = Router()
 
-router.get('/', findAll)
+// Lista todos los contratos con sus clientes: backoffice.
+router.get('/', soloAgente, findAll)
 router.get('/mis-alquileres', authenticateToken, findByClient)
 router.get('/:clave', authenticateToken, findOne)
 router.post('/', authenticateToken, sanitizeAlquilerInput, validateBody(alquilerCreateSchema), add)

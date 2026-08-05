@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import apiClient from "../../utils/apiClient";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
 
 interface TipoDocumentacion {
@@ -44,7 +44,7 @@ export default function Clientes() {
   // Cargar datos
   const fetchClientes = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/clientes");
+      const res = await apiClient.get("/clientes");
       setClientes(res.data.data || []);
     } catch (error) {
       console.error("Error al cargar clientes:", error);
@@ -55,7 +55,7 @@ export default function Clientes() {
 
   const fetchDependencias = async () => {
     try {
-      const tipos = await axios.get("http://localhost:3000/api/tipodocumentaciones");
+      const tipos = await apiClient.get("/tipodocumentaciones");
       setTiposDocumentacion(tipos.data.data || []);
     } catch (error) {
       console.error("Error al cargar tipos de documentación:", error);
@@ -102,13 +102,13 @@ export default function Clientes() {
           : { ...basePayload, contrasenia: formData.password };
 
       if (editingCliente) {
-        await axios.put(
-          `http://localhost:3000/api/clientes/${editingCliente.id}`,
+        await apiClient.put(
+          `/clientes/${editingCliente.id}`,
           payload
         );
         alert("Cliente actualizado correctamente");
       } else {
-        await axios.post("http://localhost:3000/api/clientes", payload);
+        await apiClient.post("/clientes", payload);
         alert("Cliente creado correctamente");
       }
 
@@ -125,7 +125,7 @@ export default function Clientes() {
   const handleDelete = async (id: number) => {
     if (confirm("¿Seguro que querés eliminar este cliente?")) {
       try {
-        await axios.delete(`http://localhost:3000/api/clientes/${id}`);
+        await apiClient.delete(`/clientes/${id}`);
         fetchClientes();
         alert("Cliente eliminado correctamente");
       } catch (error) {

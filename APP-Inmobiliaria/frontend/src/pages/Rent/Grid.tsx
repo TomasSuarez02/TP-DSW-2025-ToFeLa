@@ -1,13 +1,13 @@
 import {useEffect, useState } from "react"
 import Card, { type Propiedades } from "./Card"
-import axios from "axios"
+import apiClient from "../../utils/apiClient";
 
 
 
 export default function ListadoPropiedades() {
   const [propiedades, setPropiedades] = useState<Propiedades[]>([])
   useEffect(()=>{
-      axios.get('http://localhost:3000/api/propiedades')
+      apiClient.get('/propiedades')
       .then(res => {
         setPropiedades(res.data.data)
       })

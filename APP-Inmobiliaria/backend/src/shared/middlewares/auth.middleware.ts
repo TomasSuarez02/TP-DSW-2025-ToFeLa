@@ -38,6 +38,33 @@ export function attachUserIfPresent(req: Request, _res: Response, next: NextFunc
   next();
 }
 
+/**
+ * Exige que el token traiga alguno de los roles indicados.
+ * Va siempre después de `authenticateToken`, que es quien deja `req.user`.
+ */
+export function requireRole(...roles: string[]) {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    const { role } = (req as Request & { user?: AuthPayload }).user ?? {};
+    if (!role || !roles.includes(role)) {
+      return next(
+        new HttpError(
+          403,
+          'No tenés permisos para esta operación',
+          [{ path: 'general', message: 'No tenés permisos para esta operación' }],
+          'AUTH_ERROR',
+        ),
+      );
+    }
+    next();
+  };
+}
+
+/**
+ * Atajo para el backoffice: token válido + rol de agente.
+ * Express acepta un array de middlewares donde espera uno solo.
+ */
+export const soloAgente = [authenticateToken, requireRole('agente')];
+
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[0] === 'Bearer' ? authHeader.split(' ')[1] : undefined;

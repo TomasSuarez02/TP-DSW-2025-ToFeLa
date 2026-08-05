@@ -4,15 +4,21 @@ import { sanitizeClienteInput } from '../shared/middlewares/sanitization.middlew
 import { validateBody } from '../shared/middlewares/validation.middleware.js'
 import { clienteCreateSchema, clienteUpdateSchema } from '../shared/validation/schemas.js'
 import { validateClienteUniqueFields } from '../shared/middlewares/business-rules.middleware.js'
+import { authenticateToken, soloAgente } from '../shared/middlewares/auth.middleware.js'
 
 export const clienteRouter = Router()
 
-clienteRouter.get('/', findAll)
-clienteRouter.get('/:id', findOne)
+// El padrón de clientes es del backoffice: nombre, mail, teléfono y documento.
+clienteRouter.get('/', soloAgente, findAll)
+
+// El alta es el registro público del sitio.
 clienteRouter.post('/', sanitizeClienteInput, validateBody(clienteCreateSchema), validateClienteUniqueFields, add)
-clienteRouter.put('/:id', sanitizeClienteInput, validateBody(clienteUpdateSchema), validateClienteUniqueFields, update)
-clienteRouter.patch('/:id', sanitizeClienteInput, validateBody(clienteUpdateSchema), validateClienteUniqueFields, update)
-clienteRouter.delete('/:id', remove)
+
+// La ficha individual la lee el agente y el propio cliente (ver `findOne`).
+clienteRouter.get('/:id', authenticateToken, findOne)
+clienteRouter.put('/:id', authenticateToken, sanitizeClienteInput, validateBody(clienteUpdateSchema), validateClienteUniqueFields, update)
+clienteRouter.patch('/:id', authenticateToken, sanitizeClienteInput, validateBody(clienteUpdateSchema), validateClienteUniqueFields, update)
+clienteRouter.delete('/:id', soloAgente, remove)
 /*clienteRouter.delete('/', (req, res) => {
   res.status(405).send('Method Not Allowed')
 }) 
