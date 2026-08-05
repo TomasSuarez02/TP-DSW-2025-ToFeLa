@@ -1,4 +1,5 @@
 import apiClient from '../utils/apiClient'
+import { crearDocumentacion, eliminarDocumentacion } from './documentaciones'
 import type { DocumentacionCliente, EstadoDocumentacionCliente } from '../types/senia'
 
 /**
@@ -34,6 +35,44 @@ export async function presentarDocumentacion(
     ...(estado ? { estado } : {}),
   })
   return (res.data?.data ?? res.data) as DocumentacionCliente
+}
+
+/**
+ * Retira un papel presentado. El backend borra además la `Documentacion` y su
+ * archivo si no le quedan otros dueños, así que este es el endpoint a usar para
+ * "eliminar un documento" — pegarle directo a `DELETE /documentaciones/:id`
+ * choca con la foreign key cuando la presentación sigue viva.
+ */
+export async function eliminarPresentacion(
+  documentacionId: number,
+  clienteId: number,
+): Promise<void> {
+  await apiClient.delete(`/documentacionclientes/${documentacionId}/${clienteId}`)
+}
+
+/**
+ * Alta completa en un paso: crea el documento (con su archivo) y lo vincula al
+ * cliente. Si el vínculo falla se borra el documento, así no queda colgado.
+ */
+export async function cargarDocumentoDeCliente(datos: {
+  clienteId: number
+  descripcion: string
+  fecha_vencimiento: string
+  archivo?: File | null
+  estado?: EstadoDocumentacionCliente
+}): Promise<DocumentacionCliente> {
+  const creado = await crearDocumentacion({
+    descripcion: datos.descripcion,
+    fecha_vencimiento: datos.fecha_vencimiento,
+    archivo: datos.archivo,
+  })
+
+  try {
+    return await presentarDocumentacion(creado.id, datos.clienteId, datos.estado)
+  } catch (error) {
+    await eliminarDocumentacion(creado.id).catch(() => undefined)
+    throw error
+  }
 }
 
 /** El agente aprueba o rechaza un documento presentado. */

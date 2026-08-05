@@ -5,6 +5,7 @@ import Clientes from "./Clientes";
 import Visitas from "./Visitas";
 import Senias from "./Senias.tsx";
 import Documentacion from "./Documentacion";
+import MiDocumentacion from "./MiDocumentacion";
 
 // 1. Declaramos la interfaz para recibir la prop desde el Router
 interface PanelProps {
@@ -23,6 +24,12 @@ export default function Panel({ isAgent = true }: PanelProps) {
     { id: 'documentacion', name: 'Documentación', icon: '📄' },
   ];
 
+  /** El cliente no tiene sidebar: navega con las pestañas de arriba. */
+  const seccionesCliente = [
+    { id: 'senias', name: 'Mis Señas', icon: '💰' },
+    { id: 'documentacion', name: 'Mi Documentación', icon: '📄' },
+  ];
+
   const renderContent = () => {
     try {
       switch (activeSection) {
@@ -36,7 +43,8 @@ export default function Panel({ isAgent = true }: PanelProps) {
           // 3. Le pasamos la condición al subcomponente para que filtre sus botones
           return <Senias isAgent={isAgent} />;
         case 'documentacion':
-          return <Documentacion />;
+          // El agente ve la de todos los clientes; el cliente, solo la suya.
+          return isAgent ? <Documentacion /> : <MiDocumentacion />;
         default:
           return isAgent ? <Propiedades /> : <Senias isAgent={isAgent} />;
       }
@@ -101,11 +109,32 @@ export default function Panel({ isAgent = true }: PanelProps) {
 
             {/* Main Content */}
             <div className="flex-1 p-6">
-              {/* 5. Si es cliente, le damos un título contextual arriba de la tabla ya que no tiene sidebar */}
+              {/* 5. Si es cliente, en vez del sidebar van pestañas arriba */}
               {!isAgent && (
                 <div className="mb-6">
-                  <h1 className="text-3xl font-bold text-neutral-900 tracking-wide">Mis Señas Realizadas</h1>
-                  <p className="text-sm text-neutral-600 mt-1">Historial de reservas de propiedades y montos a favor</p>
+                  <div className="flex gap-2 mb-6 border-b border-[#e5d8c2]">
+                    {seccionesCliente.map((section) => (
+                      <button
+                        key={section.id}
+                        onClick={() => setActiveSection(section.id)}
+                        className={`px-5 py-3 -mb-px font-medium transition-colors border-b-2 ${
+                          activeSection === section.id
+                            ? 'border-[#846a41] text-neutral-900'
+                            : 'border-transparent text-neutral-600 hover:text-neutral-900'
+                        }`}
+                      >
+                        <span className="mr-2">{section.icon}</span>
+                        {section.name}
+                      </button>
+                    ))}
+                  </div>
+
+                  {activeSection === 'senias' && (
+                    <>
+                      <h1 className="text-3xl font-bold text-neutral-900 tracking-wide">Mis Señas Realizadas</h1>
+                      <p className="text-sm text-neutral-600 mt-1">Historial de reservas de propiedades y montos a favor</p>
+                    </>
+                  )}
                 </div>
               )}
               {renderContent()}

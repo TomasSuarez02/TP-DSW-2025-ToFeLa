@@ -38,13 +38,36 @@ export interface Pago {
   referencia?: string
 }
 
+/** El papel en sí. Viene populado dentro de cada `DocumentacionCliente`. */
+export interface DocumentacionRef {
+  id: number
+  descripcion?: string
+  fecha_vencimiento?: string
+  /** Nombre del archivo en el servidor; si falta, se cargó sin adjunto. */
+  path?: string | null
+}
+
 /** Documento que el cliente presentó, con el resultado de su revisión. */
 export interface DocumentacionCliente {
-  documentacion: number | { id: number; descripcion?: string; fecha_vencimiento?: string }
+  documentacion: number | DocumentacionRef
   cliente: number | ClienteRef
   estado: EstadoDocumentacionCliente
   fecha_carga?: string
   observaciones?: string | null
+}
+
+/**
+ * Un cliente está en regla cuando presentó al menos un papel y todos están
+ * aprobados y sin vencer. Es la misma condición que valida el backend antes de
+ * dejar concretar un alquiler (ver `exigirDocumentacionAprobada`).
+ */
+export function documentacionEnRegla(items: DocumentacionCliente[]): boolean {
+  if (items.length === 0) return false
+  return items.every((dc) => {
+    if (dc.estado !== 'aprobada') return false
+    const vence = refObjeto<DocumentacionRef>(dc.documentacion)?.fecha_vencimiento
+    return !vence || new Date(vence) >= new Date()
+  })
 }
 
 export interface Senia {
@@ -81,6 +104,18 @@ export const ETIQUETAS_ESTADO_SENIA: Record<EstadoSenia, string> = {
   confirmada: 'Confirmada',
   vencida: 'Vencida',
   cancelada: 'Cancelada',
+}
+
+export const ETIQUETAS_ESTADO_DOC: Record<EstadoDocumentacionCliente, string> = {
+  pendiente: 'Pendiente de revisión',
+  aprobada: 'Aprobada',
+  rechazada: 'Rechazada',
+}
+
+export const ESTILOS_ESTADO_DOC: Record<EstadoDocumentacionCliente, string> = {
+  pendiente: 'bg-amber-100 text-amber-800 border-amber-200',
+  aprobada: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  rechazada: 'bg-red-100 text-red-800 border-red-200',
 }
 
 /** Clases de Tailwind para el badge de cada estado. */

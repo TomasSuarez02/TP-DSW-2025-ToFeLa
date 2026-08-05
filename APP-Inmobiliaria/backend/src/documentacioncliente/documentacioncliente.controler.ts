@@ -4,6 +4,8 @@ import { DocumentacionCliente, type EstadoDocumentacionCliente } from './documen
 import { Documentacion } from '../documentacion/documentacion.entity.js'
 import { Cliente } from '../cliente/cliente.entity.js'
 import { HttpError } from '../shared/errors/http.error.js'
+import { borrarArchivo } from '../shared/utils/archivo.js'
+import { CARPETA_DOCUMENTOS } from '../shared/utils/documentos.js'
 
 const em = orm.em
 
@@ -32,8 +34,20 @@ async function buscarPorPar(documentacionId: string, clienteId: string) {
 }
 
 /** Todas las presentaciones, para que el agente revise. */
-async function findAll(_req: Request, res: Response, next: NextFunction) {
+async function findAll(req: Request, res: Response, next: NextFunction) {
   try {
+    // Un cliente que pegue acá vería los papeles de todos: para lo suyo está
+    // `findByClient`.
+    const { role } = usuarioAutenticado(req)
+    if (role !== 'agente') {
+      throw new HttpError(
+        403,
+        'Solo un agente puede ver la documentación de todos los clientes',
+        [{ path: 'general', message: 'Solo un agente puede ver la documentación de todos los clientes' }],
+        'AUTH_ERROR',
+      )
+    }
+
     const presentadas = await em.find(DocumentacionCliente, {}, { populate: [...POPULATE_DC] })
     res.status(200).json({ message: 'found all documentacion cliente', data: presentadas })
   } catch (error) {
@@ -139,10 +153,47 @@ async function revisar(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+/**
+ * Retira un papel presentado. En esta app cada `Documentacion` se crea junto con
+ * su presentación (un papel = un cliente), así que si al sacar el vínculo el
+ * documento queda sin dueño se lo borra también, con su archivo: si no, quedan
+ * filas y PDFs huérfanos que nadie puede ver ni limpiar.
+ */
 async function remove(req: Request, res: Response, next: NextFunction) {
   try {
+    const { sub, role } = usuarioAutenticado(req)
     const presentada = await buscarPorPar(req.params.documentacion, req.params.cliente)
+
+    // Mismo criterio que en `documentacion.remove`: el cliente retira lo suyo
+    // mientras esté sin aprobar; lo aprobado solo lo saca el agente.
+    if (role !== 'agente') {
+      if (presentada.cliente.id !== sub) {
+        throw new HttpError(
+          403,
+          'No podés eliminar documentación de otro cliente',
+          [{ path: 'general', message: 'No podés eliminar documentación de otro cliente' }],
+          'AUTH_ERROR',
+        )
+      }
+      if (presentada.estado === 'aprobada') {
+        throw new HttpError(
+          409,
+          'La documentación ya fue aprobada: pedile al agente que la dé de baja',
+          [{ path: 'estado', message: 'La documentación ya fue aprobada' }],
+          'BUSINESS_RULE_ERROR',
+        )
+      }
+    }
+
+    const documentacion = presentada.documentacion
     await em.removeAndFlush(presentada)
+
+    const otrosDuenios = await em.count(DocumentacionCliente, { documentacion: documentacion.id })
+    if (otrosDuenios === 0) {
+      borrarArchivo(CARPETA_DOCUMENTOS, documentacion.path)
+      await em.removeAndFlush(documentacion)
+    }
+
     res.status(200).json({ message: 'documentacion cliente deleted', data: presentada })
   } catch (error) {
     next(error)

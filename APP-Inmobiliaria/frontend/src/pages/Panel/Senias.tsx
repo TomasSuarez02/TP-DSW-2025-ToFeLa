@@ -11,14 +11,21 @@ import {
   obtenerMisSenias,
   obtenerSenias,
 } from "../../services/senias";
-import { obtenerDocumentacionClientes } from "../../services/documentacionCliente";
+import {
+  cargarDocumentoDeCliente,
+  obtenerDocumentacionClientes,
+} from "../../services/documentacionCliente";
+import FormularioDocumento from "../../components/documentacion/FormularioDocumento";
+import ListaDocumentos from "../../components/documentacion/ListaDocumentos";
 import { diasRestantes, formatearFecha, formatearMoneda } from "../../config/senia";
 import {
+  documentacionEnRegla,
   ESTILOS_ESTADO_SENIA,
   ETIQUETAS_ESTADO_SENIA,
   refId,
   refObjeto,
   type ClienteRef,
+  type DocumentacionCliente,
   type EstadoSenia,
   type MedioPago,
   type PropiedadRef,
@@ -61,8 +68,8 @@ export default function Senias({ isAgent = true }: SeniasProps) {
   /** Seña que el agente está por convertir en alquiler. */
   const [concretando, setConcretando] = useState<Senia | null>(null);
 
-  /** clienteId → tiene toda la documentación aprobada y vigente. */
-  const [docsEnRegla, setDocsEnRegla] = useState<Map<number, boolean>>(new Map());
+  /** Toda la documentación presentada, agrupada por cliente. */
+  const [docsPorCliente, setDocsPorCliente] = useState<Map<number, DocumentacionCliente[]>>(new Map());
 
   const fetchSenias = useCallback(async () => {
     try {
@@ -86,24 +93,22 @@ export default function Senias({ isAgent = true }: SeniasProps) {
   }, []);
 
   /**
-   * Clientes con toda su documentación aprobada y sin vencer. Se precarga para
-   * avisar en la tarjeta: si no, el agente descubre que faltan papeles recién
-   * cuando `concretar` le devuelve un 409.
+   * Documentación de todos los clientes. Se precarga para avisar en la tarjeta
+   * si faltan papeles: si no, el agente lo descubre recién cuando `concretar`
+   * le devuelve un 409. El modal de concretar la reusa para mostrarla y dejar
+   * cargar lo que falte sin salir del flujo.
    */
   const fetchDocumentacion = useCallback(async () => {
     try {
       const presentaciones = await obtenerDocumentacionClientes();
-      const porCliente = new Map<number, boolean>();
+      const porCliente = new Map<number, DocumentacionCliente[]>();
       for (const dc of presentaciones) {
         const id = refId(dc.cliente);
         if (!id) continue;
-        const doc = refObjeto<{ id?: number; fecha_vencimiento?: string }>(dc.documentacion);
-        const vigente =
-          dc.estado === "aprobada" &&
-          (!doc?.fecha_vencimiento || new Date(doc.fecha_vencimiento) >= new Date());
-        porCliente.set(id, (porCliente.get(id) ?? true) && vigente);
+        if (!porCliente.has(id)) porCliente.set(id, []);
+        porCliente.get(id)!.push(dc);
       }
-      setDocsEnRegla(porCliente);
+      setDocsPorCliente(porCliente);
     } catch (err) {
       console.error("Error cargando documentación:", err);
     }
@@ -402,7 +407,7 @@ export default function Senias({ isAgent = true }: SeniasProps) {
               onCompletar={() => handleCompletarSenia(s.clave)}
               onCancelar={() => handleCancelar(s)}
               onConcretar={() => setConcretando(s)}
-              docsEnRegla={docsEnRegla.get(refId(s.cliente) ?? -1)}
+              documentos={docsPorCliente.get(refId(s.cliente) ?? -1)}
               onMarcarVencida={() => handleMarcarVencida(s)}
             />
           ))}
@@ -412,6 +417,8 @@ export default function Senias({ isAgent = true }: SeniasProps) {
       {concretando && (
         <ModalConcretar
           senia={concretando}
+          documentos={docsPorCliente.get(refId(concretando.cliente) ?? -1) ?? []}
+          onDocumentosCambiados={fetchDocumentacion}
           onCancelar={() => setConcretando(null)}
           onConfirmar={(datos) => handleConcretar(concretando, datos)}
         />
@@ -423,13 +430,23 @@ export default function Senias({ isAgent = true }: SeniasProps) {
 /**
  * Cierre del alquiler. La seña es un adelanto del primer mes, así que el saldo
  * a cobrar es el precio de la propiedad menos lo ya señado.
+ *
+ * La documentación se resuelve acá mismo: se muestra lo que el cliente ya tenía
+ * cargado (desde el panel de Documentación o subido por él) y se puede aprobar,
+ * rechazar o sumar lo que falte sin salir del flujo. `Confirmar` queda
+ * bloqueado hasta que esté todo aprobado y vigente, que es la misma condición
+ * que valida el backend.
  */
 function ModalConcretar({
   senia,
+  documentos,
+  onDocumentosCambiados,
   onCancelar,
   onConfirmar,
 }: {
   senia: Senia;
+  documentos: DocumentacionCliente[];
+  onDocumentosCambiados: () => void;
   onCancelar: () => void;
   onConfirmar: (datos: { fecha_inicio: string; fecha_fin: string; medioPago: MedioPago }) => void;
 }) {
@@ -439,17 +456,80 @@ function ModalConcretar({
   const [fechaInicio, setFechaInicio] = useState(hoy);
   const [fechaFin, setFechaFin] = useState(enUnAnio);
   const [medioPago, setMedioPago] = useState<MedioPago>('efectivo');
+  const [subiendoDoc, setSubiendoDoc] = useState(false);
 
   const precio = refObjeto<PropiedadRef>(senia.propiedad)?.precio;
   const saldo = precio !== undefined ? Math.max(0, precio - senia.importe) : undefined;
 
+  const clienteId = refId(senia.cliente);
+  const enRegla = documentacionEnRegla(documentos);
+
+  const handleSubirDoc = async (datos: {
+    descripcion: string;
+    fecha_vencimiento: string;
+    archivo: File | null;
+    estado?: DocumentacionCliente['estado'];
+  }) => {
+    if (!clienteId) throw new Error('No se pudo identificar al cliente de la seña');
+
+    await cargarDocumentoDeCliente({
+      clienteId,
+      descripcion: datos.descripcion,
+      fecha_vencimiento: datos.fecha_vencimiento,
+      archivo: datos.archivo,
+      estado: datos.estado,
+    });
+
+    setSubiendoDoc(false);
+    onDocumentosCambiados();
+  };
+
+  if (subiendoDoc) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <FormularioDocumento
+          titulo="Agregar documento"
+          permiteEstado
+          onGuardar={handleSubirDoc}
+          onCancelar={() => setSubiendoDoc(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md">
+      <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold text-neutral-800 mb-1">Concretar alquiler</h3>
         <p className="text-sm text-neutral-500 mb-4">
-          Solo se puede concretar si la documentación del cliente está aprobada.
+          {nombreCliente(senia.cliente)} · {nombrePropiedad(senia.propiedad)}
         </p>
+
+        {/* Documentación: lo que ya estaba cargado, más lo que falte sumar. */}
+        <div className="border border-[#e5d8c2] rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+            <h4 className="font-medium text-neutral-800">Documentación del cliente</h4>
+            <button
+              onClick={() => setSubiendoDoc(true)}
+              className="text-xs px-3 py-1 rounded-lg bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-800"
+            >
+              + Agregar documento
+            </button>
+          </div>
+
+          <ListaDocumentos
+            items={documentos}
+            isAgent
+            onCambio={onDocumentosCambiados}
+            vacio="El cliente no presentó documentación. Cargá los papeles para poder cerrar."
+          />
+
+          {!enRegla && documentos.length > 0 && (
+            <p className="text-sm text-amber-700 mt-3">
+              ⚠️ Falta aprobar (o está vencido) alguno de los papeles.
+            </p>
+          )}
+        </div>
 
         <div className="bg-[#f7f2ea] rounded-lg p-3 mb-4 text-sm space-y-1">
           <div className="flex justify-between">
@@ -504,7 +584,8 @@ function ModalConcretar({
           </button>
           <button
             onClick={() => onConfirmar({ fecha_inicio: fechaInicio, fecha_fin: fechaFin, medioPago })}
-            disabled={fechaFin <= fechaInicio}
+            disabled={fechaFin <= fechaInicio || !enRegla}
+            title={!enRegla ? 'Falta aprobar la documentación del cliente' : undefined}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-neutral-300 text-white py-2 rounded-lg text-sm font-medium"
           >
             Confirmar
@@ -548,7 +629,7 @@ function TarjetaSenia({
   onCompletar,
   onCancelar,
   onConcretar,
-  docsEnRegla,
+  documentos,
   onMarcarVencida,
 }: {
   senia: Senia;
@@ -558,12 +639,14 @@ function TarjetaSenia({
   onCompletar: () => void;
   onCancelar: () => void;
   onConcretar: () => void;
-  /** undefined = el cliente no presentó documentación todavía. */
-  docsEnRegla?: boolean;
+  /** Papeles presentados por el cliente de la seña; undefined = ninguno. */
+  documentos?: DocumentacionCliente[];
   onMarcarVencida: () => void;
 }) {
   const dias = diasRestantes(senia.fechaVencimiento);
   const vencida = dias !== null && dias < 0;
+  const sinDocumentacion = !documentos || documentos.length === 0;
+  const docsEnRegla = !sinDocumentacion && documentacionEnRegla(documentos);
 
   return (
     <div className="bg-white rounded-xl shadow-md border p-6 flex flex-col">
@@ -594,9 +677,9 @@ function TarjetaSenia({
         )}
 
         {/* Aviso temprano: sin papeles aprobados, concretar va a fallar. */}
-        {isAgent && senia.estado === 'confirmada' && !senia.concretada && docsEnRegla !== true && (
+        {isAgent && senia.estado === 'confirmada' && !senia.concretada && !docsEnRegla && (
           <p className="text-sm text-amber-700">
-            {docsEnRegla === undefined
+            {sinDocumentacion
               ? '⚠️ El cliente no presentó documentación'
               : '⚠️ Falta aprobar documentación del cliente'}
           </p>

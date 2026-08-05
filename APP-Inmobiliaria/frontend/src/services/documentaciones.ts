@@ -43,12 +43,23 @@ export async function eliminarDocumentacion(id: number): Promise<void> {
 }
 
 /**
- * Descarga el archivo. No se puede usar un `<a href>` directo porque la ruta
- * exige el header Authorization, así que se baja por XHR y se abre como blob.
+ * Baja el archivo como blob. No se puede usar un `<a href>` directo porque la
+ * ruta exige el header Authorization.
+ *
+ * Quien llame es responsable de hacer `URL.revokeObjectURL` con la url que
+ * recibe: si no, el blob queda en memoria hasta recargar la página.
  */
-export async function descargarDocumentacion(id: number, nombre?: string | null): Promise<void> {
+export async function obtenerArchivoDocumentacion(
+  id: number,
+): Promise<{ url: string; tipo: string }> {
   const res = await apiClient.get(`/documentaciones/${id}/archivo`, { responseType: 'blob' })
-  const url = URL.createObjectURL(res.data as Blob)
+  const blob = res.data as Blob
+  return { url: URL.createObjectURL(blob), tipo: blob.type }
+}
+
+/** Descarga el archivo a disco. */
+export async function descargarDocumentacion(id: number, nombre?: string | null): Promise<void> {
+  const { url } = await obtenerArchivoDocumentacion(id)
   const link = document.createElement('a')
   link.href = url
   link.download = nombre ?? `documento-${id}`

@@ -216,7 +216,14 @@ const documentacionBaseSchema = z.object({
   filename: z.string().trim().optional(),
 })
 
-export const documentacionCreateSchema = documentacionBaseSchema
+/**
+ * Al dar de alta, el adjunto es obligatorio: una documentación sin archivo no
+ * se puede revisar, y el agente terminaría aprobando un papel que nunca vio.
+ */
+export const documentacionCreateSchema = documentacionBaseSchema.refine(
+  (value) => Boolean(value.base64 && value.filename),
+  { message: 'Adjuntá el archivo del documento', path: ['base64'] },
+)
 
 export const documentacionUpdateSchema = documentacionBaseSchema
   .partial()
