@@ -126,6 +126,8 @@ export const seniaConcretarSchema = z.object({
 export const documentacionClienteCreateSchema = z.object({
   documentacion: z.coerce.number().int().positive('La documentación es inválida'),
   cliente: z.coerce.number().int().positive('El cliente es inválido'),
+  /** El agente que carga el papel puede darlo por aprobado en el mismo acto. */
+  estado: z.enum(ESTADOS_DOCUMENTACION_CLIENTE).optional(),
 })
 
 export const documentacionClienteEstadoSchema = z.object({
@@ -209,6 +211,9 @@ const documentacionBaseSchema = z.object({
   descripcion: z.string().trim().min(2, 'La descripción es obligatoria'),
   fecha_vencimiento: z.coerce.date({ message: 'La fecha de vencimiento es inválida' }),
   path: z.string().trim().optional(),
+  /** Archivo adjunto: llega en base64 dentro del JSON y se guarda en disco. */
+  base64: z.string().optional(),
+  filename: z.string().trim().optional(),
 })
 
 export const documentacionCreateSchema = documentacionBaseSchema

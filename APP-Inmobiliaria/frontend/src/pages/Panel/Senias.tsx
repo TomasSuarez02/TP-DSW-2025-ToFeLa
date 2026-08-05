@@ -11,6 +11,7 @@ import {
   obtenerMisSenias,
   obtenerSenias,
 } from "../../services/senias";
+import { obtenerDocumentacionClientes } from "../../services/documentacionCliente";
 import { diasRestantes, formatearFecha, formatearMoneda } from "../../config/senia";
 import {
   ESTILOS_ESTADO_SENIA,
@@ -60,6 +61,9 @@ export default function Senias({ isAgent = true }: SeniasProps) {
   /** Seña que el agente está por convertir en alquiler. */
   const [concretando, setConcretando] = useState<Senia | null>(null);
 
+  /** clienteId → tiene toda la documentación aprobada y vigente. */
+  const [docsEnRegla, setDocsEnRegla] = useState<Map<number, boolean>>(new Map());
+
   const fetchSenias = useCallback(async () => {
     try {
       setLoading(true);
@@ -81,13 +85,38 @@ export default function Senias({ isAgent = true }: SeniasProps) {
     }
   }, []);
 
+  /**
+   * Clientes con toda su documentación aprobada y sin vencer. Se precarga para
+   * avisar en la tarjeta: si no, el agente descubre que faltan papeles recién
+   * cuando `concretar` le devuelve un 409.
+   */
+  const fetchDocumentacion = useCallback(async () => {
+    try {
+      const presentaciones = await obtenerDocumentacionClientes();
+      const porCliente = new Map<number, boolean>();
+      for (const dc of presentaciones) {
+        const id = refId(dc.cliente);
+        if (!id) continue;
+        const doc = refObjeto<{ id?: number; fecha_vencimiento?: string }>(dc.documentacion);
+        const vigente =
+          dc.estado === "aprobada" &&
+          (!doc?.fecha_vencimiento || new Date(doc.fecha_vencimiento) >= new Date());
+        porCliente.set(id, (porCliente.get(id) ?? true) && vigente);
+      }
+      setDocsEnRegla(porCliente);
+    } catch (err) {
+      console.error("Error cargando documentación:", err);
+    }
+  }, []);
+
   useEffect(() => {
     fetchSenias();
     // Solo cargamos propiedades en modo agente para alimentar el formulario
     if (isAgent) {
       fetchPropiedades();
+      fetchDocumentacion();
     }
-  }, [isAgent, fetchSenias, fetchPropiedades]);
+  }, [isAgent, fetchSenias, fetchPropiedades, fetchDocumentacion]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -373,6 +402,7 @@ export default function Senias({ isAgent = true }: SeniasProps) {
               onCompletar={() => handleCompletarSenia(s.clave)}
               onCancelar={() => handleCancelar(s)}
               onConcretar={() => setConcretando(s)}
+              docsEnRegla={docsEnRegla.get(refId(s.cliente) ?? -1)}
               onMarcarVencida={() => handleMarcarVencida(s)}
             />
           ))}
@@ -518,6 +548,7 @@ function TarjetaSenia({
   onCompletar,
   onCancelar,
   onConcretar,
+  docsEnRegla,
   onMarcarVencida,
 }: {
   senia: Senia;
@@ -527,6 +558,8 @@ function TarjetaSenia({
   onCompletar: () => void;
   onCancelar: () => void;
   onConcretar: () => void;
+  /** undefined = el cliente no presentó documentación todavía. */
+  docsEnRegla?: boolean;
   onMarcarVencida: () => void;
 }) {
   const dias = diasRestantes(senia.fechaVencimiento);
@@ -546,11 +579,26 @@ function TarjetaSenia({
         )}
         <p className="text-sm text-neutral-600">Importe: {formatearMoneda(senia.importe)}</p>
 
-        {senia.estado === 'confirmada' && senia.fechaVencimiento && (
-          <p className={`text-sm ${vencida ? 'text-red-600' : 'text-neutral-600'}`}>
-            {vencida
-              ? `Reserva vencida el ${formatearFecha(senia.fechaVencimiento)}`
-              : `Reservada hasta el ${formatearFecha(senia.fechaVencimiento)} · ${dias} ${dias === 1 ? 'día restante' : 'días restantes'}`}
+        {senia.concretada ? (
+          <p className="text-sm text-emerald-700 font-medium">
+            ✓ Alquiler concretado — la seña se imputó al primer mes
+          </p>
+        ) : (
+          senia.estado === 'confirmada' && senia.fechaVencimiento && (
+            <p className={`text-sm ${vencida ? 'text-red-600' : 'text-neutral-600'}`}>
+              {vencida
+                ? `Reserva vencida el ${formatearFecha(senia.fechaVencimiento)}`
+                : `Reservada hasta el ${formatearFecha(senia.fechaVencimiento)} · ${dias} ${dias === 1 ? 'día restante' : 'días restantes'}`}
+            </p>
+          )
+        )}
+
+        {/* Aviso temprano: sin papeles aprobados, concretar va a fallar. */}
+        {isAgent && senia.estado === 'confirmada' && !senia.concretada && docsEnRegla !== true && (
+          <p className="text-sm text-amber-700">
+            {docsEnRegla === undefined
+              ? '⚠️ El cliente no presentó documentación'
+              : '⚠️ Falta aprobar documentación del cliente'}
           </p>
         )}
 
@@ -573,7 +621,7 @@ function TarjetaSenia({
           <>
             <button onClick={onEditar} className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg text-sm font-medium">Editar</button>
             <button onClick={onEliminar} className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg text-sm font-medium">Eliminar</button>
-            {senia.estado === 'confirmada' && (
+            {senia.estado === 'confirmada' && !senia.concretada && (
               <>
                 <button onClick={onConcretar} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-sm font-medium">
                   Concretar alquiler

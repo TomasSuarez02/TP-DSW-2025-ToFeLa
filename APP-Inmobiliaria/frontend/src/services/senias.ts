@@ -31,6 +31,7 @@ function normalizarSenia(cruda: SeniaCruda): Senia {
     importe: Number(cruda.importe ?? 0),
     estado: (cruda.estado as EstadoSenia) ?? 'pendiente_pago',
     fechaVencimiento: cruda.fechaVencimiento ?? null,
+    concretada: cruda.concretada ?? false,
     fecha_hora_senia: cruda.fecha_hora_senia,
     propiedad: cruda.propiedad,
     cliente: cruda.cliente,

@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
+import apiClient from "../../utils/apiClient";
+import { formatearFecha as formatearFechaCorta } from "../../config/senia";
+
+/** Quién tiene tomada la propiedad. Solo viene si el pedido lo hace un agente. */
+export interface Ocupacion {
+  origen: 'senia' | 'alquiler';
+  cliente: { id?: number; nombre: string };
+  desde: string;
+  hasta: string | null;
+}
 
 export interface Propiedad {
   id: number;
@@ -12,6 +22,7 @@ export interface Propiedad {
   descripcion?: string;
   tipoPropiedad?: { id: number; descripcion: string };
   imagenes?: { id: number; path: string }[];
+  ocupacion?: Ocupacion | null;
 }
 
 interface TipoPropiedad {
@@ -66,7 +77,9 @@ export default function Propiedades() {
   // Cargar datos
   const fetchPropiedades = useCallback(async () => {
     try {
-      const res = await axios.get("http://localhost:3000/api/propiedades");
+      // Por apiClient y no axios pelado: lleva el token, y sin él el backend
+      // no devuelve la ocupación (quién tiene tomada cada propiedad).
+      const res = await apiClient.get("/propiedades");
       setPropiedades(res.data.data || []);
       console.log("Propiedades cargadas:", res.data.data);
     } catch (error) {
@@ -299,7 +312,7 @@ export default function Propiedades() {
     switch (estado.toLowerCase()) {
       case "disponible":
         return "bg-green-100 text-green-800";
-      case "reservada":
+      case "señada":
         return "bg-yellow-100 text-yellow-800";
       case "alquilada":
         return "bg-blue-100 text-blue-800";
@@ -335,7 +348,7 @@ export default function Propiedades() {
           >
             <option value="todos">Todos</option>
             <option value="disponible">Disponible</option>
-            <option value="reservada">Reservada</option>
+            <option value="señada">Señada</option>
             <option value="alquilada">Alquilada</option>
           </select>
 
@@ -403,7 +416,7 @@ export default function Propiedades() {
                 className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.estado ? "border-red-400" : "border-[#e5d8c2]"}`}
               >
                 <option value="disponible">Disponible</option>
-                <option value="reservada">Reservada</option>
+                <option value="señada">Señada</option>
                 <option value="alquilada">Alquilada</option>
               </select>
               {fieldErrors.estado && <p className="mt-1 text-sm text-red-600">{fieldErrors.estado}</p>}
@@ -579,6 +592,29 @@ export default function Propiedades() {
                 🕐 {p.hora_desde} - {p.hora_hasta}
               </p>
 
+              {/* Por qué la propiedad no está disponible. Si el estado se puso a
+                  mano no hay seña ni alquiler detrás, y conviene decirlo. */}
+              {p.estado?.toLowerCase() !== "disponible" && (
+                <div className="mt-3 pt-3 border-t border-[#f0e6d8] text-sm">
+                  {p.ocupacion ? (
+                    <>
+                      <p className="text-neutral-700">
+                        {p.ocupacion.origen === "alquiler" ? "🔑 Alquilada por" : "💰 Señada por"}{" "}
+                        <span className="font-medium">{p.ocupacion.cliente.nombre}</span>
+                      </p>
+                      <p className="text-neutral-500 text-xs">
+                        Desde el {formatearFechaCorta(p.ocupacion.desde)}
+                        {p.ocupacion.hasta && ` · hasta el ${formatearFechaCorta(p.ocupacion.hasta)}`}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-amber-700 text-xs">
+                      ⚠️ Estado puesto manualmente: no hay seña ni alquiler que lo respalde.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-2 mt-4">
                 <button
                   onClick={() => handleEdit(p)}
@@ -594,10 +630,10 @@ export default function Propiedades() {
                 </button>
                 <button
                   onClick={() => {
-                    // No abrir modal si la propiedad ya está reservada o alquilada
+                    // Solo se puede señar una propiedad que esté disponible
                     const estado = p.estado?.toLowerCase() ?? '';
-                    if (estado === 'reservada' || estado === 'alquilada') {
-                      alert('No se puede señar: la propiedad ya está reservada o alquilada.');
+                    if (estado === 'señada' || estado === 'alquilada') {
+                      alert('No se puede señar: la propiedad ya está señada o alquilada.');
                       return;
                     }
 

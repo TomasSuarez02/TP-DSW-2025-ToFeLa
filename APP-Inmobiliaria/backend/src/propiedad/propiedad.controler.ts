@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
+import { wrap } from '@mikro-orm/core'
 import { Propiedad } from './propiedad.entity.js'
 import { orm } from '../shared/db/orm.js'
 import { estadoPropiedad } from '../shared/db/estados.js'
@@ -15,6 +16,73 @@ const POPULATE_PROPIEDAD = [
   'inmobiliaria',
   'imagenes',
 ] as const satisfies readonly string[]
+
+/**
+ * Para el agente se agrega quién tiene tomada la propiedad. No va en el
+ * populate por defecto porque este endpoint es público (alimenta el catálogo):
+ * los nombres de los clientes solo se exponen a un agente autenticado.
+ */
+const POPULATE_OCUPACION = [
+  ...POPULATE_PROPIEDAD,
+  'senias',
+  'senias.cliente',
+  'alquileres',
+  'alquileres.cliente',
+  'alquileres.estadoAlquiler',
+] as const satisfies readonly string[]
+
+type AuthRequest = Request & { user?: { sub?: number; role?: string } }
+
+function esAgente(req: Request): boolean {
+  return (req as AuthRequest).user?.role === 'agente'
+}
+
+/**
+ * Explica por qué una propiedad no está disponible: quién la tiene y desde
+ * cuándo. Devuelve null si el estado no responde a ninguna seña ni alquiler
+ * registrado — que es justamente lo que hay que poder distinguir.
+ */
+function calcularOcupacion(propiedad: Propiedad) {
+  const nombre = (cliente: { nombre?: string; apellido?: string; id?: number }) =>
+    `${cliente.nombre ?? ''} ${cliente.apellido ?? ''}`.trim() || `#${cliente.id}`
+
+  if (propiedad.estado === 'alquilada') {
+    const alquiler = propiedad.alquileres
+      .getItems()
+      .filter((a) => a.estado === 'confirmado')
+      .sort((a, b) => b.fecha_hora_firma.getTime() - a.fecha_hora_firma.getTime())[0]
+
+    if (!alquiler) return null
+    return {
+      origen: 'alquiler' as const,
+      cliente: { id: alquiler.cliente.id, nombre: nombre(alquiler.cliente) },
+      desde: alquiler.fecha_inicio,
+      hasta: alquiler.fecha_fin,
+    }
+  }
+
+  if (propiedad.estado === 'señada') {
+    const senia = propiedad.senias
+      .getItems()
+      .filter((s) => s.estado === 'confirmada')
+      .sort((a, b) => b.fecha_hora_senia.getTime() - a.fecha_hora_senia.getTime())[0]
+
+    if (!senia) return null
+    return {
+      origen: 'senia' as const,
+      cliente: { id: senia.cliente.id, nombre: nombre(senia.cliente) },
+      desde: senia.fecha_hora_senia,
+      hasta: senia.fechaVencimiento ?? null,
+    }
+  }
+
+  return null
+}
+
+/** Serializa la propiedad agregando `ocupacion` solo si el pedido es de un agente. */
+function serializar(propiedad: Propiedad) {
+  return { ...wrap(propiedad).toJSON(), ocupacion: calcularOcupacion(propiedad) }
+}
 
 /**
  * La API sigue recibiendo y devolviendo `estado` como texto ('disponible',
@@ -37,8 +105,16 @@ async function findAll(req: Request, res: Response, next: NextFunction) {
       // El catálogo es la vista donde importa que una seña vencida ya no
       // retenga la propiedad, así que se barre antes de listar.
       await expirarSeniasVencidas(em);
-      const propiedades = await em.find(Propiedad, {}, { populate: [...POPULATE_PROPIEDAD] });
-      res.status(200).json({ message: 'found all propiedades', data: propiedades });
+      const agente = esAgente(req);
+      const propiedades = await em.find(
+        Propiedad,
+        {},
+        { populate: [...(agente ? POPULATE_OCUPACION : POPULATE_PROPIEDAD)] },
+      );
+      res.status(200).json({
+        message: 'found all propiedades',
+        data: agente ? propiedades.map(serializar) : propiedades,
+      });
     } catch (error) {
       next(error);
     }
@@ -48,12 +124,16 @@ async function findOne(req: Request, res: Response, next: NextFunction) {
   try {
       const id = req.params.id;
       await expirarSeniasVencidas(em);
+      const agente = esAgente(req);
       const propiedad = await em.findOneOrFail(
         Propiedad,
         { id: Number(id) },
-        { populate: [...POPULATE_PROPIEDAD] }
+        { populate: [...(agente ? POPULATE_OCUPACION : POPULATE_PROPIEDAD)] }
       );
-      res.status(200).json({ message: 'found propiedad', data: propiedad });
+      res.status(200).json({
+        message: 'found propiedad',
+        data: agente ? serializar(propiedad) : propiedad,
+      });
     } catch (error) {
       next(error);
     }

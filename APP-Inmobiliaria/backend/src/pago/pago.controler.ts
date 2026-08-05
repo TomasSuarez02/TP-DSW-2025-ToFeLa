@@ -32,7 +32,7 @@ function serializarPago(pago: Pago) {
 /**
  * Procesa el pago de una seña contra la pasarela simulada.
  * Si se aprueba: la seña pasa a `confirmada`, se fija el vencimiento de la
- * reserva y la propiedad queda `reservada`.
+ * reserva y la propiedad queda `señada`.
  */
 async function procesar(req: Request, res: Response, next: NextFunction) {
   try {

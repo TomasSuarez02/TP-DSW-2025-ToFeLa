@@ -18,14 +18,20 @@ export async function obtenerMiDocumentacion(): Promise<DocumentacionCliente[]> 
   return (res.data?.data ?? []) as DocumentacionCliente[]
 }
 
-/** Registra que un cliente presentó un documento; queda pendiente de revisión. */
+/**
+ * Registra que un cliente presentó un documento.
+ * Un agente puede darlo por aprobado en el mismo acto (lo cargó porque ya vio
+ * el papel); si no se aclara, queda pendiente de revisión.
+ */
 export async function presentarDocumentacion(
   documentacionId: number,
   clienteId: number,
+  estado?: EstadoDocumentacionCliente,
 ): Promise<DocumentacionCliente> {
   const res = await apiClient.post('/documentacionclientes', {
     documentacion: documentacionId,
     cliente: clienteId,
+    ...(estado ? { estado } : {}),
   })
   return (res.data?.data ?? res.data) as DocumentacionCliente
 }

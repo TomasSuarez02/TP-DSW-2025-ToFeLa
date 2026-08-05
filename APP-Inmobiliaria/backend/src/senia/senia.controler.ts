@@ -29,6 +29,8 @@ const POPULATE_SENIA = [
   'propiedad.estadoPropiedad',
   'cliente',
   'pago',
+  // Para que el getter `concretada` tenga con qué responder.
+  'alquiler',
 ] as const satisfies readonly string[];
 
 type AuthRequest = Request & { user?: { sub?: number; role?: string } };
@@ -349,8 +351,7 @@ async function concretar(req: Request, res: Response, next: NextFunction) {
         );
       }
 
-      const yaConcretada = await em.findOne(Alquiler, { senia });
-      if (yaConcretada) {
+      if (senia.alquiler) {
         throw new HttpError(
           409,
           'Esta seña ya se concretó en un alquiler',

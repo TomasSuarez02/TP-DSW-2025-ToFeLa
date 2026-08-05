@@ -64,7 +64,7 @@ async function findByClient(req: Request, res: Response, next: NextFunction) {
 async function add(req: Request, res: Response, next: NextFunction) {
   try {
     const { sub: usuarioId, role } = usuarioAutenticado(req)
-    const { documentacion, cliente } = req.body.sanitizedInput
+    const { documentacion, cliente, estado } = req.body.sanitizedInput
 
     // Un cliente solo puede presentar documentación a su propio nombre.
     if (role === 'cliente' && Number(cliente) !== usuarioId) {
@@ -92,10 +92,15 @@ async function add(req: Request, res: Response, next: NextFunction) {
       )
     }
 
+    // Solo un agente puede darla por aprobada de entrada: si la carga él,
+    // es porque ya vio el papel.
+    const estadoInicial =
+      role === 'agente' && estado ? (estado as EstadoDocumentacionCliente) : 'pendiente'
+
     const presentada = em.create(DocumentacionCliente, {
       documentacion: documentacionEntity,
       cliente: clienteEntity,
-      estado: 'pendiente' as EstadoDocumentacionCliente,
+      estado: estadoInicial,
       fecha_carga: new Date(),
     })
 

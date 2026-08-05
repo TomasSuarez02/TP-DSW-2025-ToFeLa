@@ -2,6 +2,7 @@ import { Entity, ManyToOne, OneToOne, Opt, PrimaryKey, Property, Rel } from "@mi
 import { Propiedad } from "../propiedad/propiedad.entity.js";
 import { Cliente } from "../cliente/cliente.entity.js";
 import { Pago } from "../pago/pago.entity.js";
+import { Alquiler } from "../alquiler/alquiler.entity.js";
 import { serializarClave } from "../shared/db/clave-compuesta.js";
 import type { EstadoSenia } from "./senia.rules.js";
 
@@ -40,6 +41,22 @@ export class Senia {
     /** Último intento de pago. Se reescribe si el cliente reintenta tras un rechazo. */
     @OneToOne(() => Pago, { nullable: true, owner: true, orphanRemoval: true })
     pago?: Rel<Pago> | null;
+
+    /**
+     * Alquiler que salió de esta seña, si ya se concretó. Lado inverso: la FK
+     * vive en Alquiler. Hay que popularlo para que llegue serializado.
+     */
+    @OneToOne(() => Alquiler, (alquiler) => alquiler.senia, { nullable: true })
+    alquiler?: Rel<Alquiler> | null;
+
+    /**
+     * La seña queda `confirmada` aun después de concretarse, así que el estado
+     * no alcanza para saber si todavía hay algo que hacer con ella.
+     */
+    @Property({ persist: false })
+    get concretada(): Opt<boolean> {
+      return !!this.alquiler;
+    }
 
     /** Clave compuesta codificada para las rutas REST. Derivada: no se persiste. */
     @Property({ persist: false })

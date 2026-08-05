@@ -33,9 +33,10 @@ export class Alquiler {
 
   /**
    * Seña que originó este alquiler. Nulable porque un agente puede cargar un
-   * alquiler a mano, sin que haya habido seña previa.
+   * alquiler a mano, sin que haya habido seña previa. Es el lado dueño de la
+   * 1:1 para que desde la seña se pueda saber si ya se concretó.
    */
-  @ManyToOne(() => Senia, { nullable: true, unique: true })
+  @OneToOne(() => Senia, (senia) => senia.alquiler, { nullable: true, owner: true })
   senia?: Rel<Senia> | null
 
   /**

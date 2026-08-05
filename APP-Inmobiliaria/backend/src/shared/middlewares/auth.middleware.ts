@@ -12,6 +12,32 @@ export interface AuthPayload {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
+/**
+ * Deja `req.user` si vino un token válido, pero no exige que venga.
+ * Sirve para rutas públicas que muestran datos extra a un agente logueado:
+ * el catálogo de propiedades es público, pero solo el agente puede ver quién
+ * tiene tomada cada una.
+ */
+export function attachUserIfPresent(req: Request, _res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[0] === 'Bearer' ? authHeader.split(' ')[1] : undefined;
+  if (!token) return next();
+
+  try {
+    const verified = jwt.verify(token, JWT_SECRET);
+    if (verified && typeof verified === 'object' && !Array.isArray(verified)) {
+      const payload = verified as JwtPayload & AuthPayload;
+      if (typeof payload.sub === 'number' && typeof payload.role === 'string') {
+        (req as Request & { user?: AuthPayload }).user = payload;
+      }
+    }
+  } catch {
+    // Token inválido en una ruta pública: se sigue como anónimo.
+  }
+
+  next();
+}
+
 export function authenticateToken(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[0] === 'Bearer' ? authHeader.split(' ')[1] : undefined;

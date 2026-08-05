@@ -56,6 +56,11 @@ export interface Senia {
   importe: number
   estado: EstadoSenia
   fechaVencimiento?: string | null
+  /**
+   * La seña sigue `confirmada` después de concretarse, así que este flag es lo
+   * único que distingue "lista para concretar" de "ya concretada".
+   */
+  concretada?: boolean
   /** Fecha de creación: es también el tercer componente de la clave. */
   fecha_hora_senia?: string
   propiedad?: number | PropiedadRef

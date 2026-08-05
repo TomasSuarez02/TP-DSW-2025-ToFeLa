@@ -47,7 +47,7 @@ export async function senarPropiedad(em: EntityManager, propiedad: Propiedad): P
 
 /** Devuelve la propiedad a `disponible` si la estaba reteniendo una seña. */
 export async function liberarPropiedad(em: EntityManager, propiedad: Propiedad): Promise<void> {
-  if (propiedad.estado === 'señada' || propiedad.estado === 'reservada') {
+  if (propiedad.estado === 'señada') {
     propiedad.estadoPropiedad = await estadoPropiedad(em, 'disponible')
   }
 }

@@ -3,7 +3,7 @@ import { BaseEntity } from '../shared/db/baseEntity.entity.js'
 import { Propiedad } from '../propiedad/propiedad.entity.js'
 
 /** Valores de referencia; se cargan al iniciar (ver shared/db/seed.ts). */
-export const ESTADOS_PROPIEDAD = ['disponible', 'reservada', 'señada', 'alquilada'] as const
+export const ESTADOS_PROPIEDAD = ['disponible', 'señada', 'alquilada'] as const
 export type DescripcionEstadoPropiedad = (typeof ESTADOS_PROPIEDAD)[number]
 
 @Entity()

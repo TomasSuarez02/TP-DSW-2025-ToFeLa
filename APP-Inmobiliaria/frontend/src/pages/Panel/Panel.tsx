@@ -4,6 +4,7 @@ import Propiedades from "./Propiedades";
 import Clientes from "./Clientes";
 import Visitas from "./Visitas";
 import Senias from "./Senias.tsx";
+import Documentacion from "./Documentacion";
 
 // 1. Declaramos la interfaz para recibir la prop desde el Router
 interface PanelProps {
@@ -19,6 +20,7 @@ export default function Panel({ isAgent = true }: PanelProps) {
     { id: 'clientes', name: 'Clientes', icon: '👥' },
     { id: 'visitas', name: 'Visitas', icon: '📅' },
     { id: 'senias', name: 'Señas', icon: '💰' },
+    { id: 'documentacion', name: 'Documentación', icon: '📄' },
   ];
 
   const renderContent = () => {
@@ -33,6 +35,8 @@ export default function Panel({ isAgent = true }: PanelProps) {
         case 'senias':
           // 3. Le pasamos la condición al subcomponente para que filtre sus botones
           return <Senias isAgent={isAgent} />;
+        case 'documentacion':
+          return <Documentacion />;
         default:
           return isAgent ? <Propiedades /> : <Senias isAgent={isAgent} />;
       }

@@ -113,6 +113,9 @@ export const sanitizeDocumentacionInput = buildSanitizer([
   'descripcion',
   'fecha_vencimiento',
   'path',
+  // Archivo subido como base64 en el JSON, igual que las imágenes de propiedades.
+  'base64',
+  'filename',
 ])
 
 export const sanitizeTipoPropiedadInput = buildSanitizer([
