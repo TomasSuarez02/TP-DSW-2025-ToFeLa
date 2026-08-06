@@ -293,9 +293,9 @@ export default function Senias({ isAgent = true }: SeniasProps) {
   return (
     <div className="p-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        {isAgent && (
-          <h2 className="text-3xl font-semibold text-neutral-900">Gestión de Señas</h2>
-        )}
+        <h2 className="text-3xl font-semibold text-neutral-900">
+          {isAgent ? "Gestión de Señas" : "Mis señas"}
+        </h2>
 
         {senias.length > 0 && (
           <select

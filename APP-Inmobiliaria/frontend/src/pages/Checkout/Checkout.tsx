@@ -110,7 +110,7 @@ export default function Checkout() {
               <p className="text-lg text-red-600">{errorCarga}</p>
               <button
                 type="button"
-                onClick={() => navigate('/MisSenias')}
+                onClick={() => navigate('/mi-cuenta/senias')}
                 className="mt-6 rounded-lg bg-[#695433] px-6 py-2 font-semibold text-white hover:bg-[#594429]"
               >
                 Volver a mis señas
@@ -131,7 +131,7 @@ export default function Checkout() {
                     mensajeRechazo={estado === 'rechazado' ? mensajeRechazo : null}
                     onCambio={actualizarCampo}
                     onSubmit={handleSubmit}
-                    onCancelar={() => navigate('/MisSenias')}
+                    onCancelar={() => navigate('/mi-cuenta/senias')}
                   />
                 )}
 
@@ -139,7 +139,7 @@ export default function Checkout() {
                   <PagoAprobado
                     senia={senia}
                     vencimiento={vencimientoReserva}
-                    onVerSenias={() => navigate('/MisSenias')}
+                    onVerSenias={() => navigate('/mi-cuenta/senias')}
                   />
                 )}
               </div>

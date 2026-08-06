@@ -30,7 +30,7 @@ export function RutaProtegida({
   // Un cliente que entra al panel del agente va a lo suyo, no al login: ya
   // tiene sesión, mandarlo a loguearse de nuevo no resuelve nada.
   if (rol && rolActual !== rol) {
-    return <Navigate to={rolActual === 'cliente' ? '/MisSenias' : '/'} replace />
+    return <Navigate to={rolActual === 'cliente' ? '/mi-cuenta/senias' : '/'} replace />
   }
 
   return <>{children}</>

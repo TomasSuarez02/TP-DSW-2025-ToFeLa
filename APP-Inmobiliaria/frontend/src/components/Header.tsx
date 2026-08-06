@@ -1,145 +1,143 @@
-import { useState } from "react"
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../auth/useAuth'
+import type { Rol } from '../auth/session'
+
+interface Enlace {
+  a: string
+  texto: string
+}
+
+/**
+ * Qué ve cada uno. Antes esto era una lista de etiquetas y una cadena de `if`
+ * más abajo que traducía cada etiqueta a su URL —dos veces, una para
+ * escritorio y otra para mobile—, así que agregar un link pedía tocar tres
+ * lugares y ya había entradas muertas ("Propiedades") que nunca se mostraban.
+ */
+function enlacesSegunRol(rol: Rol | null): Enlace[] {
+  if (rol === 'agente') return [{ a: '/panel', texto: 'Panel' }]
+
+  const publicos: Enlace[] = [
+    { a: '/Rent', texto: 'Alquilar' },
+    { a: '/contact', texto: 'Contacto' },
+  ]
+
+  if (rol === 'cliente') return [...publicos, { a: '/mi-cuenta/senias', texto: 'Mi cuenta' }]
+  return publicos
+}
 
 export default function Header() {
-  const [open, setOpen] = useState(false);
-  const { isLoggedIn, rol: userRole, logout } = useAuth();
+  const [abierto, setAbierto] = useState(false)
+  const { isLoggedIn, rol, logout } = useAuth()
+  const navigate = useNavigate()
 
-  // Links dinámicos basados en el rol exacto
-  const getLeftLinks = () => {
-    if (userRole === "agente") {
-      return ["Panel"];  // Para admin / agente
-    } else if (userRole === "cliente") {
-      return ["Alquilar", "Contacto", "Mis Señas"];  // Solo para cliente registrado
-    } else {
-      return ["Alquilar", "Contacto"];  // Para público no logueado
-    }
-  };
+  const enlaces = enlacesSegunRol(rol)
 
-  const leftLinks = getLeftLinks();
+  const cerrarSesion = () => {
+    logout()
+    setAbierto(false)
+    // window.location.href recargaba la app entera para cambiar de pantalla:
+    // se perdía el estado del router y el usuario veía un flash en blanco.
+    navigate('/login')
+  }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-white backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-arena-200 bg-white/95 backdrop-blur">
       <div className="container mx-auto max-w-screen-xl px-4">
-        {/* Barra principal */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center min-h-16 md:min-h-20">
+        <div className="grid min-h-16 grid-cols-[1fr_auto_1fr] items-center md:min-h-20">
 
           {/* IZQUIERDA */}
           <div className="flex items-center gap-4 justify-self-start">
-            {/* Botón (solo en mobile) */}
             <button
-              aria-label="Abrir menú"
-              aria-expanded={open}
-              className="md:hidden size-10 -ms-2 grid place-items-center rounded-md hover:bg-black/5"
-              onClick={() => setOpen(v => !v)}
+              type="button"
+              aria-label={abierto ? 'Cerrar menú' : 'Abrir menú'}
+              aria-expanded={abierto}
+              className="-ms-2 grid size-10 place-items-center rounded-lg text-tinta-700 transition-colors hover:bg-arena-100 hover:text-tinta-900 md:hidden"
+              onClick={() => setAbierto((v) => !v)}
             >
-              <span className="text-2xl leading-none text-black">≡</span>
+              {abierto ? (
+                <XMarkIcon className="size-6" aria-hidden="true" />
+              ) : (
+                <Bars3Icon className="size-6" aria-hidden="true" />
+              )}
             </button>
 
-            {/* Links normales (solo en desktop) */}
-            <nav className="hidden md:flex gap-6 text-[18px]">
-              {leftLinks.map(label => {
-                let linkPath = "/";
-                if (label === "Alquilar") linkPath = "/Rent";
-                else if (label === "Contacto") linkPath = "/Contact";
-                else if (label === "Panel") linkPath = "/Panel";
-                else if (label === "Propiedades") linkPath = "/Panel";
-                else if (label === "Mis Señas") linkPath = "/MisSenias"; // Nueva ruta asignada
-                
-                return (
-                  <Link
-                    key={label}
-                    to={linkPath}
-                    className="tracking-wide text-neutral-900 hover:opacity-80"
-                  >
-                    {label}
-                  </Link>
-                );
-              })}
+            <nav className="hidden gap-6 md:flex">
+              {enlaces.map(({ a, texto }) => (
+                <Link
+                  key={a}
+                  to={a}
+                  className="text-tinta-700 tracking-wide transition-colors hover:text-terra-700"
+                >
+                  {texto}
+                </Link>
+              ))}
             </nav>
           </div>
 
-          {/* CENTRO */}
-          <a
-            href="/"
-            className="justify-self-center text-2xl md:text-3xl tracking-wider font-['Playfair_Display'] text-neutral-900"
+          {/* CENTRO: el logo era un <a href> y recargaba el sitio para volver al inicio. */}
+          <Link
+            to="/"
+            className="justify-self-center font-display text-2xl tracking-wider text-tinta-900 md:text-3xl"
           >
             ROSARIO NOVA
-          </a>
+          </Link>
 
-          {/* DERECHA: auth (solo en desktop) */}
-          <div className="hidden md:block justify-self-end">
+          {/* DERECHA */}
+          <div className="hidden justify-self-end md:block">
             {!isLoggedIn ? (
               <Link
                 to="/login"
-                className="text-xl tracking-wide text-neutral-900 hover:opacity-80 "
+                className="text-tinta-700 tracking-wide transition-colors hover:text-terra-700"
               >
-                Iniciar Sesión
+                Iniciar sesión
               </Link>
             ) : (
               <button
-                onClick={() => {
-                  logout();
-                  window.location.href = "/login";
-                }}
-                className="text-sm tracking-wide text-neutral-900 hover:opacity-80 cursor-pointer"
+                type="button"
+                onClick={cerrarSesion}
+                className="cursor-pointer text-sm text-tinta-500 tracking-wide transition-colors hover:text-terra-700"
               >
-                Cerrar Sesión
+                Cerrar sesión
               </button>
             )}
           </div>
-
         </div>
 
-        {/* MENÚ MÓVIL */}
-        {open && (
-          <nav className="md:hidden flex flex-col gap-1 pt-2 pb-3 border-t border-black/5">
-            {leftLinks.map(label => {
-              let linkPath = "/";
-              if (label === "Alquilar") linkPath = "/Rent";
-              else if (label === "Contacto") linkPath = "/Contact";
-              else if (label === "Panel") linkPath = "/Panel";
-              else if (label === "Propiedades") linkPath = "/Panel";
-              else if (label === "Mis Señas") linkPath = "/MisSenias"; // Nueva ruta asignada para mobile
-              
-              return (
-                <Link
-                  key={label}
-                  to={linkPath}
-                  onClick={() => setOpen(false)}
-                  className="px-2 py-2 text-[15px] tracking-wide text-neutral-900 hover:bg-black/5 rounded"
-                >
-                  {label}
-                </Link>
-              );
-            })}
+        {abierto && (
+          <nav className="flex flex-col gap-1 border-t border-arena-200 pt-2 pb-3 md:hidden">
+            {enlaces.map(({ a, texto }) => (
+              <Link
+                key={a}
+                to={a}
+                onClick={() => setAbierto(false)}
+                className="rounded-lg px-2 py-2 text-tinta-700 tracking-wide transition-colors hover:bg-arena-100 hover:text-tinta-900"
+              >
+                {texto}
+              </Link>
+            ))}
 
-            {/* Auth SOLO en el menú móvil */}
             {!isLoggedIn ? (
               <Link
                 to="/login"
-                onClick={() => setOpen(false)}
-                className="px-2 py-2 text-[15px] tracking-wide text-neutral-900 hover:bg-black/5 rounded"
+                onClick={() => setAbierto(false)}
+                className="rounded-lg px-2 py-2 text-tinta-700 tracking-wide transition-colors hover:bg-arena-100 hover:text-tinta-900"
               >
-                Iniciar Sesión
+                Iniciar sesión
               </Link>
             ) : (
               <button
-                onClick={() => {
-                  logout();
-                  setOpen(false);
-                  window.location.href = "/login";
-                }}
-                className="px-2 py-2 text-[15px] tracking-wide text-neutral-900 hover:bg-black/5 rounded cursor-pointer"
+                type="button"
+                onClick={cerrarSesion}
+                className="cursor-pointer rounded-lg px-2 py-2 text-start text-tinta-700 tracking-wide transition-colors hover:bg-arena-100 hover:text-tinta-900"
               >
-                Cerrar Sesión
+                Cerrar sesión
               </button>
             )}
           </nav>
         )}
-
       </div>
     </header>
-  );
+  )
 }

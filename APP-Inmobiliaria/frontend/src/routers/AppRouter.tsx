@@ -1,6 +1,14 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Contact, Home, Login, Rent, Reserv, Visit } from "../pages/index.tsx";
-import Panel from "../pages/Panel/Panel.tsx";
+import PanelLayout from "../pages/Panel/PanelLayout.tsx";
+import { SECCIONES_AGENTE, SECCIONES_CLIENTE } from "../pages/Panel/secciones.ts";
+import Propiedades from "../pages/Panel/Propiedades.tsx";
+import Clientes from "../pages/Panel/Clientes.tsx";
+import Visitas from "../pages/Panel/Visitas.tsx";
+import Senias from "../pages/Panel/Senias.tsx";
+import Documentacion from "../pages/Panel/Documentacion.tsx";
+import MiDocumentacion from "../pages/Panel/MiDocumentacion.tsx";
+import Agentes from "../pages/Panel/Agentes.tsx";
 import { Register } from "../pages/Login/Register.tsx";
 import Page from "../pages/Rent/Page.tsx";
 import Checkout from "../pages/Checkout/Checkout.tsx";
@@ -23,10 +31,44 @@ export const AppRouter = () => {
         <Route path="/Rent/visit" element={<RutaProtegida><Visit/></RutaProtegida>}/>
         <Route path="/Rent/Reserv" element={<RutaProtegida><Reserv/></RutaProtegida>}/>
         <Route path="/checkout/:clave" element={<RutaProtegida><Checkout/></RutaProtegida>}/>
-        <Route path="/MisSenias" element={<RutaProtegida><Panel isAgent={false} /></RutaProtegida>} />
 
-        {/*Backoffice: además de sesión, rol de agente*/}
-        <Route path="/Panel" element={<RutaProtegida rol="agente"><Panel/></RutaProtegida>}/>
+        {/*Backoffice: además de sesión, rol de agente.
+           Cada sección es una ruta propia, así que se puede compartir el link,
+           volver con el botón "atrás" y recargar sin perder dónde se estaba.*/}
+        <Route
+          path="/panel"
+          element={
+            <RutaProtegida rol="agente">
+              <PanelLayout titulo="Panel" subtitulo="Sistema de gestión" secciones={SECCIONES_AGENTE} />
+            </RutaProtegida>
+          }
+        >
+          <Route index element={<Navigate to="/panel/propiedades" replace/>}/>
+          <Route path="propiedades" element={<Propiedades/>}/>
+          <Route path="clientes" element={<Clientes/>}/>
+          <Route path="visitas" element={<Visitas/>}/>
+          <Route path="senias" element={<Senias/>}/>
+          <Route path="documentacion" element={<Documentacion/>}/>
+          <Route path="agentes" element={<Agentes/>}/>
+        </Route>
+
+        {/*La cuenta del cliente: el mismo marco, otras dos secciones.*/}
+        <Route
+          path="/mi-cuenta"
+          element={
+            <RutaProtegida>
+              <PanelLayout titulo="Mi cuenta" subtitulo="Reservas y documentación" secciones={SECCIONES_CLIENTE} />
+            </RutaProtegida>
+          }
+        >
+          <Route index element={<Navigate to="/mi-cuenta/senias" replace/>}/>
+          <Route path="senias" element={<Senias isAgent={false}/>}/>
+          <Route path="documentos" element={<MiDocumentacion/>}/>
+        </Route>
+
+        {/*Compatibilidad con las URLs viejas. /Panel no necesita entrada propia:
+           el matcheo de React Router ignora mayúsculas y ya cae en /panel.*/}
+        <Route path="/MisSenias" element={<Navigate to="/mi-cuenta/senias" replace/>}/>
 
     </Routes>
     )

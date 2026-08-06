@@ -50,7 +50,7 @@ export default function Login() {
       if (res.data.role === "cliente") {
         window.location.href = "/";
       } else {
-        window.location.href = "/Panel";
+        window.location.href = "/panel";
       }
     } catch (error: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
