@@ -29,7 +29,6 @@ export default function Tabla<T>({
   columnas,
   claveFila,
   acciones,
-  onFilaClick,
   etiquetaAcciones = 'Acciones',
 }: {
   datos: T[]
@@ -37,7 +36,6 @@ export default function Tabla<T>({
   claveFila: (fila: T) => string | number
   /** Botones por fila. Van en su propia columna, alineados a la derecha. */
   acciones?: (fila: T) => ReactNode
-  onFilaClick?: (fila: T) => void
   etiquetaAcciones?: string
 }) {
   const visiblesEnMobile = columnas.filter((c) => !c.ocultarEnMobile)
@@ -74,12 +72,9 @@ export default function Tabla<T>({
               {datos.map((fila) => (
                 <tr
                   key={claveFila(fila)}
-                  onClick={onFilaClick ? () => onFilaClick(fila) : undefined}
                   /* La fila responde cambiando de superficie, no saltando:
                      en una tabla de trabajo el movimiento distrae. */
-                  className={`border-b border-arena-200 transition-colors last:border-0 hover:bg-arena-50 ${
-                    onFilaClick ? 'cursor-pointer' : ''
-                  }`}
+                  className="border-b border-arena-200 transition-colors last:border-0 hover:bg-arena-50"
                 >
                   {columnas.map((col) => (
                     <td
@@ -103,12 +98,15 @@ export default function Tabla<T>({
         </div>
       </div>
 
-      {/* --- Mobile ----------------------------------------------------- */}
+      {/* --- Mobile -----------------------------------------------------
+          La fila entera no es clickeable: un `onClick` sobre el <li> no se
+          alcanza con el teclado, y envolver todo en un botón para que sí lo
+          fuera metería una lista de datos adentro de un control. Lo que se
+          puede hacer con cada fila vive en su columna de acciones. */}
       <ul className="flex flex-col gap-3 md:hidden">
         {datos.map((fila) => (
           <li
             key={claveFila(fila)}
-            onClick={onFilaClick ? () => onFilaClick(fila) : undefined}
             className="rounded-card border border-arena-200 bg-white p-4 shadow-card transition-shadow hover:shadow-card-hover"
           >
             {principal && (

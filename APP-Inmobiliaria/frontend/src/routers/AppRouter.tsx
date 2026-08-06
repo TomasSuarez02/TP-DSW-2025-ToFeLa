@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Contact, Home, Login, Rent } from "../pages/index.tsx";
+import { Contact, Home, Login, NoEncontrado, Rent } from "../pages/index.tsx";
 import PanelLayout from "../pages/Panel/PanelLayout.tsx";
 import { SECCIONES_AGENTE, SECCIONES_CLIENTE } from "../pages/Panel/secciones.ts";
 import Propiedades from "../pages/Panel/Propiedades.tsx";
@@ -71,6 +71,11 @@ export const AppRouter = () => {
         {/*Compatibilidad con las URLs viejas. /Panel no necesita entrada propia:
            el matcheo de React Router ignora mayúsculas y ya cae en /panel.*/}
         <Route path="/MisSenias" element={<Navigate to="/mi-cuenta/senias" replace/>}/>
+
+        {/*Todo lo demás. Sin esta entrada, una URL mal escrita no coincidía con
+           ninguna ruta y React Router no dibujaba nada: la ventana quedaba en
+           blanco, sin Header ni forma de volver.*/}
+        <Route path="*" element={<NoEncontrado/>}/>
 
     </Routes>
     )

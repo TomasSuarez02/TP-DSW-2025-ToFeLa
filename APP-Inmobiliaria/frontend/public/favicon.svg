@@ -1,0 +1,15 @@
+<!--
+  El ícono de la pestaña.
+
+  Los colores van en hexadecimal porque este archivo lo pide el navegador
+  suelto, fuera del bundle: no tiene acceso a las variables del sistema. Son
+  los valores exactos de --color-terra-600 y --color-arena-50 de index.css; si
+  alguno cambia allá, hay que cambiarlo acá también.
+
+  La casa es una silueta llena y no un contorno: a 16 píxeles una línea de 1px
+  se pierde y el ícono se ve como una mancha.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#a65a3e" />
+  <path d="M16 6.5 27 16h-3.2v9.5h-5.6v-6h-4.4v6H8.2V16H5z" fill="#faf6f0" />
+</svg>

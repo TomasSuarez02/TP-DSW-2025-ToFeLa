@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@plugin "daisyui";
 
 /* ============================================================
    Sistema de diseño — "Arena & Salvia"
@@ -74,38 +73,12 @@
   --ease-salida: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* --- Tema DaisyUI alineado a los tokens de arriba -------------
-   Sin esto, cualquier componente DaisyUI (btn, badge, modal)
-   sigue pintando con la paleta default y rompe la coherencia. */
-@plugin "daisyui/theme" {
-  name: "tofela";
-  default: true;
-  color-scheme: light;
-
-  --color-base-100: #ffffff;
-  --color-base-200: #faf6f0;
-  --color-base-300: #ede0cf;
-  --color-base-content: #33291f;
-
-  --color-primary: #a65a3e;
-  --color-primary-content: #ffffff;
-
-  --color-secondary: #7d9478;
-  --color-secondary-content: #ffffff;
-
-  --color-accent: #f0e2d2;
-  --color-accent-content: #6f3a28;
-
-  --color-neutral: #574839;
-  --color-neutral-content: #faf6f0;
-
-  --color-success: #4f6849;
-  --color-warning: #b8792c;
-  --color-error: #a33b30;
-
-  --radius-box: 1rem;
-  --radius-field: 0.5rem;
-}
+/* Acá vivía un tema de DaisyUI que traducía los tokens de arriba a los
+   nombres de su paleta (base-100, primary, accent…). Existía para que sus
+   componentes no pintaran con los colores de fábrica, pero cuando el
+   rediseño terminó no quedaba una sola clase suya en el JSX: los botones
+   son `.accion`, los diálogos son Headless UI y las tarjetas son tokens.
+   Un plugin que sólo se usaba para no desentonar consigo mismo. */
 
 @layer base {
   body {
