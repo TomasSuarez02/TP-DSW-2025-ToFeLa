@@ -1,212 +1,239 @@
-import { useState } from "react";
-import Header from "../../components/Header.tsx";
-import apiClient from "../../utils/apiClient";
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import Header from '../../components/Header.tsx'
+import Footer from '../../components/Footer.tsx'
+import IlustracionCasa from '../../components/IlustracionCasa.tsx'
+import Campo from '../../components/ui/Campo'
+import apiClient from '../../utils/apiClient'
+import { useFormularioApi } from '../../hooks/useFormularioApi'
+import { useNotificacion } from '../../hooks/useNotificacion'
+
+const DATOS_INICIALES = {
+  nombre: '',
+  apellido: '',
+  email: '',
+  telefono: '',
+  tipo_documento: 'DNI',
+  nro_doc: '',
+  password: '',
+}
+
+/** Lo que el navegador ya puede saber antes de molestar al backend. */
+function validar(user: typeof DATOS_INICIALES): Record<string, string> {
+  const errores: Record<string, string> = {}
+
+  if (!user.nombre.trim()) errores.nombre = 'Ingresá tu nombre.'
+  if (!user.apellido.trim()) errores.apellido = 'Ingresá tu apellido.'
+  if (!user.email.trim()) errores.email = 'Ingresá tu correo electrónico.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email.trim()))
+    errores.email = 'Revisá el correo: parece incompleto.'
+  if (!user.telefono.trim()) errores.telefono = 'Ingresá un teléfono de contacto.'
+  if (!user.nro_doc.trim()) errores.nro_doc = 'Ingresá tu número de documento.'
+  else if (!/^\d{6,10}$/.test(user.nro_doc.trim()))
+    errores.nro_doc = 'El documento va sin puntos ni espacios.'
+  if (!user.password) errores.password = 'Elegí una contraseña.'
+  else if (user.password.length < 8) errores.password = 'Tiene que tener al menos 8 caracteres.'
+
+  return errores
+}
 
 export function Register() {
-    const [user, setUser] = useState({
-        nombre: "",
-        apellido: "",
-        email: "",
-        telefono: "",
-        tipo_documento: "DNI",
-        nro_doc: "",
-        password: ""
-    });
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [user, setUser] = useState(DATOS_INICIALES)
+  const navigate = useNavigate()
+  const { notificar } = useNotificacion()
+  const form = useFormularioApi()
 
-    const handleFieldChange = (name: string, value: string) => {
-        setUser((prev) => ({ ...prev, [name]: value }));
-        setError(null);
-        setSuccess(null);
-        setFieldErrors((prev) => {
-            if (!prev[name]) {
-                return prev;
-            }
+  const handleFieldChange = (name: keyof typeof DATOS_INICIALES, value: string) => {
+    setUser((prev) => ({ ...prev, [name]: value }))
+    form.limpiarCampo(name)
+  }
 
-            const updated = { ...prev };
-            delete updated[name];
-            return updated;
-        });
-    };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setSuccess(null);
-        setFieldErrors({});
-        try {
-            const res = await apiClient.post("/clientes", {
-                nombre: user.nombre,
-                apellido: user.apellido,
-                mail: user.email,
-                telefono: user.telefono,
-                tipo_doc: user.tipo_documento,
-                nro_doc: user.nro_doc,
-                contrasenia: user.password,
-            });
-            setSuccess("Usuario registrado correctamente");
-            if (res) {
-                window.location.href = "/";
-            }
-        } catch (error: unknown) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const parsed = (error as any).parsedError || { message: 'Error inesperado', fieldErrors: {} };
-            setError(parsed.message);
-            setFieldErrors(parsed.fieldErrors);
-        }
-    };
+    const errores = validar(user)
+    if (Object.keys(errores).length > 0) {
+      form.setErroresCampo(errores)
+      return
+    }
 
-    return (
-        <>
-            <Header />
-            <div className="min-h-screen bg-gradient-to-br from-[#f8f6f3] via-[#f2e5d8] to-[#dcc7af] flex items-center justify-center">
-                <div className="flex shadow-2xl rounded-2xl overflow-hidden bg-white max-w-3xl w-full">
-                    <div className="p-10 flex-1 bg-[#f2e5d8] flex flex-col justify-center relative">
-                        <div className="mb-8 text-center">
-                            <span className="tracking-wider text-2xl text-black font-semibold drop-shadow-sm">REGISTRARSE</span>
-                        </div>
-                        <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-                            {error && <p className="text-red-500">{error}</p>}
-                            {fieldErrors.general && <p className="text-red-500">{fieldErrors.general}</p>}
-                            {success && <p className="text-green-600">{success}</p>}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Nombre</label>
-                                    <input
-                                        type="text"
-                                        value={user.nombre}
-                                        onChange={e => handleFieldChange("nombre", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                                        required
-                                    />
-                                    {fieldErrors.nombre && <p className="mt-1 text-xs text-red-600">{fieldErrors.nombre}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Apellido</label>
-                                    <input
-                                        type="text"
-                                        value={user.apellido}
-                                        onChange={e => handleFieldChange("apellido", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                                        required
-                                    />
-                                    {fieldErrors.apellido && <p className="mt-1 text-xs text-red-600">{fieldErrors.apellido}</p>}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Correo electrónico</label>
-                                    <input
-                                        type="email"
-                                        value={user.email}
-                                        onChange={e => handleFieldChange("email", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                                        required
-                                    />
-                                    {fieldErrors.email && <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Teléfono</label>
-                                    <input
-                                        type="text"
-                                        value={user.telefono}
-                                        onChange={e => handleFieldChange("telefono", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                                        required
-                                    />
-                                    {fieldErrors.telefono && <p className="mt-1 text-xs text-red-600">{fieldErrors.telefono}</p>}
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Tipo de documento</label>
-                                    <select
-                                        value={user.tipo_documento}
-                                        onChange={e => handleFieldChange("tipo_documento", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans"
-                                    >
-                                        <option value="DNI">DNI</option>
-                                        <option value="Pasaporte">Pasaporte</option>
-                                        <option value="Otro">Otro</option>
-                                    </select>
-                                    {fieldErrors.tipo_documento && <p className="mt-1 text-xs text-red-600">{fieldErrors.tipo_documento}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Número de documento</label>
-                                    <input
-                                        type="text"
-                                        value={user.nro_doc}
-                                        onChange={e => handleFieldChange("nro_doc", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200"
-                                        required
-                                    />
-                                    {fieldErrors.nro_doc && <p className="mt-1 text-xs text-red-600">{fieldErrors.nro_doc}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-[#493523] mb-1">Contraseña</label>
-                                    <input
-                                        type="password"
-                                        value={user.password}
-                                        onChange={e => handleFieldChange("password", e.target.value)}
-                                        className="w-full px-4 py-2 text-base rounded-xl border border-[#e5d4c0] bg-[#fbf7f3] text-[#493523] outline-none font-sans focus:ring-2 focus:ring-[#bba180] transition-all duration-200 "
-                                        required
-                                    />
-                                    {fieldErrors.password && <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>}
-                                </div>
-                            </div>
-                            <button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-[#bba180] to-[#dcc7af] text-white font-bold text-lg border-none rounded-xl py-2 shadow-md shadow-[#8c6e46]/20 cursor-pointer transition-all duration-200 hover:from-[#a88c6f] hover:to-[#cdbba5]"
-                            >
-                                Registrarse
-                            </button>
-                        </form>
-                    </div>
-                    {/* Derecha: fondo beige e icono centralizado */}
-                    <div className="bg-[#dcc7af] flex items-center justify-center p-6">
-                        <div className="bg-white rounded-2xl border-2 border-[#a58e6f] p-7 shadow-lg flex items-center justify-center">
-                            <svg
-                                width="80"
-                                height="80"
-                                viewBox="0 0 180 180"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="block"
-                            >
-                                <rect width="180" height="180" fill="#dcc7af" />
-                                <polygon
-                                    points="60,110 150,110 150,135 60,135"
-                                    fill="#cdbba5"
-                                    opacity="0.7"
-                                    transform="translate(20,35) skewX(-32)"
-                                />
-                                <polygon
-                                    points="30,90 90,45 150,90 150,150 30,150"
-                                    fill="#fff"
-                                    stroke="#fff"
-                                    strokeWidth="2"
-                                />
-                                <rect
-                                    x="80"
-                                    y="115"
-                                    width="20"
-                                    height="35"
-                                    fill="#dcc7af"
-                                />
-                                <rect
-                                    x="120"
-                                    y="65"
-                                    width="10"
-                                    height="20"
-                                    fill="#fff"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+    const ok = await form.enviar(async () => {
+      await apiClient.post('/clientes', {
+        nombre: user.nombre.trim(),
+        apellido: user.apellido.trim(),
+        mail: user.email.trim(),
+        telefono: user.telefono.trim(),
+        tipo_doc: user.tipo_documento,
+        nro_doc: user.nro_doc.trim(),
+        contrasenia: user.password,
+      })
+    })
+
+    if (!ok) return
+
+    // El registro no devuelve token: antes esto mandaba a la home, donde el
+    // usuario recién creado seguía siendo un anónimo y no entendía por qué.
+    notificar('Cuenta creada', 'exito', 'Ya podés iniciar sesión con tu correo.')
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <>
+      <Header />
+
+      <main className="flex min-h-[calc(100dvh-4rem)] items-center justify-center bg-arena-50 px-4 py-10 md:min-h-[calc(100dvh-5rem)]">
+        <div className="grid w-full max-w-4xl overflow-hidden rounded-card border border-arena-200 bg-white shadow-card lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="p-7 sm:p-10">
+            <h1 className="font-display text-2xl leading-snug text-tinta-900">Crear una cuenta</h1>
+            <p className="mt-1.5 text-sm text-tinta-500">
+              Con una cuenta podés reservar una propiedad y presentar tu documentación.
+            </p>
+
+            <form className="mt-7 space-y-4" onSubmit={handleSubmit} noValidate>
+              {form.error && (
+                <p
+                  role="alert"
+                  className="rounded-lg border border-alerta-700/20 bg-alerta-50 px-4 py-3 text-sm text-alerta-700"
+                >
+                  {form.error}
+                </p>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Campo etiqueta="Nombre" error={form.erroresCampo.nombre} requerido>
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="text"
+                      autoComplete="given-name"
+                      value={user.nombre}
+                      onChange={(e) => handleFieldChange('nombre', e.target.value)}
+                      disabled={form.enviando}
+                    />
+                  )}
+                </Campo>
+
+                <Campo etiqueta="Apellido" error={form.erroresCampo.apellido} requerido>
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="text"
+                      autoComplete="family-name"
+                      value={user.apellido}
+                      onChange={(e) => handleFieldChange('apellido', e.target.value)}
+                      disabled={form.enviando}
+                    />
+                  )}
+                </Campo>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Campo etiqueta="Correo electrónico" error={form.erroresCampo.email} requerido>
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="email"
+                      autoComplete="email"
+                      placeholder="ejemplo@email.com"
+                      value={user.email}
+                      onChange={(e) => handleFieldChange('email', e.target.value)}
+                      disabled={form.enviando}
+                    />
+                  )}
+                </Campo>
+
+                <Campo etiqueta="Teléfono" error={form.erroresCampo.telefono} requerido>
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="tel"
+                      autoComplete="tel"
+                      placeholder="341 555 0000"
+                      value={user.telefono}
+                      onChange={(e) => handleFieldChange('telefono', e.target.value)}
+                      disabled={form.enviando}
+                    />
+                  )}
+                </Campo>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+                <Campo etiqueta="Tipo de documento" error={form.erroresCampo.tipo_documento}>
+                  {(props) => (
+                    <select
+                      {...props}
+                      value={user.tipo_documento}
+                      onChange={(e) => handleFieldChange('tipo_documento', e.target.value)}
+                      disabled={form.enviando}
+                    >
+                      <option value="DNI">DNI</option>
+                      <option value="Pasaporte">Pasaporte</option>
+                      <option value="Otro">Otro</option>
+                    </select>
+                  )}
+                </Campo>
+
+                <Campo
+                  etiqueta="Número de documento"
+                  error={form.erroresCampo.nro_doc}
+                  requerido
+                >
+                  {(props) => (
+                    <input
+                      {...props}
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="30123456"
+                      value={user.nro_doc}
+                      onChange={(e) => handleFieldChange('nro_doc', e.target.value)}
+                      disabled={form.enviando}
+                    />
+                  )}
+                </Campo>
+              </div>
+
+              {/* La contraseña iba como tercer hijo de una grilla de dos
+                  columnas, así que caía sola en una fila nueva sin motivo. */}
+              <Campo
+                etiqueta="Contraseña"
+                ayuda="Al menos 8 caracteres."
+                error={form.erroresCampo.password}
+                requerido
+              >
+                {(props) => (
+                  <input
+                    {...props}
+                    type="password"
+                    autoComplete="new-password"
+                    value={user.password}
+                    onChange={(e) => handleFieldChange('password', e.target.value)}
+                    disabled={form.enviando}
+                  />
+                )}
+              </Campo>
+
+              <button type="submit" disabled={form.enviando} className="accion accion-primaria w-full">
+                {form.enviando ? 'Creando la cuenta…' : 'Registrarme'}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-sm text-tinta-500">
+              ¿Ya tenés cuenta?{' '}
+              <Link to="/login" className="font-medium text-terra-600 underline-offset-2 hover:underline">
+                Iniciá sesión
+              </Link>
+            </p>
+          </div>
+
+          <div className="hidden items-center justify-center bg-terra-50 p-8 lg:flex">
+            <div className="rounded-card border border-arena-200 bg-white p-6 shadow-card">
+              <IlustracionCasa className="size-24" />
             </div>
-        </>
-    );
+          </div>
+        </div>
+      </main>
+
+      <Footer />
+    </>
+  )
 }

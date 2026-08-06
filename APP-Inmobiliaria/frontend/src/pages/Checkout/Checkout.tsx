@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
@@ -16,6 +17,11 @@ import { parseApiError, type FieldErrors } from '../../utils/apiErrors'
 import { SENIA_DIAS_VENCIMIENTO, SENIA_PORCENTAJE, calcularSeniaMinima } from '../../config/senia'
 import { formatearFecha, formatearMoneda } from '../../utils/formato'
 import { refObjeto, type DatosTarjeta, type PropiedadRef, type Senia } from '../../types/senia'
+import {
+  CLASE_CONTROL,
+  CLASE_CONTROL_ERROR,
+  CLASE_CONTROL_NORMAL,
+} from '../../components/ui/Campo'
 
 type Estado = 'cargando' | 'formulario' | 'procesando' | 'aprobado' | 'rechazado'
 
@@ -97,21 +103,21 @@ export default function Checkout() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-[#f5f2ed] py-10">
+      <main className="min-h-screen bg-arena-50 py-10">
         <div className="container mx-auto max-w-4xl px-4">
           {estado === 'cargando' && !errorCarga && (
-            <p className="rounded-2xl bg-white p-10 text-center text-lg text-gray-600 shadow-lg">
+            <p className="rounded-card border border-arena-200 bg-white p-10 text-center text-lg text-tinta-500 shadow-card">
               Cargando datos de la seña...
             </p>
           )}
 
           {errorCarga && (
-            <div className="rounded-2xl bg-white p-10 text-center shadow-lg">
-              <p className="text-lg text-red-600">{errorCarga}</p>
+            <div className="rounded-card border border-arena-200 bg-white p-10 text-center shadow-card">
+              <p className="text-lg text-alerta-700">{errorCarga}</p>
               <button
                 type="button"
                 onClick={() => navigate('/mi-cuenta/senias')}
-                className="mt-6 rounded-lg bg-[#695433] px-6 py-2 font-semibold text-white hover:bg-[#594429]"
+                className="accion accion-primaria mt-6"
               >
                 Volver a mis señas
               </button>
@@ -166,33 +172,33 @@ function ResumenSenia({
 
   return (
     <aside className="lg:col-span-2">
-      <div className="sticky top-8 space-y-4 rounded-2xl bg-white p-6 shadow-lg">
-        <h2 className="text-xl font-bold text-gray-800">Resumen de la seña</h2>
+      <div className="sticky top-24 space-y-4 rounded-card border border-arena-200 bg-white p-6 shadow-card">
+        <h2 className="font-display text-xl text-tinta-900">Resumen de la seña</h2>
 
-        <div className="border-t border-gray-200 pt-4">
-          <p className="text-sm uppercase tracking-wide text-gray-500">Propiedad</p>
-          <p className="text-lg font-semibold text-gray-800">
+        <div className="border-t border-arena-200 pt-4">
+          <p className="text-xs font-semibold tracking-[0.08em] text-tinta-500 uppercase">Propiedad</p>
+          <p className="text-lg font-medium text-tinta-900">
             {propiedad?.direccion ?? `Propiedad #${senia.propiedad ?? '—'}`}
           </p>
         </div>
 
         {propiedad?.precio !== undefined && (
-          <div className="border-t border-gray-200 pt-4">
-            <p className="text-sm uppercase tracking-wide text-gray-500">Precio de la propiedad</p>
-            <p className="text-lg text-gray-800">{formatearMoneda(propiedad.precio)}</p>
+          <div className="border-t border-arena-200 pt-4">
+            <p className="text-xs font-semibold tracking-[0.08em] text-tinta-500 uppercase">Precio de la propiedad</p>
+            <p className="text-lg text-tinta-900 tabular-nums">{formatearMoneda(propiedad.precio)}</p>
           </div>
         )}
 
-        <div className="border-t border-gray-200 pt-4">
-          <p className="text-sm uppercase tracking-wide text-gray-500">
+        <div className="border-t border-arena-200 pt-4">
+          <p className="text-xs font-semibold tracking-[0.08em] text-tinta-500 uppercase">
             {/* El porcentaje solo se anuncia si el importe efectivamente lo es: las señas
                 cargadas a mano por un agente pueden tener cualquier importe. */}
             {esPorcentajeEstandar ? `Seña (${Math.round(SENIA_PORCENTAJE * 100)}% del valor)` : 'Seña'}
           </p>
-          <p className="text-3xl font-bold text-[#695433]">{formatearMoneda(senia.importe)}</p>
+          <p className="font-display text-3xl text-terra-600 tabular-nums">{formatearMoneda(senia.importe)}</p>
         </div>
 
-        <div className="rounded-lg bg-[#f5f2ed] p-4 text-sm text-gray-700">
+        <div className="rounded-lg border border-arena-200 bg-arena-50 p-4 text-sm leading-relaxed text-tinta-700">
           {vencimiento ? (
             <>
               La propiedad queda reservada hasta el <strong>{formatearFecha(vencimiento)}</strong>.
@@ -228,18 +234,16 @@ function FormularioPago({
   onCancelar: () => void
 }) {
   const claseInput = (campo: keyof DatosTarjeta) =>
-    `w-full rounded-lg border px-3 py-2 text-gray-800 focus:outline-none focus:ring-1 focus:ring-[#695433] ${
-      errores[campo] ? 'border-red-400' : 'border-gray-300'
-    }`
+    `${CLASE_CONTROL} ${errores[campo] ? CLASE_CONTROL_ERROR : CLASE_CONTROL_NORMAL}`
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-lg">
-      <h1 className="text-2xl font-bold text-gray-800">Pagar la seña</h1>
-      <p className="mt-1 text-sm text-gray-500">
+    <div className="rounded-card border border-arena-200 bg-white p-6 shadow-card">
+      <h1 className="font-display text-2xl text-tinta-900">Pagar la seña</h1>
+      <p className="mt-1 text-sm text-tinta-500">
         Entorno de prueba: no se procesa ningún pago real.
       </p>
 
-      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+      <div className="mt-4 rounded-lg border border-ambar-700/20 bg-ambar-50 p-4 text-sm text-ambar-700">
         <p className="font-semibold">Tarjetas de prueba</p>
         <ul className="mt-1 space-y-1">
           <li>
@@ -255,14 +259,14 @@ function FormularioPago({
       </div>
 
       {mensajeRechazo && (
-        <div className="mt-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
+        <div role="alert" className="mt-4 rounded-lg border border-alerta-700/20 bg-alerta-50 px-4 py-3 text-sm text-alerta-700">
           {mensajeRechazo}. Revisá los datos o probá con otra tarjeta.
         </div>
       )}
 
       <form onSubmit={onSubmit} noValidate className="mt-6 space-y-4">
         <div>
-          <label htmlFor="numeroTarjeta" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="numeroTarjeta" className="mb-1.5 block text-sm font-medium text-tinta-900">
             Número de tarjeta
           </label>
           <input
@@ -275,11 +279,11 @@ function FormularioPago({
             className={claseInput('numeroTarjeta')}
             disabled={procesando}
           />
-          {errores.numeroTarjeta && <p className="mt-1 text-sm text-red-600">{errores.numeroTarjeta}</p>}
+          {errores.numeroTarjeta && <p className="mt-1.5 text-xs font-medium text-alerta-700">{errores.numeroTarjeta}</p>}
         </div>
 
         <div>
-          <label htmlFor="titular" className="mb-1 block text-sm font-medium text-gray-700">
+          <label htmlFor="titular" className="mb-1.5 block text-sm font-medium text-tinta-900">
             Titular de la tarjeta
           </label>
           <input
@@ -291,12 +295,12 @@ function FormularioPago({
             className={claseInput('titular')}
             disabled={procesando}
           />
-          {errores.titular && <p className="mt-1 text-sm text-red-600">{errores.titular}</p>}
+          {errores.titular && <p className="mt-1.5 text-xs font-medium text-alerta-700">{errores.titular}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="vencimiento" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="vencimiento" className="mb-1.5 block text-sm font-medium text-tinta-900">
               Vencimiento
             </label>
             <input
@@ -309,11 +313,11 @@ function FormularioPago({
               className={claseInput('vencimiento')}
               disabled={procesando}
             />
-            {errores.vencimiento && <p className="mt-1 text-sm text-red-600">{errores.vencimiento}</p>}
+            {errores.vencimiento && <p className="mt-1.5 text-xs font-medium text-alerta-700">{errores.vencimiento}</p>}
           </div>
 
           <div>
-            <label htmlFor="cvv" className="mb-1 block text-sm font-medium text-gray-700">
+            <label htmlFor="cvv" className="mb-1.5 block text-sm font-medium text-tinta-900">
               Código de seguridad
             </label>
             <input
@@ -326,7 +330,7 @@ function FormularioPago({
               className={claseInput('cvv')}
               disabled={procesando}
             />
-            {errores.cvv && <p className="mt-1 text-sm text-red-600">{errores.cvv}</p>}
+            {errores.cvv && <p className="mt-1.5 text-xs font-medium text-alerta-700">{errores.cvv}</p>}
           </div>
         </div>
 
@@ -335,17 +339,17 @@ function FormularioPago({
             type="button"
             onClick={onCancelar}
             disabled={procesando}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            className="accion accion-secundaria"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={procesando}
-            className="flex items-center gap-2 rounded-lg bg-[#695433] px-6 py-2 font-semibold text-white hover:bg-[#594429] disabled:opacity-60"
+            className="accion accion-primaria"
           >
             {procesando && (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <span className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent motion-reduce:animate-none" />
             )}
             {procesando ? 'Procesando...' : 'Pagar seña'}
           </button>
@@ -365,31 +369,31 @@ function PagoAprobado({
   onVerSenias: () => void
 }) {
   return (
-    <div className="rounded-2xl bg-white p-8 text-center shadow-lg">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl">
-        ✓
+    <div className="rounded-card border border-arena-200 bg-white p-8 text-center shadow-card">
+      <div className="mx-auto grid size-16 place-items-center rounded-full bg-salvia-100">
+        <CheckCircleIcon className="size-9 text-salvia-700" aria-hidden="true" />
       </div>
-      <h1 className="mt-4 text-2xl font-bold text-gray-800">¡Seña confirmada!</h1>
-      <p className="mt-2 text-gray-600">
+      <h1 className="mt-4 font-display text-2xl text-tinta-900">¡Seña confirmada!</h1>
+      <p className="mt-2 text-tinta-700">
         Registramos el pago de <strong>{formatearMoneda(senia.importe)}</strong>.
       </p>
 
       {vencimiento && (
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-tinta-700">
           La propiedad queda reservada a tu nombre hasta el{' '}
           <strong>{formatearFecha(vencimiento)}</strong>.
         </p>
       )}
 
       {senia.pago?.ultimosCuatro && (
-        <p className="mt-4 text-sm text-gray-500">
+        <p className="mt-4 text-sm text-tinta-500">
           Tarjeta terminada en {senia.pago.ultimosCuatro}
           {senia.pago.referencia && ` · Referencia ${senia.pago.referencia}`}
         </p>
       )}
 
-      <div className="mt-6 rounded-lg bg-[#f5f2ed] p-4 text-left text-sm text-gray-700">
-        <p className="font-semibold text-gray-800">Próximo paso</p>
+      <div className="mt-6 rounded-lg border border-arena-200 bg-arena-50 p-4 text-left text-sm leading-relaxed text-tinta-700">
+        <p className="font-semibold text-tinta-900">Próximo paso</p>
         <p className="mt-1">
           Acercate a la inmobiliaria con la documentación requerida y el saldo restante antes de
           esa fecha. Un agente confirmará el alquiler.
@@ -399,7 +403,7 @@ function PagoAprobado({
       <button
         type="button"
         onClick={onVerSenias}
-        className="mt-6 rounded-lg bg-[#695433] px-6 py-2 font-semibold text-white hover:bg-[#594429]"
+        className="accion accion-primaria mt-6"
       >
         Ver mis señas
       </button>

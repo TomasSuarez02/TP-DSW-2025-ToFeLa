@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Contact, Home, Login, Rent, Reserv, Visit } from "../pages/index.tsx";
+import { Contact, Home, Login, Rent } from "../pages/index.tsx";
 import PanelLayout from "../pages/Panel/PanelLayout.tsx";
 import { SECCIONES_AGENTE, SECCIONES_CLIENTE } from "../pages/Panel/secciones.ts";
 import Propiedades from "../pages/Panel/Propiedades.tsx";
@@ -27,9 +27,11 @@ export const AppRouter = () => {
         <Route path="/Rent" element={<Rent/>}/>
         <Route path="/Rent/property/:id" element={<Page/>}/>
 
-        {/*Rutas Privadas: hace falta sesión iniciada*/}
-        <Route path="/Rent/visit" element={<RutaProtegida><Visit/></RutaProtegida>}/>
-        <Route path="/Rent/Reserv" element={<RutaProtegida><Reserv/></RutaProtegida>}/>
+        {/*Rutas Privadas: hace falta sesión iniciada.
+           /Rent/visit y /Rent/Reserv se sacaron: eran dos stubs con un <h1>
+           ("Página de visitas", "Reserv Page") enrutados en producción, sin
+           un solo link que llevara a ellos. La visita del cliente todavía no
+           existe como flujo; cuando exista, entra acá con su pantalla real.*/}
         <Route path="/checkout/:clave" element={<RutaProtegida><Checkout/></RutaProtegida>}/>
 
         {/*Backoffice: además de sesión, rol de agente.
