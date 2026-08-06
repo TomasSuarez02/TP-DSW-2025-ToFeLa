@@ -118,10 +118,7 @@ export default function Documentacion() {
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="max-w-prose">
           <h1 className="font-display text-2xl text-tinta-900">Documentación</h1>
-          <p className="mt-0.5 text-sm leading-relaxed text-tinta-500">
-            Papeles necesarios para cerrar un contrato. Podés cargarlos apenas el cliente los
-            manda; después, al concretar el alquiler, ya están listos.
-          </p>
+  
         </div>
 
         <button type="button" onClick={() => abrirFormulario()} className="accion accion-primaria shrink-0">

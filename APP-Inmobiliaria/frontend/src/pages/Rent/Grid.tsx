@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
-import { ChevronDownIcon } from "@heroicons/react/24/outline"
+import { useSearchParams } from "react-router-dom"
+import { ChevronDownIcon, XMarkIcon } from "@heroicons/react/24/outline"
 import Card, { type Propiedades } from "./Card"
+import TarjetaEsqueleto from "../../components/ui/TarjetaEsqueleto"
 import apiClient from "../../utils/apiClient";
 
 type Estado = 'cargando' | 'listo' | 'error'
@@ -12,11 +14,38 @@ const ORDENES: { valor: Orden; etiqueta: string }[] = [
   { valor: 'precio-desc', etiqueta: 'Precio: mayor a menor' },
 ]
 
+/* "Perón" y "Peron" tienen que encontrar lo mismo: nadie escribe los acentos
+   en un buscador, y la dirección los tiene. */
+function sinAcentos(texto: string): string {
+  return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+}
+
 export default function ListadoPropiedades() {
   const [propiedades, setPropiedades] = useState<Propiedades[]>([])
   const [estado, setEstado] = useState<Estado>('cargando')
-  const [tipo, setTipo] = useState<number | 'todos'>('todos')
   const [orden, setOrden] = useState<Orden>('recientes')
+
+  /* El filtro vive en la URL, no en el estado del componente: así el buscador
+     de la portada puede mandar acá, el resultado se comparte con un link y el
+     botón "atrás" del navegador deshace el filtro en vez de salir del sitio. */
+  const [params, setParams] = useSearchParams()
+  const busqueda = params.get('q')?.trim() ?? ''
+  const tipoParam = params.get('tipo')
+  const tipo: number | 'todos' = tipoParam && /^\d+$/.test(tipoParam) ? Number(tipoParam) : 'todos'
+
+  const actualizarParams = (cambios: { q?: string | null; tipo?: number | 'todos' }) => {
+    const siguientes = new URLSearchParams(params)
+    if (cambios.q !== undefined) {
+      if (cambios.q) siguientes.set('q', cambios.q)
+      else siguientes.delete('q')
+    }
+    if (cambios.tipo !== undefined) {
+      if (cambios.tipo === 'todos') siguientes.delete('tipo')
+      else siguientes.set('tipo', String(cambios.tipo))
+    }
+    // replace: filtrar no es navegar, no tiene por qué llenar el historial.
+    setParams(siguientes, { replace: true })
+  }
 
   useEffect(() => {
     apiClient.get('/propiedades')
@@ -35,12 +64,26 @@ export default function ListadoPropiedades() {
     [propiedades],
   )
 
+  /* El término busca en dirección, descripción y tipo. La descripción es la que
+     nombra el barrio ("PH en Fisherton…"), así que buscar "fisherton" funciona
+     aunque el barrio no sea un campo propio de la propiedad. */
+  const porTexto = useMemo(() => {
+    const termino = sinAcentos(busqueda)
+    if (!termino) return disponibles
+    return disponibles.filter(p =>
+      sinAcentos(
+        `${p.direccion} ${p.descripcion ?? ''} ${p.tipoPropiedad?.descripcion ?? ''}`,
+      ).includes(termino),
+    )
+  }, [disponibles, busqueda])
+
   /* Los tipos salen de lo que hay publicado, no de una lista fija: un
      filtro que ofrece "Local comercial" cuando no hay ninguno sólo sirve
-     para llevar a un resultado vacío. */
+     para llevar a un resultado vacío. Con una búsqueda activa se cuentan
+     sobre los resultados, así el número del chip nunca miente. */
   const tipos = useMemo(() => {
     const cuenta = new Map<number, { descripcion: string; total: number }>()
-    for (const p of disponibles) {
+    for (const p of porTexto) {
       if (!p.tipoPropiedad) continue
       const previo = cuenta.get(p.tipoPropiedad.id)
       cuenta.set(p.tipoPropiedad.id, {
@@ -51,19 +94,19 @@ export default function ListadoPropiedades() {
     return [...cuenta.entries()]
       .map(([id, v]) => ({ id, ...v }))
       .sort((a, b) => a.descripcion.localeCompare(b.descripcion, 'es'))
-  }, [disponibles])
+  }, [porTexto])
 
   const visibles = useMemo(() => {
     const filtradas =
-      tipo === 'todos' ? disponibles : disponibles.filter(p => p.tipoPropiedad?.id === tipo)
+      tipo === 'todos' ? porTexto : porTexto.filter(p => p.tipoPropiedad?.id === tipo)
 
     if (orden === 'recientes') return filtradas
     return [...filtradas].sort((a, b) =>
       orden === 'precio-asc' ? a.precio - b.precio : b.precio - a.precio,
     )
-  }, [disponibles, tipo, orden])
+  }, [porTexto, tipo, orden])
 
-  const hayFiltros = tipos.length > 1 && disponibles.length > 3
+  const hayFiltros = tipos.length > 1 && porTexto.length > 3
 
   return (
     <section className="bg-arena-50">
@@ -81,19 +124,38 @@ export default function ListadoPropiedades() {
           )}
         </header>
 
+        {/* Qué se buscó, y cómo salir de esa búsqueda. Sin esto, quien llega
+            desde la portada ve una lista corta y no sabe por qué. */}
+        {busqueda && (
+          <p className="mb-6 flex flex-wrap items-center gap-2 text-sm text-tinta-700">
+            Resultados para
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-arena-300 bg-white py-1 ps-3 pe-1.5 font-medium text-tinta-900">
+              {busqueda}
+              <button
+                type="button"
+                onClick={() => actualizarParams({ q: null })}
+                className="grid size-5 place-items-center rounded-full text-tinta-500 transition-colors hover:bg-arena-100 hover:text-tinta-900"
+              >
+                <XMarkIcon className="size-3.5" aria-hidden="true" />
+                <span className="sr-only">Quitar la búsqueda</span>
+              </button>
+            </span>
+          </p>
+        )}
+
         {/* Filtros: aparecen sólo cuando hay algo que filtrar. Con cuatro
             propiedades, una barra de controles es ruido. */}
         {estado === 'listo' && hayFiltros && (
           <div className="mb-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
             <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tipo">
-              {[{ id: 'todos' as const, descripcion: 'Todas', total: disponibles.length }, ...tipos].map(t => {
+              {[{ id: 'todos' as const, descripcion: 'Todas', total: porTexto.length }, ...tipos].map(t => {
                 const activo = tipo === t.id
                 return (
                   <button
                     key={t.id}
                     type="button"
                     aria-pressed={activo}
-                    onClick={() => setTipo(t.id)}
+                    onClick={() => actualizarParams({ tipo: t.id })}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                       activo
                         ? 'border-terra-600 bg-terra-600 text-white'
@@ -135,14 +197,8 @@ export default function ListadoPropiedades() {
              había propiedades mientras todavía estaba cargando. */
           <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" aria-hidden="true">
             {Array.from({ length: 6 }).map((_, i) => (
-              <li key={i} className="overflow-hidden rounded-card bg-white shadow-card">
-                <div className="aspect-4/3 w-full animate-pulse bg-arena-100" />
-                <div className="space-y-3 p-5">
-                  <div className="h-2.5 w-20 animate-pulse rounded-full bg-arena-100" />
-                  <div className="h-4 w-3/4 animate-pulse rounded-full bg-arena-100" />
-                  <div className="h-3 w-full animate-pulse rounded-full bg-arena-100" />
-                  <div className="h-6 w-28 animate-pulse rounded-full bg-arena-100" />
-                </div>
+              <li key={i}>
+                <TarjetaEsqueleto />
               </li>
             ))}
           </ul>
@@ -171,6 +227,22 @@ export default function ListadoPropiedades() {
               Volvé a mirar en unos días: publicamos nuevas unidades seguido.
             </p>
           </div>
+        ) : porTexto.length === 0 ? (
+          <div className="rounded-card border border-arena-200 bg-white px-6 py-16 text-center">
+            <p className="font-display text-xl text-tinta-900">
+              No encontramos nada para «{busqueda}»
+            </p>
+            <p className="mt-2 text-sm text-tinta-500">
+              Probá con el nombre de la calle o del barrio, o mirá el catálogo completo.
+            </p>
+            <button
+              type="button"
+              onClick={() => actualizarParams({ q: null, tipo: 'todos' })}
+              className="accion accion-secundaria mt-6"
+            >
+              Ver todas
+            </button>
+          </div>
         ) : visibles.length === 0 ? (
           /* Vacío por filtro, no por catálogo: el mensaje tiene que decir
              eso y dar la salida, no repetir que no hay propiedades. */
@@ -183,7 +255,7 @@ export default function ListadoPropiedades() {
             </p>
             <button
               type="button"
-              onClick={() => setTipo('todos')}
+              onClick={() => actualizarParams({ tipo: 'todos' })}
               className="accion accion-secundaria mt-6"
             >
               Ver todas
