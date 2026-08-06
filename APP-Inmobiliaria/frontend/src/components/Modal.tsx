@@ -2,11 +2,15 @@ import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/re
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import type { ReactNode } from 'react'
 
-type Ancho = 'sm' | 'md'
+type Ancho = 'sm' | 'md' | 'lg' | 'xl'
 
 const anchos: Record<Ancho, string> = {
   sm: 'max-w-md',
   md: 'max-w-lg',
+  /** Para formularios de alta con campos en dos columnas. */
+  lg: 'max-w-2xl',
+  /** Para mostrar un documento: necesita ancho de página, no de formulario. */
+  xl: 'max-w-4xl',
 }
 
 /**

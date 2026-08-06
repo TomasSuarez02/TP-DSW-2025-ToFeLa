@@ -1,154 +1,163 @@
-import { useState } from "react";
-import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
-import type { EstadoDocumentacionCliente } from "../../types/senia";
+import { useState } from 'react'
+import { PaperClipIcon } from '@heroicons/react/24/outline'
+import Campo from '../ui/Campo'
+import { useFormularioApi } from '../../hooks/useFormularioApi'
+import type { EstadoDocumentacionCliente } from '../../types/senia'
 
 export interface DatosDocumento {
-  descripcion: string;
-  fecha_vencimiento: string;
-  archivo: File | null;
-  estado?: EstadoDocumentacionCliente;
+  descripcion: string
+  fecha_vencimiento: string
+  archivo: File | null
+  estado?: EstadoDocumentacionCliente
 }
 
 /**
  * Alta de un papel. Se usa desde los tres lugares donde se carga documentación:
  * el panel del agente, el modal de concretar y la vista del cliente.
  *
+ * Es sólo el formulario: el título, el cierre y el fondo los pone el Modal que
+ * lo contiene. Antes traía su propia tarjeta con título, pensada para vivir
+ * dentro de un `<div className="fixed inset-0">` escrito a mano en cada
+ * pantalla.
+ *
  * El selector de estado solo aparece para el agente: si lo carga él es porque
  * ya vio el papel, así que puede darlo por aprobado en el acto. Lo que sube el
  * cliente siempre queda pendiente de revisión.
  */
 export default function FormularioDocumento({
-  titulo,
   permiteEstado = false,
   campoExtra,
   onGuardar,
   onCancelar,
 }: {
-  titulo: string;
-  permiteEstado?: boolean;
+  permiteEstado?: boolean
   /** Campos que solo tienen sentido en una pantalla; hoy, elegir el cliente. */
-  campoExtra?: React.ReactNode;
-  onGuardar: (datos: DatosDocumento) => Promise<void>;
-  onCancelar: () => void;
+  campoExtra?: React.ReactNode
+  onGuardar: (datos: DatosDocumento) => Promise<void>
+  onCancelar: () => void
 }) {
-  const [descripcion, setDescripcion] = useState("");
-  const [fechaVencimiento, setFechaVencimiento] = useState("");
-  const [archivo, setArchivo] = useState<File | null>(null);
-  const [estado, setEstado] = useState<EstadoDocumentacionCliente>("aprobada");
-  const [guardando, setGuardando] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [descripcion, setDescripcion] = useState('')
+  const [fechaVencimiento, setFechaVencimiento] = useState('')
+  const [archivo, setArchivo] = useState<File | null>(null)
+  const [estado, setEstado] = useState<EstadoDocumentacionCliente>('aprobada')
+  const form = useFormularioApi()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
+    e.preventDefault()
 
-    const errores: FieldErrors = {};
-    if (descripcion.trim().length < 2) errores.descripcion = "La descripción es obligatoria";
-    if (!fechaVencimiento) errores.fecha_vencimiento = "La fecha de vencimiento es obligatoria";
+    const errores: Record<string, string> = {}
+    if (descripcion.trim().length < 2) errores.descripcion = 'Escribí de qué documento se trata.'
+    if (!fechaVencimiento) errores.fecha_vencimiento = 'Indicá hasta cuándo vale.'
     // Sin adjunto no hay nada que revisar; el backend también lo rechaza.
-    if (!archivo) errores.base64 = "Adjuntá el archivo del documento";
-    if (Object.keys(errores).length > 0) {
-      setFieldErrors(errores);
-      setSubmitError("Completá los campos obligatorios");
-      return;
-    }
-    setFieldErrors({});
+    if (!archivo) errores.base64 = 'Adjuntá el archivo del documento.'
 
-    setGuardando(true);
-    try {
-      await onGuardar({
+    if (Object.keys(errores).length > 0) {
+      form.setErroresCampo(errores)
+      return
+    }
+
+    await form.enviar(() =>
+      onGuardar({
         descripcion: descripcion.trim(),
         fecha_vencimiento: fechaVencimiento,
         archivo,
         ...(permiteEstado ? { estado } : {}),
-      });
-    } catch (error) {
-      const parsed = parseApiError(error);
-      setSubmitError(parsed.message);
-      setFieldErrors(parsed.fieldErrors);
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  const claseInput = (error?: string) =>
-    `w-full px-3 py-2 border rounded-lg mb-1 bg-[#fffdf9] ${error ? "border-red-400" : "border-[#e5d8c2]"}`;
+      }),
+    )
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-      <h3 className="text-xl font-semibold mb-4 text-neutral-800">{titulo}</h3>
-
-      {submitError && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          {submitError}
-        </div>
+    <form onSubmit={handleSubmit} noValidate className="space-y-4">
+      {form.error && (
+        <p
+          role="alert"
+          className="rounded-lg border border-alerta-700/20 bg-alerta-50 px-4 py-3 text-sm text-alerta-700"
+        >
+          {form.error}
+        </p>
       )}
 
       {campoExtra}
 
-      <label className="block text-sm text-neutral-700 mb-1">Tipo de documento</label>
-      <input
-        type="text"
-        value={descripcion}
-        onChange={(e) => setDescripcion(e.target.value)}
-        placeholder="Recibo de sueldo, garantía propietaria, DNI…"
-        className={claseInput(fieldErrors.descripcion)}
-      />
-      {fieldErrors.descripcion && <p className="text-sm text-red-600 mb-2">{fieldErrors.descripcion}</p>}
+      <Campo etiqueta="Tipo de documento" error={form.erroresCampo.descripcion} requerido>
+        {(props) => (
+          <input
+            {...props}
+            type="text"
+            placeholder="Recibo de sueldo, garantía propietaria, DNI…"
+            value={descripcion}
+            onChange={(e) => {
+              setDescripcion(e.target.value)
+              form.limpiarCampo('descripcion')
+            }}
+          />
+        )}
+      </Campo>
 
-      <label className="block text-sm text-neutral-700 mb-1 mt-3">Vence el</label>
-      <input
-        type="date"
-        value={fechaVencimiento}
-        onChange={(e) => setFechaVencimiento(e.target.value)}
-        className={claseInput(fieldErrors.fecha_vencimiento)}
-      />
-      {fieldErrors.fecha_vencimiento && (
-        <p className="text-sm text-red-600 mb-2">{fieldErrors.fecha_vencimiento}</p>
+      <Campo
+        etiqueta="Vence el"
+        ayuda="Un documento vencido bloquea el cierre del alquiler."
+        error={form.erroresCampo.fecha_vencimiento}
+        requerido
+      >
+        {(props) => (
+          <input
+            {...props}
+            type="date"
+            value={fechaVencimiento}
+            onChange={(e) => {
+              setFechaVencimiento(e.target.value)
+              form.limpiarCampo('fecha_vencimiento')
+            }}
+          />
+        )}
+      </Campo>
+
+      <Campo etiqueta="Archivo" ayuda="PDF o imagen." error={form.erroresCampo.base64} requerido>
+        {(props) => (
+          <input
+            {...props}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            onChange={(e) => {
+              setArchivo(e.target.files?.[0] ?? null)
+              form.limpiarCampo('base64')
+            }}
+            className={`${props.className} file:me-3 file:rounded-md file:border-0 file:bg-arena-200 file:px-3 file:py-1.5 file:text-sm file:text-tinta-900`}
+          />
+        )}
+      </Campo>
+
+      {archivo && (
+        <p className="flex items-center gap-1.5 text-xs text-tinta-500">
+          <PaperClipIcon className="size-4" aria-hidden="true" />
+          {archivo.name}
+        </p>
       )}
-      <p className="text-xs text-neutral-500 mb-3">Un documento vencido bloquea el cierre del alquiler.</p>
-
-      <label className="block text-sm text-neutral-700 mb-1">Archivo (PDF o imagen)</label>
-      <input
-        type="file"
-        accept=".pdf,.jpg,.jpeg,.png,.webp"
-        onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
-        className={`w-full text-sm mb-1 ${fieldErrors.base64 ? "border border-red-400 rounded-lg p-2" : ""}`}
-      />
-      {archivo && <p className="text-xs text-neutral-500 mb-3">📎 {archivo.name}</p>}
-      {fieldErrors.base64 && <p className="text-sm text-red-600 mb-2">{fieldErrors.base64}</p>}
 
       {permiteEstado && (
-        <>
-          <label className="block text-sm text-neutral-700 mb-1 mt-3">Estado</label>
-          <select
-            value={estado}
-            onChange={(e) => setEstado(e.target.value as EstadoDocumentacionCliente)}
-            className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg mb-5 bg-[#fffdf9]"
-          >
-            <option value="aprobada">Aprobada — ya verifiqué el papel</option>
-            <option value="pendiente">Pendiente de revisión</option>
-          </select>
-        </>
+        <Campo etiqueta="Estado">
+          {(props) => (
+            <select
+              {...props}
+              value={estado}
+              onChange={(e) => setEstado(e.target.value as EstadoDocumentacionCliente)}
+            >
+              <option value="aprobada">Aprobada — ya verifiqué el papel</option>
+              <option value="pendiente">Pendiente de revisión</option>
+            </select>
+          )}
+        </Campo>
       )}
 
-      <div className="flex gap-3 mt-4">
-        <button
-          type="button"
-          onClick={onCancelar}
-          className="flex-1 border border-neutral-300 text-neutral-700 py-2 rounded-lg text-sm font-medium"
-        >
+      <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+        <button type="button" onClick={onCancelar} className="accion accion-fantasma">
           Cancelar
         </button>
-        <button
-          type="submit"
-          disabled={guardando}
-          className="flex-1 bg-[#846a41] hover:bg-[#6d5735] disabled:bg-neutral-300 text-white py-2 rounded-lg text-sm font-medium"
-        >
-          {guardando ? "Guardando…" : "Guardar"}
+        <button type="submit" disabled={form.enviando} className="accion accion-primaria">
+          {form.enviando ? 'Guardando…' : 'Guardar documento'}
         </button>
       </div>
     </form>
-  );
+  )
 }

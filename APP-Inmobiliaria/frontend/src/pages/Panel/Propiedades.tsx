@@ -1,779 +1,721 @@
-import { useState, useEffect, useCallback } from "react";
-import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
-import apiClient from "../../utils/apiClient";
-import { formatearFecha as formatearFechaCorta } from "../../utils/formato";
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  ClockIcon,
+  HomeModernIcon,
+  PencilSquareIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline'
+import apiClient from '../../utils/apiClient'
+import { formatearFecha, formatearMoneda } from '../../utils/formato'
+import { tonoEstadoPropiedad } from '../../lib/estados'
+import { useRecurso } from '../../hooks/useRecurso'
+import { useFormularioApi } from '../../hooks/useFormularioApi'
+import { useNotificacion } from '../../hooks/useNotificacion'
+import Modal from '../../components/Modal'
+import Badge from '../../components/ui/Badge'
+import Campo from '../../components/ui/Campo'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import EstadoVista from '../../components/ui/EstadoVista'
+import Tabla, { type Columna } from '../../components/ui/Tabla'
 
 /** Quién tiene tomada la propiedad. Solo viene si el pedido lo hace un agente. */
 export interface Ocupacion {
-  origen: 'senia' | 'alquiler';
-  cliente: { id?: number; nombre: string };
-  desde: string;
-  hasta: string | null;
+  origen: 'senia' | 'alquiler'
+  cliente: { id?: number; nombre: string }
+  desde: string
+  hasta: string | null
 }
 
 export interface Propiedad {
-  id: number;
-  direccion: string;
-  precio: number;
-  estado: string;
-  hora_desde?: string;
-  hora_hasta?: string;
-  descripcion?: string;
-  tipoPropiedad?: { id: number; descripcion: string };
-  imagenes?: { id: number; path: string }[];
-  ocupacion?: Ocupacion | null;
+  id: number
+  direccion: string
+  precio: number
+  estado: string
+  hora_desde?: string
+  hora_hasta?: string
+  descripcion?: string
+  tipoPropiedad?: { id: number; descripcion: string }
+  imagenes?: { id: number; path: string }[]
+  ocupacion?: Ocupacion | null
 }
 
+/** El backend la expone como `descripcion`, igual que el resto de las tablas de referencia. */
 interface TipoPropiedad {
-  id: number;
-  nombre: string;
+  id: number
+  descripcion: string
 }
 
 export interface Cliente {
-  id: number;
-  nombre: string;
-  apellido: string;
+  id: number
+  nombre: string
+  apellido: string
 }
 
-export interface Senia {
-  id?: number;
-  idPropiedad?: number;
-  idCliente?: number;
-  propiedad?: number;
-  cliente?: number;
-  importe?: number;
+const ESTADOS = ['disponible', 'señada', 'alquilada'] as const
+
+const FORM_VACIO = {
+  direccion: '',
+  precio: '',
+  estado: 'disponible',
+  descripcion: '',
+  hora_desde: '',
+  hora_hasta: '',
+  tipoPropiedad: '',
+}
+
+/** El formulario tenía `noValidate` y ninguna validación de JS detrás. */
+function validar(datos: typeof FORM_VACIO): Record<string, string> {
+  const errores: Record<string, string> = {}
+
+  if (!datos.direccion.trim()) errores.direccion = 'Ingresá la dirección.'
+  const precio = Number(datos.precio)
+  if (!datos.precio.trim()) errores.precio = 'Ingresá el precio del alquiler.'
+  else if (!Number.isFinite(precio) || precio <= 0) errores.precio = 'Tiene que ser un número mayor a cero.'
+  if (!datos.tipoPropiedad) errores.tipoPropiedad = 'Elegí el tipo de propiedad.'
+  if (!datos.hora_desde) errores.hora_desde = 'Indicá desde qué hora se puede visitar.'
+  if (!datos.hora_hasta) errores.hora_hasta = 'Indicá hasta qué hora se puede visitar.'
+  else if (datos.hora_desde && datos.hora_hasta <= datos.hora_desde)
+    errores.hora_hasta = 'Tiene que ser posterior a la hora de inicio.'
+
+  return errores
+}
+
+/** Recorta los segundos que devuelve MySQL para una columna `time`. */
+function hora(valor?: string): string {
+  return valor ? valor.slice(0, 5) : '—'
 }
 
 export default function Propiedades() {
-  const [propiedades, setPropiedades] = useState<Propiedad[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingProperty, setEditingProperty] = useState<Propiedad | null>(null);
-  const [estadoFiltro, setEstadoFiltro] = useState<string>("todos");
-  const [open, setOpen] = useState<boolean>(false);
-  const [selectedProperty, setSelectedProperty] = useState<Propiedad | null>(null);
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [cliente, setCliente] = useState<Cliente | null>(null);
-  const [importe, setImporte] = useState<number | null>(null);
-  // estado para la seña (no guardamos el objeto aquí antes de enviarlo)
+  const { notificar } = useNotificacion()
 
+  const {
+    datos: propiedades,
+    cargando,
+    error,
+    recargar,
+  } = useRecurso<Propiedad[]>(
+    // El token va sí o sí: sin él el backend no devuelve la ocupación.
+    async () => (await apiClient.get('/propiedades')).data.data ?? [],
+    [],
+    [],
+  )
 
-  const [formData, setFormData] = useState({
-    direccion: "",
-    precio: "",
-    estado: "disponible",
-    descripcion: "",
-    hora_desde: "",
-    hora_hasta: "",
-    tipoPropiedad: "",
-  });
+  const { datos: tipos } = useRecurso<TipoPropiedad[]>(
+    async () => (await apiClient.get('/tipopropiedades')).data.data ?? [],
+    [],
+    [],
+  )
 
-  const [tiposPropiedad, setTiposPropiedad] = useState<TipoPropiedad[]>([]);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [estadoFiltro, setEstadoFiltro] = useState<string>('todos')
 
-  // Cargar datos
-  const fetchPropiedades = useCallback(async () => {
-    try {
-      // Por apiClient y no axios pelado: lleva el token, y sin él el backend
-      // no devuelve la ocupación (quién tiene tomada cada propiedad).
-      const res = await apiClient.get("/propiedades");
-      setPropiedades(res.data.data || []);
-      console.log("Propiedades cargadas:", res.data.data);
-    } catch (error) {
-      console.error("Error al cargar propiedades:", error);
-    } finally {
-      setLoading(false);
+  // --- Alta y edición ---
+  const [formAbierto, setFormAbierto] = useState(false)
+  const [editando, setEditando] = useState<Propiedad | null>(null)
+  const [formData, setFormData] = useState(FORM_VACIO)
+  const [imagenes, setImagenes] = useState<File[]>([])
+  const form = useFormularioApi()
+
+  // --- Diálogos ---
+  const [aEliminar, setAEliminar] = useState<Propiedad | null>(null)
+  const [aSenar, setASenar] = useState<Propiedad | null>(null)
+
+  const propiedadesFiltradas = useMemo(
+    () =>
+      estadoFiltro === 'todos'
+        ? propiedades
+        : propiedades.filter((p) => p.estado?.toLowerCase() === estadoFiltro),
+    [propiedades, estadoFiltro],
+  )
+
+  // Las vistas previas se creaban con URL.createObjectURL() dentro del render y
+  // se "liberaban" creando otra URL nueva para revocarla, que no libera nada.
+  const previews = useMemo(() => imagenes.map((img) => URL.createObjectURL(img)), [imagenes])
+  useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews])
+
+  const cambiar = (campo: keyof typeof FORM_VACIO, valor: string) => {
+    setFormData((prev) => ({ ...prev, [campo]: valor }))
+    form.limpiarCampo(campo)
+  }
+
+  const cerrarFormulario = () => {
+    setFormAbierto(false)
+    setEditando(null)
+    setFormData(FORM_VACIO)
+    setImagenes([])
+    form.limpiar()
+  }
+
+  const abrirEdicion = (p: Propiedad) => {
+    setEditando(p)
+    setFormData({
+      direccion: p.direccion ?? '',
+      precio: String(p.precio ?? ''),
+      estado: p.estado ?? 'disponible',
+      descripcion: p.descripcion ?? '',
+      hora_desde: hora(p.hora_desde) === '—' ? '' : hora(p.hora_desde),
+      hora_hasta: hora(p.hora_hasta) === '—' ? '' : hora(p.hora_hasta),
+      tipoPropiedad: p.tipoPropiedad?.id ? String(p.tipoPropiedad.id) : '',
+    })
+    setImagenes([])
+    form.limpiar()
+    setFormAbierto(true)
+  }
+
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const errores = validar(formData)
+    if (Object.keys(errores).length > 0) {
+      form.setErroresCampo(errores)
+      return
     }
-  }, []);
 
-  const fetchClientes = useCallback(async () => {
-    try {
-      const res = await apiClient.get("/clientes");
-      setClientes(res.data.data || []);
-      console.log("Clientes cargados:", res.data.data);
-    } catch (error) {
-      console.error("Error al cargar clientes:", error);
-    } finally {
-      // No forzar re-render de loading aquí si ya fue manejado por fetchPropiedades
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchDependencias = useCallback(async () => {
-    try {
-      const tipos = await apiClient.get("/tipopropiedades");
-      setTiposPropiedad(tipos.data.data || []);
-      console.log("Tipos de propiedad cargados:", tipos.data.data);
-    } catch (error) {
-      console.error("Error al cargar tipos de propiedad:", error);
-    }
-  }, []);
-
-  // useEffect con dependencias estables — se ejecutará una vez al montar
-  useEffect(() => {
-    fetchPropiedades();
-    fetchDependencias();
-  }, [fetchPropiedades, fetchDependencias]);
-
-  // Cargar clientes sólo cuando se abra el modal; fetchClientes está memoizado
-  useEffect(() => {
-    if (open) fetchClientes();
-  }, [open, fetchClientes]);
-
-  // Handlers
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setSubmitError(null);
-    setFieldErrors((prev) => {
-      if (!prev[name]) return prev;
-      const next = { ...prev };
-      delete next[name];
-      return next;
-    });
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-
-    selectedImages.forEach(img => {
-      URL.revokeObjectURL(URL.createObjectURL(img));
-    });
-    
-    const files = e.target.files ? Array.from(e.target.files) : [];
-    setSelectedImages(files);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
-    setFieldErrors({});
-    try {
+    const ok = await form.enviar(async () => {
       const payload = {
-        direccion: formData.direccion,
-        precio: parseFloat(formData.precio),
+        direccion: formData.direccion.trim(),
+        precio: Number(formData.precio),
         estado: formData.estado,
-        descripcion: formData.descripcion || undefined,
+        descripcion: formData.descripcion.trim() || undefined,
         hora_desde: formData.hora_desde,
         hora_hasta: formData.hora_hasta,
-        tipoPropiedad: formData.tipoPropiedad
-          ? parseInt(formData.tipoPropiedad)
-          : undefined,
-      };
-
-      let propiedadId: number | null = null;
-
-      if (editingProperty) {
-        await apiClient.put(
-          `/propiedades/${editingProperty.id}`,
-          payload
-        );
-        propiedadId = editingProperty.id;
-        alert("Propiedad actualizada correctamente");
-      } else {
-        const res = await apiClient.post("/propiedades", payload);
-        propiedadId = res.data.data.id;
-        alert("Propiedad creada correctamente");
-
-        // Subir imágenes correctamente con el formato que espera el backend
-        if (selectedImages.length > 0) {
-          for (const img of selectedImages) {
-            // Convertir archivo a base64
-            const base64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.readAsDataURL(img);
-            });
-
-            // Enviar con el formato correcto que espera el backend
-            await apiClient.post("/imagenes", {
-              propiedad: propiedadId,
-              base64: base64,
-              filename: `${Date.now()}-${img.name}` // nombre único
-            });
-          }
-        }
+        tipoPropiedad: Number(formData.tipoPropiedad),
       }
 
-      resetForm();
-      fetchPropiedades();
-    } catch (error) {
-      console.error("Error al guardar propiedad:", error);
-      const parsed = parseApiError(error);
-      setSubmitError(parsed.message);
-      setFieldErrors(parsed.fieldErrors);
-    }
-  };
+      if (editando) {
+        await apiClient.put(`/propiedades/${editando.id}`, payload)
+        return
+      }
 
-  const handleDelete = async (id: number) => {
-    if (confirm("¿Seguro que querés eliminar esta propiedad?")) {
+      const res = await apiClient.post('/propiedades', payload)
+      const propiedadId: number = res.data.data.id
+
+      for (const img of imagenes) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = () => reject(new Error(`No se pudo leer ${img.name}`))
+          reader.readAsDataURL(img)
+        })
+
+        await apiClient.post('/imagenes', {
+          propiedad: propiedadId,
+          base64,
+          filename: `${Date.now()}-${img.name}`,
+        })
+      }
+    })
+
+    if (!ok) return
+
+    notificar(editando ? 'Propiedad actualizada' : 'Propiedad creada')
+    cerrarFormulario()
+    await recargar()
+  }
+
+  const eliminar = useCallback(
+    async (p: Propiedad) => {
       try {
-        await apiClient.delete(`/propiedades/${id}`);
-        fetchPropiedades();
-        alert("Propiedad eliminada correctamente");
-      } catch (error) {
-        console.error("Error al eliminar propiedad:", error);
-        alert("Error al eliminar propiedad, tiene una seña o visita asociada");
+        await apiClient.delete(`/propiedades/${p.id}`)
+      } catch {
+        // El backend rechaza el borrado si hay señas o visitas colgando. Antes
+        // el motivo se adivinaba desde un alert() con el texto fijo.
+        throw new Error('No se pudo eliminar: la propiedad tiene señas o visitas asociadas.')
       }
-    }
-  };
+      setAEliminar(null)
+      notificar('Propiedad eliminada')
+      await recargar()
+    },
+    [notificar, recargar],
+  )
 
-  const handleEdit = (propiedad: Propiedad) => {
-    setEditingProperty(propiedad);
-    setFormData({
-      direccion: propiedad.direccion || "",
-      precio: propiedad.precio.toString(),
-      estado: propiedad.estado || "disponible",
-      descripcion: propiedad.descripcion || "",
-      hora_desde: propiedad.hora_desde || "",
-      hora_hasta: propiedad.hora_hasta || "",
-      tipoPropiedad: propiedad.tipoPropiedad?.id?.toString() || "",
-    });
-    setShowForm(true);
-  };
-
-  const seniaPost = useCallback(async (data: Senia | null) => {
-    if (!data) return;
-
-    // intentar obtener id de propiedad desde distintos posibles campos
-    const d = data as Partial<Senia>;
-    const propiedadId = d.propiedad ?? d.idPropiedad ?? null;
-
-    // validar que el importe no supere el precio de la propiedad
-    if (propiedadId && d.importe != null) {
-      // buscar en la lista local primero
-      let prop = propiedades.find((p) => p.id === Number(propiedadId));
-      if (!prop) {
-        // intentar traer la propiedad puntual
-        try {
-          const resp = await apiClient.get(`/propiedades/${propiedadId}`);
-          prop = resp.data.data;
-        } catch (err) {
-          console.warn('No se pudo cargar la propiedad para validación del importe', err);
-        }
-      }
-
-      if (prop && typeof prop.precio === 'number') {
-        if ((d.importe as number) > prop.precio) {
-          alert(`El importe de la seña no puede ser mayor que el precio de la propiedad (${prop.precio}).`);
-          return;
-        }
-      }
-    }
-
-    try {
-      const res = await apiClient.post('/senias', data);
-      console.log('Senia guardada:', res.data);
-      alert('Alquiler señado con éxito');
-
-      if (propiedadId) {
-        try {
-          await apiClient.put(`/propiedades/${propiedadId}`, { estado: 'señada' });
-          fetchPropiedades();
-        } catch (err) {
-          console.error('Error actualizando estado de propiedad', err);
-        }
-      }
-
-      setOpen(false);
-    } catch (err) {
-      console.error('Error señando alquiler', err);
-      alert('No se pudo agendar la visita');
-    }
-  }, [fetchPropiedades, propiedades]);
-
-  const resetForm = () => {
-    selectedImages.forEach(img => {
-      URL.revokeObjectURL(URL.createObjectURL(img));
-    });
-    
-    setFormData({
-      direccion: "",
-      precio: "",
-      estado: "disponible",
-      descripcion: "",
-      hora_desde: "",
-      hora_hasta: "",
-      tipoPropiedad: "",
-    });
-    setSelectedImages([]);
-    setEditingProperty(null);
-    setShowForm(false);
-    setSubmitError(null);
-    setFieldErrors({});
-  };
-
-  // Utils
-  const getEstadoColor = (estado: string) => {
-    switch (estado.toLowerCase()) {
-      case "disponible":
-        return "bg-green-100 text-green-800";
-      case "señada":
-        return "bg-yellow-100 text-yellow-800";
-      case "alquilada":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  // Filtrado
-  const propiedadesFiltradas =
-    estadoFiltro === "todos"
-      ? propiedades
-      : propiedades.filter(
-          (p) => p.estado.toLowerCase() === estadoFiltro.toLowerCase()
-        );
-
-  // Render
-  return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h2 className="text-3xl font-semibold text-neutral-900">
-          Gestión de Propiedades
-        </h2>
+  const columnas: Columna<Propiedad>[] = [
+    {
+      id: 'propiedad',
+      encabezado: 'Propiedad',
+      principal: true,
+      celda: (p) => (
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-neutral-800">
-            Filtrar por estado:
+          {p.imagenes?.[0] ? (
+            <img
+              // Antes era http://localhost:3000 escrito a mano: fuera de la
+              // máquina del desarrollador, todas las miniaturas rompían.
+              src={p.imagenes[0].path}
+              alt=""
+              className="size-11 shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-arena-100">
+              <HomeModernIcon className="size-5 text-arena-400" aria-hidden="true" />
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium text-tinta-900">{p.direccion}</p>
+            <p className="truncate text-xs text-tinta-500">
+              {p.tipoPropiedad?.descripcion ?? 'Sin tipo'} · #{p.id}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'precio',
+      encabezado: 'Precio',
+      alinear: 'derecha',
+      celda: (p) => <span className="font-medium text-terra-600">{formatearMoneda(p.precio)}</span>,
+    },
+    {
+      id: 'estado',
+      encabezado: 'Estado',
+      celda: (p) => (
+        <div className="flex flex-col items-start gap-1">
+          <Badge tono={tonoEstadoPropiedad(p.estado)}>{p.estado}</Badge>
+          {p.estado?.toLowerCase() !== 'disponible' &&
+            (p.ocupacion ? (
+              <span className="text-xs text-tinta-500">
+                {p.ocupacion.cliente.nombre} · desde el {formatearFecha(p.ocupacion.desde)}
+              </span>
+            ) : (
+              <span className="text-xs text-ambar-700">Sin seña ni alquiler que lo respalde</span>
+            ))}
+        </div>
+      ),
+    },
+    {
+      id: 'visitas',
+      encabezado: 'Visitas',
+      ocultarEnMobile: true,
+      celda: (p) => (
+        <span className="inline-flex items-center gap-1.5 text-sm text-tinta-500">
+          <ClockIcon className="size-4" aria-hidden="true" />
+          {hora(p.hora_desde)} a {hora(p.hora_hasta)}
+        </span>
+      ),
+    },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="font-display text-2xl text-tinta-900">Propiedades</h1>
+          <p className="mt-0.5 text-sm text-tinta-500">
+            {propiedades.length} {propiedades.length === 1 ? 'propiedad cargada' : 'propiedades cargadas'}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <label htmlFor="filtro-estado" className="sr-only">
+            Filtrar por estado
           </label>
           <select
+            id="filtro-estado"
             value={estadoFiltro}
             onChange={(e) => setEstadoFiltro(e.target.value)}
-            className="border border-[#e5d8c2] rounded-lg px-3 py-2 bg-[#fffdf9] text-[#1a1a1a] focus:ring-2 focus:ring-[#d4b89e]"
+            className="rounded-lg border border-arena-300 bg-white px-3 py-2 text-sm text-tinta-900"
           >
-            <option value="todos">Todos</option>
-            <option value="disponible">Disponible</option>
-            <option value="señada">Señada</option>
-            <option value="alquilada">Alquilada</option>
+            <option value="todos">Todos los estados</option>
+            {ESTADOS.map((e) => (
+              <option key={e} value={e}>
+                {e[0].toUpperCase() + e.slice(1)}
+              </option>
+            ))}
           </select>
 
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-2 rounded-lg font-medium"
-          >
-            {showForm ? "Cerrar" : "+ Nueva Propiedad"}
+          <button type="button" onClick={() => setFormAbierto(true)} className="accion accion-primaria">
+            <PlusIcon className="size-5" aria-hidden="true" />
+            Nueva propiedad
           </button>
         </div>
       </div>
 
-      {/* Formulario */}
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className="grid grid-cols-1 md:grid-cols-2 gap-4"
-          >
-            {submitError && (
-              <div className="col-span-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
-                {submitError}
-              </div>
-            )}
-            {/* Campos existentes */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Dirección *
-              </label>
-              <input
-                type="text"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.direccion ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.direccion && <p className="mt-1 text-sm text-red-600">{fieldErrors.direccion}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Precio ($) *
-              </label>
-              <input
-                type="number"
-                name="precio"
-                value={formData.precio}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.precio ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.precio && <p className="mt-1 text-sm text-red-600">{fieldErrors.precio}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Estado *
-              </label>
-              <select
-                name="estado"
-                value={formData.estado}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.estado ? "border-red-400" : "border-[#e5d8c2]"}`}
-              >
-                <option value="disponible">Disponible</option>
-                <option value="señada">Señada</option>
-                <option value="alquilada">Alquilada</option>
-              </select>
-              {fieldErrors.estado && <p className="mt-1 text-sm text-red-600">{fieldErrors.estado}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Tipo de Propiedad *
-              </label>
-              <select
-                name="tipoPropiedad"
-                value={formData.tipoPropiedad}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.tipoPropiedad ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              >
-                <option value="">Seleccionar tipo...</option>
-                {tiposPropiedad.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
-                  </option>
-                ))}
-              </select>
-              {fieldErrors.tipoPropiedad && <p className="mt-1 text-sm text-red-600">{fieldErrors.tipoPropiedad}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Hora Desde *
-              </label>
-              <input
-                type="time"
-                name="hora_desde"
-                value={formData.hora_desde}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.hora_desde ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.hora_desde && <p className="mt-1 text-sm text-red-600">{fieldErrors.hora_desde}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Hora Hasta *
-              </label>
-              <input
-                type="time"
-                name="hora_hasta"
-                value={formData.hora_hasta}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.hora_hasta ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.hora_hasta && <p className="mt-1 text-sm text-red-600">{fieldErrors.hora_hasta}</p>}
-            </div>
-
-            <div className="col-span-2">
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Descripción
-              </label>
-              <textarea
-                name="descripcion"
-                value={formData.descripcion}
-                onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
-                rows={4}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a] resize-none"
-                placeholder="Describe las características de esta propiedad..."
-              />
-            </div>
-
-            <div className="col-span-2">
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Imágenes de la propiedad
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full px-3 py-2 border border-[#e5d8c2] rounded-lg bg-[#fffdf9] text-[#1a1a1a]"
-              />
-              {selectedImages.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-3">
-                  {selectedImages.map((img, i) => (
-                    <img
-                      key={i}
-                      src={URL.createObjectURL(img)}
-                      alt={`img-${i}`}
-                      className="h-20 w-20 object-cover rounded-lg border"
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Botones */}
-            <div className="col-span-2 flex justify-end gap-3 mt-4">
+      <EstadoVista
+        cargando={cargando}
+        error={error}
+        vacio={propiedadesFiltradas.length === 0}
+        onReintentar={recargar}
+        mensajeVacio={
+          propiedades.length === 0 ? 'Todavía no hay propiedades' : 'Ninguna propiedad con ese estado'
+        }
+        detalleVacio={
+          propiedades.length === 0
+            ? 'Cargá la primera para que aparezca en el listado de alquiler.'
+            : 'Probá con otro filtro.'
+        }
+        accionVacio={
+          propiedades.length === 0 && (
+            <button type="button" onClick={() => setFormAbierto(true)} className="accion accion-primaria accion-sm">
+              <PlusIcon className="size-4" aria-hidden="true" />
+              Nueva propiedad
+            </button>
+          )
+        }
+      >
+        <Tabla
+          datos={propiedadesFiltradas}
+          columnas={columnas}
+          claveFila={(p) => p.id}
+          acciones={(p) => (
+            <>
               <button
                 type="button"
-                onClick={resetForm}
-                className="px-4 py-2 border border-[#e5d8c2] rounded-lg text-[#1a1a1a]"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] rounded-lg font-medium text-neutral-900"
-              >
-                {editingProperty ? "Actualizar" : "Crear"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Lista */}
-      {loading ? (
-        <div className="text-center py-10 text-neutral-600">
-          Cargando propiedades...
-        </div>
-      ) : propiedadesFiltradas.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-medium text-neutral-700">
-            No hay propiedades registradas
-          </h3>
-          <p className="text-neutral-500 mb-4">Agregá la primera propiedad</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-3 rounded-lg"
-          >
-            + Agregar Propiedad
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {propiedadesFiltradas.map((p) => (
-            <div
-              key={p.id}
-              className="bg-white rounded-xl shadow-md border p-4"
-            >
-              {/* Imagen principal de la propiedad */}
-              {p.imagenes && p.imagenes.length > 0 && (
-                <div className="mb-3">
-                  <img
-                    src={`http://localhost:3000/images/${p.imagenes[0].path.split('/').pop()}`}
-                    alt="Imagen propiedad"
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                </div>
-              )}
-
-              <div className="flex justify-between mb-2">
-                <h3 className="font-semibold text-lg text-neutral-900">
-                  #{p.id}
-                </h3>
-                <span
-                  className={`px-3 py-1 text-xs font-medium rounded-full ${getEstadoColor(
-                    p.estado
-                  )}`}
-                >
-                  {p.estado.toUpperCase()}
-                </span>
-              </div>
-
-              <div className="text-2xl font-bold mb-1 text-neutral-900">
-                ${p.precio.toLocaleString()}
-              </div>
-              <p className="text-sm text-neutral-600">📍 {p.direccion}</p>
-              <p className="text-sm text-neutral-600">
-                🏠 {p.tipoPropiedad?.descripcion || "Sin tipo"}
-              </p>
-              <p className="text-sm text-neutral-600">
-                🕐 {p.hora_desde} - {p.hora_hasta}
-              </p>
-
-              {/* Por qué la propiedad no está disponible. Si el estado se puso a
-                  mano no hay seña ni alquiler detrás, y conviene decirlo. */}
-              {p.estado?.toLowerCase() !== "disponible" && (
-                <div className="mt-3 pt-3 border-t border-[#f0e6d8] text-sm">
-                  {p.ocupacion ? (
-                    <>
-                      <p className="text-neutral-700">
-                        {p.ocupacion.origen === "alquiler" ? "🔑 Alquilada por" : "💰 Señada por"}{" "}
-                        <span className="font-medium">{p.ocupacion.cliente.nombre}</span>
-                      </p>
-                      <p className="text-neutral-500 text-xs">
-                        Desde el {formatearFechaCorta(p.ocupacion.desde)}
-                        {p.ocupacion.hasta && ` · hasta el ${formatearFechaCorta(p.ocupacion.hasta)}`}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-amber-700 text-xs">
-                      ⚠️ Estado puesto manualmente: no hay seña ni alquiler que lo respalde.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => handleEdit(p)}
-                  className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  className="flex-1 bg-red-100 hover:bg-red-200 text-red-800 py-2 rounded-lg"
-                >
-                  Eliminar
-                </button>
-                <button
-                  onClick={() => {
-                    // Solo se puede señar una propiedad que esté disponible
-                    const estado = p.estado?.toLowerCase() ?? '';
-                    if (estado === 'señada' || estado === 'alquilada') {
-                      alert('No se puede señar: la propiedad ya está señada o alquilada.');
-                      return;
-                    }
-
-                    console.log('Open modal click');
-                    setSelectedProperty(p);
-                    setOpen(true);
-                  }}
-                  aria-haspopup="dialog"
-                  aria-expanded={open}
-                  aria-controls="property-modal"
-                  className="flex-1 bg-orange-100 hover:bg-orange-200 text-orange-600 py-2 rounded-lg"
-                >
-                  Señar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        
-      )}
-
-      {/* Modal único para señar propiedad (fuera del map) */}
-      {open && selectedProperty && (
-        <div className="fixed inset-0 z-[999] grid h-screen w-screen place-items-center">
-          {/* Fondo semitransparente */}
-          <div
-            className="fixed inset-0 bg-[#f5f2ed] bg-opacity-95 backdrop-blur-sm"
-            onClick={() => {
-              setOpen(false);
-              setSelectedProperty(null);
-              setCliente(null);
-              setImporte(null);
-            }}
-          />
-
-          {/* Contenedor principal del modal */}
-          <div className="relative m-4 p-4 w-11/12 max-w-3xl rounded-lg bg-white shadow-sm z-10">
-            {/* Título */}
-            <div className="flex shrink-0 items-center pb-4 text-xl font-medium text-slate-800">
-              Señar propiedad
-            </div>
-
-            {/* Cuerpo */}
-            <div className="relative border-t border-slate-200 py-4 leading-normal text-slate-600 font-light">
-              {/* Propiedad */}
-              <label htmlFor="propiedad" className="block">
-                Propiedad
-              </label>
-              <input
-                id="propiedad"
-                type="text"
-                readOnly
-                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
-                          focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                value={selectedProperty.direccion}
-              />
-
-              {/* Cliente */}
-              <label htmlFor="cliente" className="block mt-4">
-                Cliente
-              </label>
-              <select
-                id="cliente"
-                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm 
-                          focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                value={cliente?.id ?? ''}
-                onChange={(e) => setCliente(clientes.find(c => c.id === Number(e.target.value)) || null)}
-              >
-                {clientes.length === 0 ? (
-                  <option>No hay clientes disponibles</option>
-                ) : (
-                  <>
-                    <option value="" disabled>
-                      Elegí un cliente
-                    </option>
-                    {clientes.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.nombre} {s.apellido}
-                      </option>
-                    ))}
-                  </>
-                )}
-              </select>
-
-              <label htmlFor="importe" className="block mt-4">
-                Importe
-              </label>
-              <input
-                type="number"
-                id="importe"
-                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm"
-                value={importe ?? ''}
-                onChange={(e) => setImporte(e.target.value === '' ? null : Number(e.target.value))}
-              />
-            </div>
-
-            {/* Botones */}
-            <div className="flex shrink-0 flex-wrap items-center pt-4 justify-end">
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setSelectedProperty(null);
-                  setCliente(null);
-                  setImporte(null);
-                }}
-                className="rounded-md border border-transparent py-2 px-4 text-center text-sm 
-                          text-slate-600 transition-all hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-100 
-                          disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                type="button"
-              >
-                Cancelar
-              </button>
-
-              <button
-                onClick={() => {
-                  if (!clientes.length || !cliente) {
-                    alert('Selecciona un cliente.');
-                    return;
-                  }
-
-                  const data: Senia = {
-                    propiedad: selectedProperty.id,
-                    cliente: cliente.id,
-                    importe: Number(importe)
-                  };
-
-                  seniaPost(data);
-                }}
-                className="ml-2 rounded-md bg-green-600 py-2 px-4 border border-transparent text-center text-sm 
-                          text-white transition-all shadow-md hover:shadow-lg focus:bg-green-700 focus:shadow-none 
-                          active:bg-green-700 hover:bg-green-700 active:shadow-none 
-                          disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none"
-                type="button"
+                onClick={() => setASenar(p)}
+                disabled={p.estado?.toLowerCase() !== 'disponible'}
+                title={
+                  p.estado?.toLowerCase() !== 'disponible'
+                    ? 'Solo se puede señar una propiedad disponible'
+                    : undefined
+                }
+                className="accion accion-secundaria accion-sm"
               >
                 Señar
               </button>
-            </div>
+              <button
+                type="button"
+                onClick={() => abrirEdicion(p)}
+                className="accion accion-fantasma accion-sm"
+              >
+                <PencilSquareIcon className="size-4" aria-hidden="true" />
+                <span className="sr-only sm:not-sr-only">Editar</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAEliminar(p)}
+                className="accion accion-fantasma accion-sm text-alerta-700 hover:bg-alerta-50"
+              >
+                <TrashIcon className="size-4" aria-hidden="true" />
+                <span className="sr-only">Eliminar {p.direccion}</span>
+              </button>
+            </>
+          )}
+        />
+      </EstadoVista>
+
+      {/* --- Alta y edición ------------------------------------------------ */}
+      <Modal
+        open={formAbierto}
+        onClose={cerrarFormulario}
+        ancho="lg"
+        titulo={editando ? 'Editar propiedad' : 'Nueva propiedad'}
+        descripcion={
+          editando ? `Cambios sobre ${editando.direccion}.` : 'Los datos que se publican en el listado.'
+        }
+        pie={
+          <>
+            <button type="button" onClick={cerrarFormulario} className="accion accion-fantasma">
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              form="form-propiedad"
+              disabled={form.enviando}
+              className="accion accion-primaria"
+            >
+              {form.enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear propiedad'}
+            </button>
+          </>
+        }
+      >
+        <form id="form-propiedad" onSubmit={guardar} noValidate className="space-y-4">
+          {form.error && (
+            <p
+              role="alert"
+              className="rounded-lg border border-alerta-700/20 bg-alerta-50 px-4 py-3 text-sm text-alerta-700"
+            >
+              {form.error}
+            </p>
+          )}
+
+          <Campo etiqueta="Dirección" error={form.erroresCampo.direccion} requerido>
+            {(props) => (
+              <input
+                {...props}
+                type="text"
+                placeholder="Córdoba 1234"
+                value={formData.direccion}
+                onChange={(e) => cambiar('direccion', e.target.value)}
+              />
+            )}
+          </Campo>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo etiqueta="Precio mensual" error={form.erroresCampo.precio} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={formData.precio}
+                  onChange={(e) => cambiar('precio', e.target.value)}
+                />
+              )}
+            </Campo>
+
+            <Campo etiqueta="Tipo de propiedad" error={form.erroresCampo.tipoPropiedad} requerido>
+              {(props) => (
+                <select
+                  {...props}
+                  value={formData.tipoPropiedad}
+                  onChange={(e) => cambiar('tipoPropiedad', e.target.value)}
+                >
+                  <option value="">Seleccionar…</option>
+                  {/* Acá se leía `t.nombre`, que no existe en la respuesta:
+                      la lista se dibujaba con todas las opciones en blanco. */}
+                  {tipos.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.descripcion}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Campo>
           </div>
-        </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Campo etiqueta="Estado" error={form.erroresCampo.estado}>
+              {(props) => (
+                <select {...props} value={formData.estado} onChange={(e) => cambiar('estado', e.target.value)}>
+                  {ESTADOS.map((e) => (
+                    <option key={e} value={e}>
+                      {e[0].toUpperCase() + e.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Campo>
+
+            <Campo etiqueta="Visitas desde" error={form.erroresCampo.hora_desde} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="time"
+                  value={formData.hora_desde}
+                  onChange={(e) => cambiar('hora_desde', e.target.value)}
+                />
+              )}
+            </Campo>
+
+            <Campo etiqueta="Visitas hasta" error={form.erroresCampo.hora_hasta} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="time"
+                  value={formData.hora_hasta}
+                  onChange={(e) => cambiar('hora_hasta', e.target.value)}
+                />
+              )}
+            </Campo>
+          </div>
+
+          <Campo etiqueta="Descripción" error={form.erroresCampo.descripcion}>
+            {(props) => (
+              <textarea
+                {...props}
+                rows={3}
+                placeholder="Qué tiene la propiedad y qué la distingue."
+                value={formData.descripcion}
+                onChange={(e) => cambiar('descripcion', e.target.value)}
+                className={`${props.className} resize-y`}
+              />
+            )}
+          </Campo>
+
+          {/* Las imágenes se suben con el alta. En la edición el backend no
+              expone un endpoint para reemplazarlas, así que no se ofrece. */}
+          {!editando && (
+            <Campo etiqueta="Imágenes" ayuda="Se publican en el orden en que las elegís.">
+              {(props) => (
+                <input
+                  {...props}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => setImagenes(e.target.files ? Array.from(e.target.files) : [])}
+                  className={`${props.className} file:me-3 file:rounded-md file:border-0 file:bg-arena-200 file:px-3 file:py-1.5 file:text-sm file:text-tinta-900`}
+                />
+              )}
+            </Campo>
+          )}
+
+          {previews.length > 0 && (
+            <ul className="flex flex-wrap gap-2">
+              {previews.map((src, i) => (
+                <li key={src}>
+                  <img
+                    src={src}
+                    alt={`Vista previa ${i + 1}`}
+                    className="size-20 rounded-lg border border-arena-200 object-cover"
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </form>
+      </Modal>
+
+      {aSenar && (
+        <DialogoSenar
+          propiedad={aSenar}
+          onCerrar={() => setASenar(null)}
+          onListo={async () => {
+            setASenar(null)
+            await recargar()
+          }}
+        />
       )}
+
+      <ConfirmDialog
+        open={aEliminar !== null}
+        titulo="Eliminar propiedad"
+        descripcion="La propiedad deja de estar publicada. No se puede deshacer."
+        detalle={aEliminar?.direccion}
+        textoConfirmar="Eliminar"
+        onConfirmar={() => (aEliminar ? eliminar(aEliminar) : undefined)}
+        onCancelar={() => setAEliminar(null)}
+      />
     </div>
-  );
+  )
+}
+
+/**
+ * Señar una propiedad a nombre de un cliente.
+ *
+ * Reemplaza a un `<div className="fixed inset-0">` escrito a mano, sin rol,
+ * sin foco atrapado y sin Esc, con el select de clientes cargándose recién al
+ * abrirlo. Los clientes se piden acá, cuando el diálogo existe.
+ */
+function DialogoSenar({
+  propiedad,
+  onCerrar,
+  onListo,
+}: {
+  propiedad: Propiedad
+  onCerrar: () => void
+  onListo: () => Promise<void>
+}) {
+  const { notificar } = useNotificacion()
+  const form = useFormularioApi()
+  const [clienteId, setClienteId] = useState('')
+  const [importe, setImporte] = useState('')
+
+  const { datos: clientes, cargando } = useRecurso<Cliente[]>(
+    async () => (await apiClient.get('/clientes')).data.data ?? [],
+    [],
+    [],
+  )
+
+  const enviar = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const errores: Record<string, string> = {}
+    if (!clienteId) errores.cliente = 'Elegí a nombre de quién queda la seña.'
+    const monto = Number(importe)
+    if (!importe.trim()) errores.importe = 'Ingresá el importe de la seña.'
+    else if (!Number.isFinite(monto) || monto <= 0) errores.importe = 'Tiene que ser mayor a cero.'
+    else if (monto > propiedad.precio)
+      errores.importe = `No puede superar el precio de la propiedad (${formatearMoneda(propiedad.precio)}).`
+
+    if (Object.keys(errores).length > 0) {
+      form.setErroresCampo(errores)
+      return
+    }
+
+    const ok = await form.enviar(async () => {
+      await apiClient.post('/senias', {
+        propiedad: propiedad.id,
+        cliente: Number(clienteId),
+        importe: monto,
+      })
+      // Acá había un PUT que ponía la propiedad en 'señada'. El backend no lo
+      // hace al crear la seña: la retiene recién cuando se confirma o se cobra
+      // (ver senia.controler.ts). Adelantarlo dejaba propiedades marcadas como
+      // señadas sin una seña confirmada detrás, que es justo el caso que la
+      // pantalla marcaba como "estado puesto manualmente".
+    })
+
+    if (!ok) return
+
+    notificar('Seña creada', 'exito', 'Queda pendiente de pago hasta que se confirme.')
+    await onListo()
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onCerrar}
+      titulo="Señar propiedad"
+      descripcion="La seña nace pendiente de pago; la propiedad se retiene cuando se confirma."
+      pie={
+        <>
+          <button type="button" onClick={onCerrar} className="accion accion-fantasma">
+            Cancelar
+          </button>
+          <button type="submit" form="form-senar" disabled={form.enviando} className="accion accion-primaria">
+            {form.enviando ? 'Creando…' : 'Crear seña'}
+          </button>
+        </>
+      }
+    >
+      <form id="form-senar" onSubmit={enviar} noValidate className="space-y-4">
+        {form.error && (
+          <p
+            role="alert"
+            className="rounded-lg border border-alerta-700/20 bg-alerta-50 px-4 py-3 text-sm text-alerta-700"
+          >
+            {form.error}
+          </p>
+        )}
+
+        <div className="rounded-lg border border-arena-200 bg-arena-50 px-4 py-3">
+          <p className="text-sm font-medium text-tinta-900">{propiedad.direccion}</p>
+          <p className="text-xs text-tinta-500">{formatearMoneda(propiedad.precio)} por mes</p>
+        </div>
+
+        <Campo etiqueta="Cliente" error={form.erroresCampo.cliente} requerido>
+          {(props) => (
+            <select
+              {...props}
+              value={clienteId}
+              onChange={(e) => {
+                setClienteId(e.target.value)
+                form.limpiarCampo('cliente')
+              }}
+              disabled={cargando || clientes.length === 0}
+            >
+              <option value="">
+                {cargando ? 'Cargando clientes…' : clientes.length === 0 ? 'No hay clientes' : 'Elegí un cliente'}
+              </option>
+              {clientes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre} {c.apellido}
+                </option>
+              ))}
+            </select>
+          )}
+        </Campo>
+
+        <Campo
+          etiqueta="Importe"
+          ayuda={`Como referencia, el 20% son ${formatearMoneda(Math.round(propiedad.precio * 0.2))}.`}
+          error={form.erroresCampo.importe}
+          requerido
+        >
+          {(props) => (
+            <input
+              {...props}
+              type="number"
+              min="0"
+              step="1000"
+              value={importe}
+              onChange={(e) => {
+                setImporte(e.target.value)
+                form.limpiarCampo('importe')
+              }}
+            />
+          )}
+        </Campo>
+      </form>
+    </Modal>
+  )
 }

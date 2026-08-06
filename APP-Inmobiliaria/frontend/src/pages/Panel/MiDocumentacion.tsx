@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../../auth/useAuth";
-import FormularioDocumento from "../../components/documentacion/FormularioDocumento";
-import ListaDocumentos from "../../components/documentacion/ListaDocumentos";
+import { useState } from 'react'
+import { ArrowUpTrayIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '../../auth/useAuth'
+import FormularioDocumento from '../../components/documentacion/FormularioDocumento'
+import ListaDocumentos from '../../components/documentacion/ListaDocumentos'
+import Modal from '../../components/Modal'
+import EstadoVista from '../../components/ui/EstadoVista'
+import { useRecurso } from '../../hooks/useRecurso'
+import { useNotificacion } from '../../hooks/useNotificacion'
 import {
   cargarDocumentoDeCliente,
   obtenerMiDocumentacion,
-} from "../../services/documentacionCliente";
-import { documentacionEnRegla, type DocumentacionCliente } from "../../types/senia";
+} from '../../services/documentacionCliente'
+import { documentacionEnRegla, type DocumentacionCliente } from '../../types/senia'
 
 /**
  * El cliente sube sus propios papeles y ve en qué quedó la revisión.
@@ -16,33 +21,23 @@ import { documentacionEnRegla, type DocumentacionCliente } from "../../types/sen
  * concreta el alquiler ya están revisados.
  */
 export default function MiDocumentacion() {
-  const { userId } = useAuth();
-  const [items, setItems] = useState<DocumentacionCliente[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const { userId } = useAuth()
+  const { notificar } = useNotificacion()
+  const [formAbierto, setFormAbierto] = useState(false)
 
-  const fetchDocumentos = useCallback(async () => {
-    try {
-      setLoading(true);
-      setItems(await obtenerMiDocumentacion());
-    } catch (error) {
-      console.error("Error al cargar mi documentación:", error);
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const {
+    datos: items,
+    cargando,
+    error,
+    recargar,
+  } = useRecurso<DocumentacionCliente[]>(() => obtenerMiDocumentacion(), [], [])
 
-  useEffect(() => {
-    fetchDocumentos();
-  }, [fetchDocumentos]);
-
-  const handleGuardar = async (datos: {
-    descripcion: string;
-    fecha_vencimiento: string;
-    archivo: File | null;
+  const guardar = async (datos: {
+    descripcion: string
+    fecha_vencimiento: string
+    archivo: File | null
   }) => {
-    if (!userId) throw new Error("Volvé a iniciar sesión para cargar documentación");
+    if (!userId) throw new Error('Volvé a iniciar sesión para cargar documentación')
 
     // Sin `estado`: lo que sube el cliente queda pendiente de revisión.
     await cargarDocumentoDeCliente({
@@ -50,71 +45,85 @@ export default function MiDocumentacion() {
       descripcion: datos.descripcion,
       fecha_vencimiento: datos.fecha_vencimiento,
       archivo: datos.archivo,
-    });
+    })
 
-    setShowForm(false);
-    fetchDocumentos();
-  };
+    setFormAbierto(false)
+    notificar('Documento enviado', 'exito', 'Un agente lo va a revisar.')
+    await recargar()
+  }
 
-  const enRegla = documentacionEnRegla(items);
-  const rechazados = items.filter((dc) => dc.estado === "rechazada").length;
+  const enRegla = documentacionEnRegla(items)
+  const rechazados = items.filter((dc) => dc.estado === 'rechazada').length
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6 gap-4 flex-wrap">
-        <div>
-          <h2 className="text-3xl font-semibold text-neutral-900">Mi documentación</h2>
-          <p className="text-neutral-600 text-sm mt-1">
-            Subí los papeles que te piden para alquilar. Un agente los revisa y, si están en
-            regla, el día de la firma no tenés que traer nada más.
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="max-w-prose">
+          <h1 className="font-display text-2xl text-tinta-900">Mi documentación</h1>
+          <p className="mt-0.5 text-sm leading-relaxed text-tinta-500">
+            Subí los papeles que te piden para alquilar. Un agente los revisa y, si están en regla,
+            el día de la firma no tenés que traer nada más.
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-[#846a41] hover:bg-[#6d5735] text-white px-5 py-2 rounded-lg font-medium"
-        >
+
+        <button type="button" onClick={() => setFormAbierto(true)} className="accion accion-primaria shrink-0">
+          <ArrowUpTrayIcon className="size-5" aria-hidden="true" />
           Subir documento
         </button>
       </div>
 
-      {!loading && items.length > 0 && (
-        <div
-          className={`mb-6 rounded-lg border p-4 text-sm ${
+      {!cargando && items.length > 0 && (
+        <p
+          className={`flex items-start gap-3 rounded-card border px-4 py-3 text-sm leading-relaxed ${
             enRegla
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-amber-50 border-amber-200 text-amber-800"
+              ? 'border-salvia-500/30 bg-salvia-100 text-salvia-700'
+              : 'border-ambar-700/20 bg-ambar-50 text-ambar-700'
           }`}
         >
-          {enRegla
-            ? "✓ Tu documentación está aprobada y vigente. Podés cerrar el alquiler."
-            : rechazados > 0
-              ? `Tenés ${rechazados} ${rechazados === 1 ? "documento rechazado" : "documentos rechazados"}. Mirá el motivo abajo y volvé a subirlo corregido.`
-              : "Tus documentos están pendientes de revisión."}
-        </div>
+          {enRegla ? (
+            <CheckCircleIcon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          ) : (
+            <ExclamationTriangleIcon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          )}
+          <span>
+            {enRegla
+              ? 'Tu documentación está aprobada y vigente. Podés cerrar el alquiler.'
+              : rechazados > 0
+                ? `Tenés ${rechazados} ${
+                    rechazados === 1 ? 'documento rechazado' : 'documentos rechazados'
+                  }. Mirá el motivo abajo y volvé a subirlo corregido.`
+                : 'Tus documentos están pendientes de revisión.'}
+          </span>
+        </p>
       )}
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <FormularioDocumento
-            titulo="Subir documento"
-            onGuardar={handleGuardar}
-            onCancelar={() => setShowForm(false)}
-          />
+      <EstadoVista
+        cargando={cargando}
+        error={error}
+        vacio={items.length === 0}
+        onReintentar={recargar}
+        mensajeVacio="Todavía no subiste ningún documento"
+        detalleVacio="Suelen pedirte DNI, recibo de sueldo y una garantía."
+        accionVacio={
+          <button type="button" onClick={() => setFormAbierto(true)} className="accion accion-primaria accion-sm">
+            <ArrowUpTrayIcon className="size-4" aria-hidden="true" />
+            Subir documento
+          </button>
+        }
+      >
+        <div className="rounded-card border border-arena-200 bg-white p-5 shadow-card">
+          <ListaDocumentos items={items} isAgent={false} onCambio={recargar} />
         </div>
-      )}
+      </EstadoVista>
 
-      {loading ? (
-        <div className="text-center py-10 text-neutral-600">Cargando tu documentación…</div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm p-5">
-          <ListaDocumentos
-            items={items}
-            isAgent={false}
-            onCambio={fetchDocumentos}
-            vacio="Todavía no subiste ningún documento."
-          />
-        </div>
-      )}
+      <Modal
+        open={formAbierto}
+        onClose={() => setFormAbierto(false)}
+        titulo="Subir documento"
+        descripcion="Queda pendiente hasta que un agente lo revise."
+      >
+        <FormularioDocumento onGuardar={guardar} onCancelar={() => setFormAbierto(false)} />
+      </Modal>
     </div>
-  );
+  )
 }

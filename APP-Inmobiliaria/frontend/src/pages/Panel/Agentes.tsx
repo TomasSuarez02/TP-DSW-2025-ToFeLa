@@ -1,365 +1,382 @@
-import { useEffect, useState } from "react";
-import { parseApiError, type FieldErrors } from "../../utils/apiErrors";
-import { useAuth } from "../../auth/useAuth";
+import { useState } from 'react'
+import { EnvelopeIcon, PencilSquareIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '../../auth/useAuth'
 import {
   actualizarAgente,
   crearAgente,
   eliminarAgente,
   obtenerAgentes,
   type Agente,
-} from "../../services/agentesInmobiliarios";
+} from '../../services/agentesInmobiliarios'
+import Modal from '../../components/Modal'
+import Badge from '../../components/ui/Badge'
+import Campo from '../../components/ui/Campo'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import EstadoVista from '../../components/ui/EstadoVista'
+import Tabla, { type Columna } from '../../components/ui/Tabla'
+import { useRecurso } from '../../hooks/useRecurso'
+import { useFormularioApi } from '../../hooks/useFormularioApi'
+import { useNotificacion } from '../../hooks/useNotificacion'
+import { formatearFecha } from '../../utils/formato'
+
+const TIPOS_DOC = ['DNI', 'Pasaporte', 'Otro'] as const
+
+const formVacio = () => ({
+  nombre: '',
+  apellido: '',
+  mail: '',
+  telefono: '',
+  tipo_doc: 'DNI',
+  nro_doc: '',
+  fecha_ingreso: new Date().toISOString().slice(0, 10),
+  contrasenia: '',
+})
+
+function validar(datos: ReturnType<typeof formVacio>, editando: boolean): Record<string, string> {
+  const errores: Record<string, string> = {}
+
+  if (!datos.nombre.trim()) errores.nombre = 'Ingresá el nombre.'
+  if (!datos.apellido.trim()) errores.apellido = 'Ingresá el apellido.'
+  if (!datos.mail.trim()) errores.mail = 'Ingresá el correo electrónico.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.mail.trim()))
+    errores.mail = 'Revisá el correo: parece incompleto.'
+  if (!datos.telefono.trim()) errores.telefono = 'Ingresá un teléfono.'
+  if (!datos.tipo_doc) errores.tipo_doc = 'Elegí el tipo de documento.'
+  if (!datos.nro_doc.trim()) errores.nro_doc = 'Ingresá el número de documento.'
+  else if (!/^\d{6,10}$/.test(datos.nro_doc.trim())) errores.nro_doc = 'Va sin puntos ni espacios.'
+  if (!datos.fecha_ingreso) errores.fecha_ingreso = 'Indicá la fecha de ingreso.'
+
+  // Al editar, una contraseña vacía significa "dejala como está".
+  if (!editando) {
+    if (!datos.contrasenia) errores.contrasenia = 'Elegí una contraseña inicial.'
+    else if (datos.contrasenia.length < 8) errores.contrasenia = 'Tiene que tener al menos 8 caracteres.'
+  } else if (datos.contrasenia && datos.contrasenia.length < 8) {
+    errores.contrasenia = 'Tiene que tener al menos 8 caracteres.'
+  }
+
+  return errores
+}
 
 /**
  * Alta de agentes del backoffice.
  *
  * No hay registro público para este rol: la única forma de crear un agente es
- * que otro agente ya logueado lo cargue acá. Antes de esta pantalla, la única
- * forma de hacerlo era pegándole a la API directamente con curl.
+ * que otro agente ya logueado lo cargue acá.
  */
 export default function Agentes() {
-  const { userId } = useAuth();
+  const { userId } = useAuth()
+  const { notificar } = useNotificacion()
 
-  const [agentes, setAgentes] = useState<Agente[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingAgente, setEditingAgente] = useState<Agente | null>(null);
-  const [guardando, setGuardando] = useState(false);
+  const {
+    datos: agentes,
+    cargando,
+    error,
+    recargar,
+  } = useRecurso<Agente[]>(() => obtenerAgentes(), [], [])
 
-  const [formData, setFormData] = useState({
-    nombre: "",
-    apellido: "",
-    mail: "",
-    telefono: "",
-    tipo_doc: "",
-    nro_doc: "",
-    fecha_ingreso: new Date().toISOString().slice(0, 10),
-    contrasenia: "",
-  });
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [formAbierto, setFormAbierto] = useState(false)
+  const [editando, setEditando] = useState<Agente | null>(null)
+  const [formData, setFormData] = useState(formVacio)
+  const [aEliminar, setAEliminar] = useState<Agente | null>(null)
+  const form = useFormularioApi()
 
-  const fetchAgentes = async () => {
-    try {
-      setLoading(true);
-      setAgentes(await obtenerAgentes());
-    } catch (error) {
-      console.error("Error al cargar agentes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const cambiar = (campo: keyof ReturnType<typeof formVacio>, valor: string) => {
+    setFormData((prev) => ({ ...prev, [campo]: valor }))
+    form.limpiarCampo(campo)
+  }
 
-  useEffect(() => {
-    fetchAgentes();
-  }, []);
+  const cerrarFormulario = () => {
+    setFormAbierto(false)
+    setEditando(null)
+    setFormData(formVacio())
+    form.limpiar()
+  }
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setSubmitError(null);
-    setFieldErrors((prev) => {
-      if (!prev[name]) return prev;
-      const next = { ...prev };
-      delete next[name];
-      return next;
-    });
-  };
-
-  const resetForm = () => {
+  const abrirEdicion = (a: Agente) => {
+    setEditando(a)
     setFormData({
-      nombre: "",
-      apellido: "",
-      mail: "",
-      telefono: "",
-      tipo_doc: "",
-      nro_doc: "",
-      fecha_ingreso: new Date().toISOString().slice(0, 10),
-      contrasenia: "",
-    });
-    setEditingAgente(null);
-    setShowForm(false);
-    setSubmitError(null);
-    setFieldErrors({});
-  };
+      nombre: a.nombre,
+      apellido: a.apellido,
+      mail: a.mail,
+      telefono: a.telefono,
+      tipo_doc: a.tipo_doc || 'DNI',
+      nro_doc: String(a.nro_doc),
+      fecha_ingreso: a.fecha_ingreso ? a.fecha_ingreso.slice(0, 10) : '',
+      contrasenia: '',
+    })
+    form.limpiar()
+    setFormAbierto(true)
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitError(null);
-    setFieldErrors({});
+  const guardar = async (e: React.FormEvent) => {
+    e.preventDefault()
 
-    // Al editar, la contraseña es opcional: si se deja vacía, se mantiene la actual.
-    if (!editingAgente && !formData.contrasenia.trim()) {
-      setFieldErrors({ contrasenia: "La contraseña es obligatoria" });
-      setSubmitError("Completá los campos obligatorios");
-      return;
+    const errores = validar(formData, editando !== null)
+    if (Object.keys(errores).length > 0) {
+      form.setErroresCampo(errores)
+      return
     }
 
-    // Sin este guard, dos clicks seguidos dan de alta el agente dos veces.
-    setGuardando(true);
-    try {
-      if (editingAgente) {
-        await actualizarAgente(editingAgente.id, formData);
-        alert("Agente actualizado correctamente");
-      } else {
-        await crearAgente(formData);
-        alert("Agente creado correctamente");
-      }
-      resetForm();
-      fetchAgentes();
-    } catch (error) {
-      console.error("Error al guardar agente:", error);
-      const parsed = parseApiError(error);
-      setSubmitError(parsed.message);
-      setFieldErrors(parsed.fieldErrors);
-    } finally {
-      setGuardando(false);
-    }
-  };
+    const ok = await form.enviar(async () => {
+      if (editando) await actualizarAgente(editando.id, formData)
+      else await crearAgente(formData)
+    })
 
-  const handleEdit = (agente: Agente) => {
-    setEditingAgente(agente);
-    setFormData({
-      nombre: agente.nombre,
-      apellido: agente.apellido,
-      mail: agente.mail,
-      telefono: agente.telefono,
-      tipo_doc: agente.tipo_doc,
-      nro_doc: String(agente.nro_doc),
-      fecha_ingreso: agente.fecha_ingreso ? agente.fecha_ingreso.slice(0, 10) : "",
-      contrasenia: "",
-    });
-    setShowForm(true);
-  };
+    if (!ok) return
 
-  const handleDelete = async (agente: Agente) => {
-    if (agente.id === userId) {
-      alert("No podés eliminar tu propia cuenta.");
-      return;
-    }
-    if (!confirm(`¿Eliminar a ${agente.nombre} ${agente.apellido}?`)) return;
-    try {
-      await eliminarAgente(agente.id);
-      fetchAgentes();
-    } catch (error) {
-      alert(parseApiError(error).message);
-    }
-  };
+    notificar(editando ? 'Agente actualizado' : 'Agente creado')
+    cerrarFormulario()
+    await recargar()
+  }
+
+  const eliminar = async (agente: Agente) => {
+    await eliminarAgente(agente.id)
+    setAEliminar(null)
+    notificar('Agente eliminado')
+    await recargar()
+  }
+
+  const columnas: Columna<Agente>[] = [
+    {
+      id: 'agente',
+      encabezado: 'Agente',
+      principal: true,
+      celda: (a) => (
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-salvia-100 text-sm font-semibold text-salvia-700"
+          >
+            {(a.nombre?.[0] ?? '?').toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 truncate font-medium text-tinta-900">
+              {a.nombre} {a.apellido}
+              {a.id === userId && <Badge tono="terra">Vos</Badge>}
+            </p>
+            <p className="truncate text-xs text-tinta-500">
+              {(a.tipo_doc || '—').toUpperCase()} {a.nro_doc}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'contacto',
+      encabezado: 'Contacto',
+      celda: (a) => (
+        <div className="min-w-0">
+          <a
+            href={`mailto:${a.mail}`}
+            className="inline-flex items-center gap-1.5 text-tinta-700 transition-colors hover:text-terra-700"
+          >
+            <EnvelopeIcon className="size-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{a.mail}</span>
+          </a>
+          <p className="truncate text-xs text-tinta-500">{a.telefono || '—'}</p>
+        </div>
+      ),
+    },
+    {
+      id: 'ingreso',
+      encabezado: 'Ingreso',
+      alinear: 'derecha',
+      ocultarEnMobile: true,
+      celda: (a) => <span className="text-tinta-700">{formatearFecha(a.fecha_ingreso)}</span>,
+    },
+  ]
 
   return (
-    <div className="p-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-semibold text-neutral-900">Gestión de Agentes</h2>
-          <p className="text-neutral-600 text-sm mt-1">
-            Altas y bajas del personal con acceso al panel de administración.
+          <h1 className="font-display text-2xl text-tinta-900">Agentes</h1>
+          <p className="mt-0.5 text-sm text-tinta-500">
+            Altas y bajas del personal con acceso al panel.
           </p>
         </div>
-        <button
-          onClick={() => (showForm ? resetForm() : setShowForm(true))}
-          className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-2 rounded-lg font-medium"
-        >
-          {showForm ? "Cerrar" : "+ Nuevo Agente"}
+
+        <button type="button" onClick={() => setFormAbierto(true)} className="accion accion-primaria">
+          <PlusIcon className="size-5" aria-hidden="true" />
+          Nuevo agente
         </button>
       </div>
 
-      {showForm && (
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8 text-neutral-900">
-          <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {submitError && (
-              <div className="col-span-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-700">
-                {submitError}
-              </div>
-            )}
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Nombre *</label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.nombre ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.nombre && <p className="mt-1 text-sm text-red-600">{fieldErrors.nombre}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Apellido *</label>
-              <input
-                type="text"
-                name="apellido"
-                value={formData.apellido}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.apellido ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.apellido && <p className="mt-1 text-sm text-red-600">{fieldErrors.apellido}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Email *</label>
-              <input
-                type="email"
-                name="mail"
-                value={formData.mail}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.mail ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.mail && <p className="mt-1 text-sm text-red-600">{fieldErrors.mail}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Teléfono *</label>
-              <input
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.telefono ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.telefono && <p className="mt-1 text-sm text-red-600">{fieldErrors.telefono}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Tipo de Documento *</label>
-              <select
-                name="tipo_doc"
-                value={formData.tipo_doc}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.tipo_doc ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              >
-                <option value="">Seleccionar tipo...</option>
-                <option value="DNI">DNI</option>
-                <option value="Pasaporte">Pasaporte</option>
-              </select>
-              {fieldErrors.tipo_doc && <p className="mt-1 text-sm text-red-600">{fieldErrors.tipo_doc}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Número de Documento *</label>
-              <input
-                type="text"
-                name="nro_doc"
-                value={formData.nro_doc}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.nro_doc ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.nro_doc && <p className="mt-1 text-sm text-red-600">{fieldErrors.nro_doc}</p>}
-            </div>
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">Fecha de ingreso *</label>
-              <input
-                type="date"
-                name="fecha_ingreso"
-                value={formData.fecha_ingreso}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.fecha_ingreso ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required
-              />
-              {fieldErrors.fecha_ingreso && <p className="mt-1 text-sm text-red-600">{fieldErrors.fecha_ingreso}</p>}
-            </div>
-
-            <div className="col-span-2">
-              <label className="block mb-2 text-sm font-medium text-[#1a1a1a]">
-                Contraseña {editingAgente ? "" : "*"}
-              </label>
-              <input
-                type="password"
-                name="contrasenia"
-                value={formData.contrasenia}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg bg-[#fffdf9] text-[#1a1a1a] ${fieldErrors.contrasenia ? "border-red-400" : "border-[#e5d8c2]"}`}
-                required={!editingAgente}
-                placeholder={editingAgente ? "Dejar vacío para mantener la contraseña actual" : ""}
-              />
-              {fieldErrors.contrasenia && <p className="mt-1 text-sm text-red-600">{fieldErrors.contrasenia}</p>}
-            </div>
-
-            <div className="col-span-2 flex justify-end gap-3 mt-4">
+      <EstadoVista
+        cargando={cargando}
+        error={error}
+        vacio={agentes.length === 0}
+        onReintentar={recargar}
+        mensajeVacio="Todavía no hay agentes"
+        detalleVacio="Cargá al primero para que pueda entrar al panel."
+        accionVacio={
+          <button type="button" onClick={() => setFormAbierto(true)} className="accion accion-primaria accion-sm">
+            <PlusIcon className="size-4" aria-hidden="true" />
+            Nuevo agente
+          </button>
+        }
+      >
+        <Tabla
+          datos={agentes}
+          columnas={columnas}
+          claveFila={(a) => a.id}
+          acciones={(a) => (
+            <>
+              <button type="button" onClick={() => abrirEdicion(a)} className="accion accion-fantasma accion-sm">
+                <PencilSquareIcon className="size-4" aria-hidden="true" />
+                <span className="sr-only sm:not-sr-only">Editar</span>
+              </button>
               <button
                 type="button"
-                onClick={resetForm}
-                className="px-4 py-2 border border-[#e5d8c2] rounded-lg text-[#1a1a1a]"
+                onClick={() => setAEliminar(a)}
+                disabled={a.id === userId}
+                title={a.id === userId ? 'No podés eliminar tu propia cuenta' : undefined}
+                className="accion accion-fantasma accion-sm text-alerta-700 hover:bg-alerta-50"
               >
-                Cancelar
+                <TrashIcon className="size-4" aria-hidden="true" />
+                <span className="sr-only">
+                  Eliminar a {a.nombre} {a.apellido}
+                </span>
               </button>
-              <button
-                type="submit"
-                disabled={guardando}
-                className="px-6 py-2 bg-[#dcc7af] hover:bg-[#d4b89e] disabled:bg-neutral-200 disabled:text-neutral-500 disabled:cursor-not-allowed rounded-lg font-medium text-neutral-900"
-              >
-                {guardando ? "Guardando…" : editingAgente ? "Actualizar" : "Crear"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+            </>
+          )}
+        />
+      </EstadoVista>
 
-      {loading ? (
-        <div className="text-center py-10 text-neutral-600">Cargando agentes…</div>
-      ) : agentes.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-medium text-neutral-700">No hay agentes registrados</h3>
-          <p className="text-neutral-500 mb-4">Agregá el primer agente</p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-[#dcc7af] hover:bg-[#d4b89e] text-neutral-900 px-6 py-3 rounded-lg"
+      <Modal
+        open={formAbierto}
+        onClose={cerrarFormulario}
+        ancho="lg"
+        titulo={editando ? 'Editar agente' : 'Nuevo agente'}
+        descripcion={
+          editando
+            ? 'Dejá la contraseña vacía para no cambiarla.'
+            : 'Va a poder entrar al panel con este correo y contraseña.'
+        }
+        pie={
+          <>
+            <button type="button" onClick={cerrarFormulario} className="accion accion-fantasma">
+              Cancelar
+            </button>
+            <button type="submit" form="form-agente" disabled={form.enviando} className="accion accion-primaria">
+              {form.enviando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Crear agente'}
+            </button>
+          </>
+        }
+      >
+        <form id="form-agente" onSubmit={guardar} noValidate className="space-y-4">
+          {form.error && (
+            <p
+              role="alert"
+              className="rounded-lg border border-alerta-700/20 bg-alerta-50 px-4 py-3 text-sm text-alerta-700"
+            >
+              {form.error}
+            </p>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo etiqueta="Nombre" error={form.erroresCampo.nombre} requerido>
+              {(props) => (
+                <input {...props} type="text" value={formData.nombre} onChange={(e) => cambiar('nombre', e.target.value)} />
+              )}
+            </Campo>
+
+            <Campo etiqueta="Apellido" error={form.erroresCampo.apellido} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="text"
+                  value={formData.apellido}
+                  onChange={(e) => cambiar('apellido', e.target.value)}
+                />
+              )}
+            </Campo>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo etiqueta="Correo electrónico" error={form.erroresCampo.mail} requerido>
+              {(props) => (
+                <input {...props} type="email" value={formData.mail} onChange={(e) => cambiar('mail', e.target.value)} />
+              )}
+            </Campo>
+
+            <Campo etiqueta="Teléfono" error={form.erroresCampo.telefono} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="tel"
+                  value={formData.telefono}
+                  onChange={(e) => cambiar('telefono', e.target.value)}
+                />
+              )}
+            </Campo>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Campo etiqueta="Tipo de documento" error={form.erroresCampo.tipo_doc} requerido>
+              {(props) => (
+                <select {...props} value={formData.tipo_doc} onChange={(e) => cambiar('tipo_doc', e.target.value)}>
+                  {TIPOS_DOC.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Campo>
+
+            <Campo etiqueta="Número" error={form.erroresCampo.nro_doc} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="text"
+                  inputMode="numeric"
+                  value={formData.nro_doc}
+                  onChange={(e) => cambiar('nro_doc', e.target.value)}
+                />
+              )}
+            </Campo>
+
+            <Campo etiqueta="Fecha de ingreso" error={form.erroresCampo.fecha_ingreso} requerido>
+              {(props) => (
+                <input
+                  {...props}
+                  type="date"
+                  value={formData.fecha_ingreso}
+                  onChange={(e) => cambiar('fecha_ingreso', e.target.value)}
+                />
+              )}
+            </Campo>
+          </div>
+
+          <Campo
+            etiqueta={editando ? 'Nueva contraseña' : 'Contraseña'}
+            ayuda={editando ? 'Sólo si querés cambiarla. Al menos 8 caracteres.' : 'Al menos 8 caracteres.'}
+            error={form.erroresCampo.contrasenia}
+            requerido={!editando}
           >
-            + Agregar Agente
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {agentes.map((agente) => {
-            const esUnoMismo = agente.id === userId;
-            return (
-              <div key={agente.id} className="bg-white rounded-xl shadow-md border p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-semibold text-lg text-neutral-900">
-                    {agente.nombre} {agente.apellido}
-                  </h3>
-                  {esUnoMismo && (
-                    <span className="text-xs px-2 py-1 rounded-full bg-[#f2e5d8] text-neutral-800">Vos</span>
-                  )}
-                </div>
+            {(props) => (
+              <input
+                {...props}
+                type="password"
+                autoComplete="new-password"
+                value={formData.contrasenia}
+                onChange={(e) => cambiar('contrasenia', e.target.value)}
+              />
+            )}
+          </Campo>
+        </form>
+      </Modal>
 
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm text-neutral-600">📧 {agente.mail}</p>
-                  <p className="text-sm text-neutral-600">📱 {agente.telefono}</p>
-                  <p className="text-sm text-neutral-600">
-                    {agente.tipo_doc.toUpperCase()} {agente.nro_doc}
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleEdit(agente)}
-                    className="flex-1 bg-[#f2e5d8] hover:bg-[#e8d5c4] text-neutral-900 py-2 rounded-lg text-sm font-medium"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => handleDelete(agente)}
-                    disabled={esUnoMismo}
-                    title={esUnoMismo ? "No podés eliminar tu propia cuenta" : undefined}
-                    className="flex-1 bg-red-100 hover:bg-red-200 disabled:bg-neutral-100 disabled:text-neutral-400 disabled:cursor-not-allowed text-red-800 py-2 rounded-lg text-sm font-medium"
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <ConfirmDialog
+        open={aEliminar !== null}
+        titulo="Eliminar agente"
+        descripcion="Pierde el acceso al panel. No se puede deshacer."
+        detalle={aEliminar ? `${aEliminar.nombre} ${aEliminar.apellido} · ${aEliminar.mail}` : undefined}
+        textoConfirmar="Eliminar"
+        onConfirmar={() => (aEliminar ? eliminar(aEliminar) : undefined)}
+        onCancelar={() => setAEliminar(null)}
+      />
     </div>
-  );
+  )
 }

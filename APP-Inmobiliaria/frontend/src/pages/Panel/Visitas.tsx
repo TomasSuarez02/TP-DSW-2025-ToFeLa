@@ -1,407 +1,340 @@
-import { useEffect, useState, useMemo } from 'react';
-import apiClient from "../../utils/apiClient";
-import { parseApiError } from '../../utils/apiErrors';
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ArrowsUpDownIcon,
+  BellAlertIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline'
+import apiClient from '../../utils/apiClient'
+import { formatearFechaHora, formatearMoneda } from '../../utils/formato'
+import { useRecurso } from '../../hooks/useRecurso'
+import { useNotificacion } from '../../hooks/useNotificacion'
+import Badge, { type Tono } from '../../components/ui/Badge'
+import ConfirmDialog from '../../components/ui/ConfirmDialog'
+import EstadoVista from '../../components/ui/EstadoVista'
+import Tabla, { type Columna } from '../../components/ui/Tabla'
 
 interface Visita {
   /** PK compuesta (propiedad + cliente + fecha) codificada por el backend. */
-  clave: string;
-  fecha_hora: string;
+  clave: string
+  fecha_hora: string
   cliente: {
-    id: number;
-    nombre: string;
-    apellido: string;
-    mail: string;
-    telefono?: string;
-  };
+    id: number
+    nombre: string
+    apellido: string
+    mail: string
+    telefono?: string
+  }
   propiedad: {
-    id: number;
-    direccion: string;
-    precio: number;
-  };
+    id: number
+    direccion: string
+    precio: number
+  }
 }
 
-type FiltroVisitas = 'todas' | 'hoy' | 'pendientes' | 'pasadas';
+type Filtro = 'todas' | 'hoy' | 'pendientes' | 'pasadas'
+
+const FILTROS: { id: Filtro; nombre: string }[] = [
+  { id: 'todas', nombre: 'Todas' },
+  { id: 'hoy', nombre: 'Hoy' },
+  { id: 'pendientes', nombre: 'Pendientes' },
+  { id: 'pasadas', nombre: 'Pasadas' },
+]
+
+const UNA_HORA = 60 * 60 * 1000
+
+function esHoy(fecha: string): boolean {
+  const visita = new Date(fecha)
+  const hoy = new Date()
+  return (
+    visita.getDate() === hoy.getDate() &&
+    visita.getMonth() === hoy.getMonth() &&
+    visita.getFullYear() === hoy.getFullYear()
+  )
+}
+
+const yaPaso = (fecha: string) => new Date(fecha).getTime() < Date.now()
+
+const esInminente = (fecha: string) => {
+  const falta = new Date(fecha).getTime() - Date.now()
+  return falta > 0 && falta <= UNA_HORA
+}
+
+/** Un único vocabulario de estado, en vez de cinco combinaciones de color. */
+function estadoVisita(fecha: string): { tono: Tono; texto: string } {
+  if (esInminente(fecha)) return { tono: 'ambar', texto: 'En menos de 1 h' }
+  if (yaPaso(fecha)) return { tono: 'arena', texto: 'Realizada' }
+  if (esHoy(fecha)) return { tono: 'ambar', texto: 'Hoy' }
+  return { tono: 'salvia', texto: 'Pendiente' }
+}
 
 export default function Visitas() {
-  const [visitas, setVisitas] = useState<Visita[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [ordenAscendente, setOrdenAscendente] = useState(false);
-  const [filtro, setFiltro] = useState<FiltroVisitas>('todas');
-  const [busqueda, setBusqueda] = useState('');
+  const { notificar } = useNotificacion()
+  const [filtro, setFiltro] = useState<Filtro>('todas')
+  const [busqueda, setBusqueda] = useState('')
+  const [ascendente, setAscendente] = useState(false)
+  const [aEliminar, setAEliminar] = useState<Visita | null>(null)
+
+  const {
+    datos: visitas,
+    cargando,
+    error,
+    recargar,
+  } = useRecurso<Visita[]>(
+    async () => {
+      const res = await apiClient.get('/visitas')
+      const data = res.data?.data ?? res.data
+      return Array.isArray(data) ? data : []
+    },
+    [],
+    [],
+  )
+
+  // La agenda cambia mientras el agente la mira, pero el refresco ponía
+  // `loading` en true cada 30 segundos: la pantalla entera parpadeaba a
+  // "Cargando visitas…" y se perdía de vista lo que se estaba leyendo.
+  const [yaCargoUnaVez, setYaCargoUnaVez] = useState(false)
+  useEffect(() => {
+    if (!cargando) setYaCargoUnaVez(true)
+  }, [cargando])
 
   useEffect(() => {
-    fetchVisitas();
-    // Actualizar cada 30 segundos para visitas en tiempo real
-    const interval = setInterval(fetchVisitas, 30000);
-    return () => clearInterval(interval);
-  }, []);
+    const id = setInterval(() => {
+      // Si la pestaña está en segundo plano no hay nadie mirando la agenda.
+      if (document.visibilityState === 'visible') void recargar()
+    }, 30_000)
+    return () => clearInterval(id)
+  }, [recargar])
 
-  const fetchVisitas = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiClient.get('/visitas');
-      const data = response.data?.data ?? response.data;
-      setVisitas(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Error fetching visitas:', err);
-      const parsed = parseApiError(err);
-      setError(parsed.message || 'Error al cargar las visitas');
-      setVisitas([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Eliminar visita (similar a la lógica en Senias.tsx)
-  const handleDelete = async (clave?: string) => {
-    if (!clave) return;
-    if (!confirm('¿Seguro que querés eliminar esta visita?')) return;
-
-    try {
-      await apiClient.delete(`/visitas/${clave}`);
-      // refrescar lista
-      fetchVisitas();
-      alert('Visita eliminada correctamente');
-    } catch (err) {
-      console.error('Error al eliminar visita:', err);
-      const parsed = parseApiError(err);
-      alert(parsed.message || 'Error al eliminar visita');
-    }
-  };
-
-
-  const formatearFecha = (fecha: string) => {
-    try {
-      const date = new Date(fecha);
-      const dia = String(date.getDate()).padStart(2, '0');
-      const mes = String(date.getMonth() + 1).padStart(2, '0');
-      const año = date.getFullYear();
-      const horas = String(date.getHours()).padStart(2, '0');
-      const minutos = String(date.getMinutes()).padStart(2, '0');
-      return `${dia}/${mes}/${año} - ${horas}:${minutos}`;
-    } catch {
-      return fecha;
-    }
-  };
-
-
-  const visitaPasada = (fecha: string) => {
-    return new Date(fecha) < new Date();
-  };
-
-  const esHoy = (fecha: string) => {
-    const hoy = new Date();
-    const fechaVisita = new Date(fecha);
-    return (
-      fechaVisita.getDate() === hoy.getDate() &&
-      fechaVisita.getMonth() === hoy.getMonth() &&
-      fechaVisita.getFullYear() === hoy.getFullYear()
-    );
-  };
-
-  const proximaVisita = (fecha: string) => {
-    const ahora = new Date();
-    const fechaVisita = new Date(fecha);
-    const diff = fechaVisita.getTime() - ahora.getTime();
-    return diff > 0 && diff <= 3600000; // Próxima hora
-  };
-
-  // Filtrar y ordenar visitas
   const visitasFiltradas = useMemo(() => {
-    let resultado = [...visitas];
+    const termino = busqueda.trim().toLowerCase()
 
-    // Filtrar por búsqueda
-    if (busqueda) {
-      resultado = resultado.filter(v =>
-        v.cliente?.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        v.cliente?.apellido?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        v.propiedad?.direccion?.toLowerCase().includes(busqueda.toLowerCase())
-      );
-    }
+    const resultado = visitas.filter((v) => {
+      if (termino) {
+        const texto = `${v.cliente?.nombre ?? ''} ${v.cliente?.apellido ?? ''} ${
+          v.propiedad?.direccion ?? ''
+        }`.toLowerCase()
+        if (!texto.includes(termino)) return false
+      }
 
-    // Filtrar por tipo
-    switch (filtro) {
-      case 'hoy':
-        resultado = resultado.filter(v => esHoy(v.fecha_hora));
-        break;
-      case 'pendientes':
-        resultado = resultado.filter(v => !visitaPasada(v.fecha_hora));
-        break;
-      case 'pasadas':
-        resultado = resultado.filter(v => visitaPasada(v.fecha_hora));
-        break;
-    }
+      if (filtro === 'hoy') return esHoy(v.fecha_hora)
+      if (filtro === 'pendientes') return !yaPaso(v.fecha_hora)
+      if (filtro === 'pasadas') return yaPaso(v.fecha_hora)
+      return true
+    })
 
-    // Ordenar
-    resultado.sort((a, b) => {
-      const fechaA = new Date(a.fecha_hora).getTime();
-      const fechaB = new Date(b.fecha_hora).getTime();
-      return ordenAscendente ? fechaA - fechaB : fechaB - fechaA;
-    });
+    return resultado.sort((a, b) => {
+      const diferencia = new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime()
+      return ascendente ? diferencia : -diferencia
+    })
+  }, [visitas, busqueda, filtro, ascendente])
 
-    return resultado;
-  }, [visitas, busqueda, filtro, ordenAscendente]);
-
-  // Estadísticas
-  const stats = useMemo(() => {
-    const ahora = new Date();
-    return {
+  const stats = useMemo(
+    () => ({
       total: visitas.length,
-      hoy: visitas.filter(v => esHoy(v.fecha_hora)).length,
-      pendientes: visitas.filter(v => new Date(v.fecha_hora) >= ahora).length,
-      proximas: visitas.filter(v => proximaVisita(v.fecha_hora)).length,
-    };
-  }, [visitas]);
+      hoy: visitas.filter((v) => esHoy(v.fecha_hora)).length,
+      pendientes: visitas.filter((v) => !yaPaso(v.fecha_hora)).length,
+      inminentes: visitas.filter((v) => esInminente(v.fecha_hora)).length,
+    }),
+    [visitas],
+  )
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-neutral-600">Cargando visitas...</div>
-        </div>
-      </div>
-    );
+  const eliminar = async (visita: Visita) => {
+    await apiClient.delete(`/visitas/${visita.clave}`)
+    setAEliminar(null)
+    notificar('Visita eliminada')
+    await recargar()
   }
 
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={fetchVisitas}
-            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reintentar
-          </button>
+  const columnas: Columna<Visita>[] = [
+    {
+      id: 'cuando',
+      encabezado: 'Fecha y hora',
+      principal: true,
+      celda: (v) => {
+        const estado = estadoVisita(v.fecha_hora)
+        return (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-medium text-tinta-900 tabular-nums">
+              {formatearFechaHora(v.fecha_hora)}
+            </span>
+            <Badge tono={estado.tono}>{estado.texto}</Badge>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'cliente',
+      encabezado: 'Cliente',
+      celda: (v) => (
+        <div className="min-w-0">
+          <p className="truncate text-tinta-900">
+            {v.cliente?.apellido}, {v.cliente?.nombre}
+          </p>
+          <p className="truncate text-xs text-tinta-500">
+            {v.cliente?.mail ?? '—'}
+            {v.cliente?.telefono && ` · ${v.cliente.telefono}`}
+          </p>
         </div>
-      </div>
-    );
-  }
+      ),
+    },
+    {
+      id: 'propiedad',
+      encabezado: 'Propiedad',
+      celda: (v) => <span className="text-tinta-700">{v.propiedad?.direccion ?? '—'}</span>,
+    },
+    {
+      id: 'precio',
+      encabezado: 'Precio',
+      alinear: 'derecha',
+      ocultarEnMobile: true,
+      celda: (v) =>
+        v.propiedad?.precio !== undefined ? (
+          <span className="text-tinta-700">{formatearMoneda(v.propiedad.precio)}</span>
+        ) : (
+          '—'
+        ),
+    },
+  ]
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-neutral-900">Gestión de Visitas</h2>
-        <p className="text-neutral-600 mt-2">Administra y organiza las visitas a propiedades</p>
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-display text-2xl text-tinta-900">Visitas</h1>
+        <p className="mt-0.5 text-sm text-tinta-500">La agenda de recorridas por propiedad.</p>
       </div>
 
-      {/* Tarjetas de estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500">
-          <p className="text-sm text-neutral-600 mb-1">Total Visitas</p>
-          <p className="text-3xl font-bold text-neutral-900">{stats.total}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-yellow-500">
-          <p className="text-sm text-neutral-600 mb-1">Hoy</p>
-          <p className="text-3xl font-bold text-yellow-600">{stats.hoy}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-green-500">
-          <p className="text-sm text-neutral-600 mb-1">Pendientes</p>
-          <p className="text-3xl font-bold text-green-600">{stats.pendientes}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-4 border-l-4 border-red-500">
-          <p className="text-sm text-neutral-600 mb-1">Próximas (1h)</p>
-          <p className="text-3xl font-bold text-red-600">{stats.proximas}</p>
-        </div>
-      </div>
+      <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Estadistica etiqueta="Agendadas" valor={stats.total} />
+        <Estadistica etiqueta="Hoy" valor={stats.hoy} />
+        <Estadistica etiqueta="Pendientes" valor={stats.pendientes} />
+        <Estadistica etiqueta="En la próxima hora" valor={stats.inminentes} destacada={stats.inminentes > 0} />
+      </dl>
 
-      {/* Alertas para visitas próximas */}
-      {stats.proximas > 0 && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
-          <div className="flex items-center">
-            <span className="text-2xl mr-3">⚠️</span>
-            <div>
-              <p className="text-red-800 font-semibold">
-                ¡Atención! Tienes {stats.proximas} visita{stats.proximas > 1 ? 's' : ''} en la próxima hora
-              </p>
-              <p className="text-red-600 text-sm">Revisa la agenda y prepara las propiedades</p>
-            </div>
-          </div>
-        </div>
+      {stats.inminentes > 0 && (
+        <p className="flex items-start gap-3 rounded-card border border-ambar-700/20 bg-ambar-50 px-4 py-3 text-sm text-ambar-700">
+          <BellAlertIcon className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <span>
+            Hay {stats.inminentes} visita{stats.inminentes > 1 ? 's' : ''} en la próxima hora. Revisá
+            que las propiedades estén listas.
+          </span>
+        </p>
       )}
 
-      {/* Filtros y búsqueda */}
-      <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Búsqueda */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              🔍 Buscar visita
-            </label>
-            <input
-              type="text"
-              placeholder="Cliente o dirección..."
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              className="text-black w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-neutral-400"
-            />
-          </div>
-
-          {/* Filtros rápidos */}
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
-              📋 Filtro rápido
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFiltro('todas')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'todas'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-              >
-                Todas
-              </button>
-              <button
-                onClick={() => setFiltro('hoy')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'hoy'
-                    ? 'bg-yellow-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-              >
-                Hoy
-              </button>
-              <button
-                onClick={() => setFiltro('pendientes')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'pendientes'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-              >
-                Pendientes
-              </button>
-              <button
-                onClick={() => setFiltro('pasadas')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${filtro === 'pasadas'
-                    ? 'bg-gray-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-              >
-                Pasadas
-              </button>
-            </div>
-          </div>
+      <div className="flex flex-col gap-3 rounded-card border border-arena-200 bg-white p-4 shadow-card sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative min-w-0 flex-1 sm:max-w-xs">
+          <label htmlFor="buscar-visita" className="sr-only">
+            Buscar por cliente o dirección
+          </label>
+          <MagnifyingGlassIcon
+            className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-tinta-500"
+            aria-hidden="true"
+          />
+          <input
+            id="buscar-visita"
+            type="search"
+            placeholder="Cliente o dirección…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="w-full rounded-lg border border-arena-300 bg-arena-50 py-2 ps-9 pe-3 text-sm text-tinta-900 transition-colors placeholder:text-tinta-500/70 focus:border-terra-600 focus:bg-white focus:outline-none"
+          />
         </div>
 
-        {/* Ordenamiento */}
-        <div className="mt-4 flex items-center justify-between">
-          <p className="text-sm text-neutral-600">
-            Mostrando <strong>{visitasFiltradas.length}</strong> de <strong>{visitas.length}</strong> visitas
-          </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTROS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFiltro(f.id)}
+              aria-pressed={filtro === f.id}
+              className={`accion accion-sm ${
+                filtro === f.id ? 'accion-primaria' : 'accion-secundaria'
+              }`}
+            >
+              {f.nombre}
+            </button>
+          ))}
+
           <button
-            onClick={() => setOrdenAscendente(!ordenAscendente)}
-            className="px-4 py-2 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 flex items-center gap-2 text-sm"
+            type="button"
+            onClick={() => setAscendente((v) => !v)}
+            className="accion accion-fantasma accion-sm"
           >
-            <span>📅</span>
-            <span className="text-neutral-900">
-              {ordenAscendente ? 'Más antiguas primero' : 'Más recientes primero'}
-            </span>
+            <ArrowsUpDownIcon className="size-4" aria-hidden="true" />
+            {ascendente ? 'Más antiguas' : 'Más recientes'}
           </button>
         </div>
       </div>
 
-      {/* Tabla de visitas */}
-      {visitasFiltradas.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <p className="text-neutral-600 text-lg">
-            {busqueda || filtro !== 'todas'
-              ? 'No se encontraron visitas con los filtros aplicados'
-              : 'No hay visitas agendadas'}
-          </p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-neutral-50 border-b border-neutral-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                    Fecha y Hora
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                    Cliente
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                    Contacto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                    Propiedad
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-neutral-600 uppercase tracking-wider">
-                    Precio
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-neutral-200">
-                {visitasFiltradas.map((visita) => {
-                  const pasada = visitaPasada(visita.fecha_hora);
-                  const hoy = esHoy(visita.fecha_hora);
-                  const proxima = proximaVisita(visita.fecha_hora);
+      <EstadoVista
+        cargando={cargando && !yaCargoUnaVez}
+        error={error}
+        vacio={visitasFiltradas.length === 0}
+        onReintentar={recargar}
+        mensajeVacio={visitas.length === 0 ? 'No hay visitas agendadas' : 'Ninguna visita con esos filtros'}
+        detalleVacio={
+          visitas.length === 0
+            ? 'Cuando un cliente pida una recorrida, aparece acá.'
+            : 'Probá con otro filtro o limpiá la búsqueda.'
+        }
+      >
+        <Tabla
+          datos={visitasFiltradas}
+          columnas={columnas}
+          claveFila={(v) => v.clave}
+          acciones={(v) => (
+            <button
+              type="button"
+              onClick={() => setAEliminar(v)}
+              className="accion accion-fantasma accion-sm text-alerta-700 hover:bg-alerta-50"
+            >
+              <TrashIcon className="size-4" aria-hidden="true" />
+              <span className="sr-only">Eliminar la visita del {formatearFechaHora(v.fecha_hora)}</span>
+            </button>
+          )}
+        />
+      </EstadoVista>
 
-                  return (
-                    <tr
-                      key={visita.clave}
-                      className={`hover:bg-neutral-50 transition-colors ${proxima ? 'bg-red-50' : pasada ? 'bg-gray-50' : hoy ? 'bg-yellow-50' : ''
-                        }`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${proxima
-                              ? 'bg-red-100 text-red-700 animate-pulse'
-                              : pasada
-                                ? 'bg-gray-200 text-gray-700'
-                                : hoy
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-green-100 text-green-700'
-                            }`}
-                        >
-                          {proxima ? '🔴 ¡PRÓXIMA!' : pasada ? '✓ Realizada' : hoy ? '📍 Hoy' : '⏰ Pendiente'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-bold text-neutral-900">
-                          {formatearFecha(visita.fecha_hora)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-neutral-900">
-                          {visita.cliente?.apellido}, {visita.cliente?.nombre}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-neutral-600">{visita.cliente?.mail || 'N/A'}</div>
-                        {visita.cliente?.telefono && (
-                          <div className="text-xs text-neutral-500">📞 {visita.cliente.telefono}</div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-neutral-900">{visita.propiedad?.direccion || 'N/A'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-neutral-900">
-                        ${visita.propiedad?.precio?.toLocaleString() || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleDelete(visita.clave)}
-                          className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-sm font-medium"
-                          type="button"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={aEliminar !== null}
+        titulo="Eliminar visita"
+        descripcion="Se cancela la recorrida agendada. No se puede deshacer."
+        detalle={
+          aEliminar
+            ? `${formatearFechaHora(aEliminar.fecha_hora)} · ${aEliminar.propiedad?.direccion ?? ''}`
+            : undefined
+        }
+        textoConfirmar="Eliminar"
+        onConfirmar={() => (aEliminar ? eliminar(aEliminar) : undefined)}
+        onCancelar={() => setAEliminar(null)}
+      />
     </div>
-  );
+  )
+}
+
+function Estadistica({
+  etiqueta,
+  valor,
+  destacada = false,
+}: {
+  etiqueta: string
+  valor: number
+  destacada?: boolean
+}) {
+  return (
+    <div
+      className={`rounded-card border p-4 shadow-card ${
+        destacada ? 'border-ambar-700/20 bg-ambar-50' : 'border-arena-200 bg-white'
+      }`}
+    >
+      <dt className="text-xs font-semibold tracking-[0.06em] text-tinta-500 uppercase">{etiqueta}</dt>
+      <dd
+        className={`mt-1 font-display text-3xl tabular-nums ${
+          destacada ? 'text-ambar-700' : 'text-tinta-900'
+        }`}
+      >
+        {valor}
+      </dd>
+    </div>
+  )
 }
