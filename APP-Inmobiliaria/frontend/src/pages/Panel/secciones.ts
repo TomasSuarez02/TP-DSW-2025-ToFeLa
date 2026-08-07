@@ -30,7 +30,9 @@ export const SECCIONES_AGENTE: Seccion[] = [
   { to: '/panel/agentes', nombre: 'Agentes', icono: IdentificationIcon },
 ]
 
+/** En el orden en que le pasan al cliente: primero visita, después seña, después papeles. */
 export const SECCIONES_CLIENTE: Seccion[] = [
+  { to: '/mi-cuenta/visitas', nombre: 'Mis visitas', icono: CalendarDaysIcon },
   { to: '/mi-cuenta/senias', nombre: 'Mis señas', icono: BanknotesIcon },
   { to: '/mi-cuenta/documentos', nombre: 'Mi documentación', icono: DocumentTextIcon },
 ]

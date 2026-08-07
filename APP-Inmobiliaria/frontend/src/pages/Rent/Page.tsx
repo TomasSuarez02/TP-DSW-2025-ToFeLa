@@ -475,7 +475,11 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
               {prop.direccion}.
             </p>
             <p className="mt-2 text-sm text-tinta-500">
-              La vas a encontrar en Mis Señas junto con el resto de tu actividad.
+              La vas a encontrar en{' '}
+              <Link to="/mi-cuenta/visitas" className="font-medium text-terra-600 underline hover:text-terra-800">
+                Mis visitas
+              </Link>
+              , donde también podés cancelarla si no llegás.
             </p>
           </div>
         ) : (

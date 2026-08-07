@@ -5,32 +5,22 @@ import {
   MagnifyingGlassIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline'
-import apiClient from '../../utils/apiClient'
 import { formatearFechaHora, formatearMoneda } from '../../utils/formato'
 import { useRecurso } from '../../hooks/useRecurso'
 import { useNotificacion } from '../../hooks/useNotificacion'
-import Badge, { type Tono } from '../../components/ui/Badge'
+import Badge from '../../components/ui/Badge'
 import ConfirmDialog from '../../components/ui/ConfirmDialog'
 import EstadoVista from '../../components/ui/EstadoVista'
 import Tabla, { type Columna } from '../../components/ui/Tabla'
-
-interface Visita {
-  /** PK compuesta (propiedad + cliente + fecha) codificada por el backend. */
-  clave: string
-  fecha_hora: string
-  cliente: {
-    id: number
-    nombre: string
-    apellido: string
-    mail: string
-    telefono?: string
-  }
-  propiedad: {
-    id: number
-    direccion: string
-    precio: number
-  }
-}
+import {
+  eliminarVisita,
+  esHoy,
+  esInminente,
+  estadoVisita,
+  obtenerVisitas,
+  yaPaso,
+  type Visita,
+} from '../../services/visitas'
 
 type Filtro = 'todas' | 'hoy' | 'pendientes' | 'pasadas'
 
@@ -40,33 +30,6 @@ const FILTROS: { id: Filtro; nombre: string }[] = [
   { id: 'pendientes', nombre: 'Pendientes' },
   { id: 'pasadas', nombre: 'Pasadas' },
 ]
-
-const UNA_HORA = 60 * 60 * 1000
-
-function esHoy(fecha: string): boolean {
-  const visita = new Date(fecha)
-  const hoy = new Date()
-  return (
-    visita.getDate() === hoy.getDate() &&
-    visita.getMonth() === hoy.getMonth() &&
-    visita.getFullYear() === hoy.getFullYear()
-  )
-}
-
-const yaPaso = (fecha: string) => new Date(fecha).getTime() < Date.now()
-
-const esInminente = (fecha: string) => {
-  const falta = new Date(fecha).getTime() - Date.now()
-  return falta > 0 && falta <= UNA_HORA
-}
-
-/** Un único vocabulario de estado, en vez de cinco combinaciones de color. */
-function estadoVisita(fecha: string): { tono: Tono; texto: string } {
-  if (esInminente(fecha)) return { tono: 'ambar', texto: 'En menos de 1 h' }
-  if (yaPaso(fecha)) return { tono: 'arena', texto: 'Realizada' }
-  if (esHoy(fecha)) return { tono: 'ambar', texto: 'Hoy' }
-  return { tono: 'salvia', texto: 'Pendiente' }
-}
 
 export default function Visitas() {
   const { notificar } = useNotificacion()
@@ -80,15 +43,7 @@ export default function Visitas() {
     cargando,
     error,
     recargar,
-  } = useRecurso<Visita[]>(
-    async () => {
-      const res = await apiClient.get('/visitas')
-      const data = res.data?.data ?? res.data
-      return Array.isArray(data) ? data : []
-    },
-    [],
-    [],
-  )
+  } = useRecurso<Visita[]>(() => obtenerVisitas(), [], [])
 
   // La agenda cambia mientras el agente la mira, pero el refresco ponía
   // `loading` en true cada 30 segundos: la pantalla entera parpadeaba a
@@ -140,7 +95,7 @@ export default function Visitas() {
   )
 
   const eliminar = async (visita: Visita) => {
-    await apiClient.delete(`/visitas/${visita.clave}`)
+    await eliminarVisita(visita.clave)
     setAEliminar(null)
     notificar('Visita eliminada')
     await recargar()

@@ -8,6 +8,7 @@ import Visitas from "../pages/Panel/Visitas.tsx";
 import Senias from "../pages/Panel/Senias.tsx";
 import Documentacion from "../pages/Panel/Documentacion.tsx";
 import MiDocumentacion from "../pages/Panel/MiDocumentacion.tsx";
+import MisVisitas from "../pages/Panel/MisVisitas.tsx";
 import Agentes from "../pages/Panel/Agentes.tsx";
 import { Register } from "../pages/Login/Register.tsx";
 import Page from "../pages/Rent/Page.tsx";
@@ -30,8 +31,8 @@ export const AppRouter = () => {
         {/*Rutas Privadas: hace falta sesión iniciada.
            /Rent/visit y /Rent/Reserv se sacaron: eran dos stubs con un <h1>
            ("Página de visitas", "Reserv Page") enrutados en producción, sin
-           un solo link que llevara a ellos. La visita del cliente todavía no
-           existe como flujo; cuando exista, entra acá con su pantalla real.*/}
+           un solo link que llevara a ellos. La visita se agenda desde la ficha
+           de la propiedad y se sigue desde /mi-cuenta/visitas.*/}
         <Route path="/checkout/:clave" element={<RutaProtegida><Checkout/></RutaProtegida>}/>
 
         {/*Backoffice: además de sesión, rol de agente.
@@ -54,16 +55,17 @@ export const AppRouter = () => {
           <Route path="agentes" element={<Agentes/>}/>
         </Route>
 
-        {/*La cuenta del cliente: el mismo marco, otras dos secciones.*/}
+        {/*La cuenta del cliente: el mismo marco, otras tres secciones.*/}
         <Route
           path="/mi-cuenta"
           element={
             <RutaProtegida>
-              <PanelLayout titulo="Mi cuenta" subtitulo="Reservas y documentación" secciones={SECCIONES_CLIENTE} />
+              <PanelLayout titulo="Mi cuenta" subtitulo="Visitas, reservas y documentación" secciones={SECCIONES_CLIENTE} />
             </RutaProtegida>
           }
         >
           <Route index element={<Navigate to="/mi-cuenta/senias" replace/>}/>
+          <Route path="visitas" element={<MisVisitas/>}/>
           <Route path="senias" element={<Senias isAgent={false}/>}/>
           <Route path="documentos" element={<MiDocumentacion/>}/>
         </Route>
