@@ -55,11 +55,11 @@ export default function Modal({
         >
           <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
             <div>
-              <DialogTitle className="font-display text-xl leading-snug text-tinta-900">
+              <DialogTitle className="font-sans text-xl leading-snug text-tinta-900">
                 {titulo}
               </DialogTitle>
               {descripcion && (
-                <p className="mt-1.5 text-sm leading-relaxed text-tinta-500">{descripcion}</p>
+                <p className="mt-1.5 text-lg leading-relaxed text-tinta-500">{descripcion}</p>
               )}
             </div>
 

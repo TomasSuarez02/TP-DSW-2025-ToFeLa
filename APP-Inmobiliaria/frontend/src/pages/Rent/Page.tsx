@@ -197,6 +197,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
   }, [prop?.id, userId, slotSel, fecha])
 
   const disponible = prop?.estado?.toLowerCase() === 'disponible'
+  const estadoCapitalizado = prop?.estado ? prop.estado[0].toUpperCase() + prop.estado.slice(1) : ''
   const puedeSeniar = userRole === 'cliente' && loggedClient !== null && disponible
 
   // --- Estados de pantalla -------------------------------------------------
@@ -303,7 +304,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
     <>
       <Header />
 
-      <main className="bg-arena-50">
+      <main className="bg-arena-50 mb-20">
         <div className="mx-auto max-w-screen-xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
           <Link
             to="/Rent"
@@ -313,51 +314,37 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
             Volver a las propiedades
           </Link>
 
-          <header className="mt-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-            <div>
-              <h1 className="font-display text-3xl leading-tight text-balance text-tinta-900 sm:text-4xl lg:text-5xl">
-                {prop.direccion}
-              </h1>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                {prop.tipoPropiedad && (
-                  <span className="rounded-full bg-terra-100 px-3 py-1 text-xs font-semibold tracking-wider text-terra-800 uppercase">
-                    {prop.tipoPropiedad.descripcion}
-                  </span>
-                )}
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold tracking-wider uppercase ${
-                    disponible ? 'bg-salvia-100 text-salvia-700' : 'bg-arena-200 text-tinta-700'
-                  }`}
-                >
-                  {prop.estado}
-                </span>
-              </div>
-            </div>
-          </header>
-
-          <div className="mt-8">
+          <div className="mt-5">
             <Gallery imagenes={prop.imagenes ?? []} direccion={prop.direccion} />
           </div>
 
-          <div className="mt-10 grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_22rem] lg:gap-14">
+          <header className="mt-8 flex flex-wrap items-end justify-between">
+            <div>
+              <h1 className="font-semibold text-1xl leading-tight text-balance text-tinta-900 sm:text-2xl lg:text-3xl">
+                {prop.direccion}
+              </h1>
+            </div>
+          </header>
+
+          <div className="mt-5 grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_22rem] lg:gap-14">
             {/* Lectura: la descripción manda, los datos la acompañan. */}
             <div>
               <section>
-                <h2 className="font-display text-2xl text-tinta-900">Sobre esta propiedad</h2>
+                <h2 className="font-display text-2xl text-tinta-900">Descripción</h2>
                 <p className="mt-4 max-w-[68ch] leading-[1.75] whitespace-pre-wrap text-tinta-700">
                   {prop.descripcion || 'La inmobiliaria todavía no cargó una descripción para esta propiedad. Podés agendar una visita para conocerla en persona.'}
                 </p>
               </section>
 
               <section className="mt-10 border-t border-arena-200 pt-8">
-                <h2 className="font-display text-2xl text-tinta-900">Datos</h2>
+                <h2 className="font-display text-2xl text-tinta-900">Características</h2>
                 <dl className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <Dato
                     icono={HomeModernIcon}
                     etiqueta="Tipo"
                     valor={prop.tipoPropiedad?.descripcion}
                   />
-                  <Dato icono={TagIcon} etiqueta="Estado" valor={prop.estado} />
+                  <Dato icono={TagIcon} etiqueta="Estado" valor={estadoCapitalizado} />
                   <Dato icono={ClockIcon} etiqueta="Horario de visitas" valor={horario} />
                   <Dato
                     icono={BuildingOffice2Icon}
@@ -366,6 +353,19 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
                   />
                 </dl>
               </section>
+
+              <section className="mt-10 border-t border-arena-200 pt-8">
+                <h2 className="font-display text-2xl text-tinta-900">Ubicación</h2>
+                <div className="mt-5 overflow-hidden rounded-card border border-arena-200">
+                  <iframe
+                    title={`Mapa de ${prop.direccion}`}
+                    className="h-80 w-full"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(prop.direccion)}&output=embed`}
+                  />
+                </div>
+              </section>
             </div>
 
             {/* Decisión: precio, seña y acciones, siempre a la vista. */}
@@ -373,7 +373,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
               <div className="sticky top-28 rounded-card border border-arena-200 bg-white p-6 shadow-card">
                 <p className="text-xs tracking-wider text-tinta-500 uppercase">Alquiler mensual</p>
                 <p className="mt-1 flex items-baseline gap-2">
-                  <span className="font-display text-4xl text-terra-600 tabular-nums">
+                  <span className="font-sans text-4xl text-terra-600 tabular-nums">
                     {formatearMoneda(prop.precio)}
                   </span>
                   <span className="text-sm text-tinta-500">por mes</span>
@@ -395,11 +395,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
 
                 <div className="mt-5 space-y-2.5">{acciones}</div>
 
-                {horario && (
-                  <p className="mt-4 text-center text-xs text-tinta-500">
-                    Se puede visitar de {hhmm(horaDesde)} a {hhmm(horaHasta)} h
-                  </p>
-                )}
+                <p className="text-sm text-tinta-500"></p>
               </div>
             </aside>
           </div>
@@ -636,7 +632,7 @@ export default function Page({ propiedad }: { propiedad?: Propiedades }) {
           )}
         </Modal>
       )}
-
+      
       <Footer />
 
       {/* La barra fija se apoya sobre el borde inferior de la ventana, así

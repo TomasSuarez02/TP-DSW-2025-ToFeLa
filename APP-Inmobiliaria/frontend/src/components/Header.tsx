@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../auth/useAuth'
 import type { Rol } from '../auth/session'
+import { SECCIONES_CLIENTE } from '../pages/Panel/secciones'
 
 interface Enlace {
   a: string
@@ -23,12 +24,14 @@ function enlacesSegunRol(rol: Rol | null): Enlace[] {
     { a: '/contact', texto: 'Contacto' },
   ]
 
-  if (rol === 'cliente') return [...publicos, { a: '/mi-cuenta/senias', texto: 'Mi cuenta' }]
   return publicos
 }
 
 export default function Header() {
   const [abierto, setAbierto] = useState(false)
+  const [cuentaAbierta, setCuentaAbierta] = useState(false)
+  const cuentaRef = useRef<HTMLDivElement>(null)
+  const cierreHoverRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { isLoggedIn, rol, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -37,9 +40,30 @@ export default function Header() {
   const cerrarSesion = () => {
     logout()
     setAbierto(false)
+    setCuentaAbierta(false)
     // window.location.href recargaba la app entera para cambiar de pantalla:
     // se perdía el estado del router y el usuario veía un flash en blanco.
     navigate('/login')
+  }
+
+  useEffect(() => {
+    if (!cuentaAbierta) return
+    const alClickearFuera = (e: MouseEvent) => {
+      if (!cuentaRef.current?.contains(e.target as Node)) setCuentaAbierta(false)
+    }
+    document.addEventListener('mousedown', alClickearFuera)
+    return () => document.removeEventListener('mousedown', alClickearFuera)
+  }, [cuentaAbierta])
+
+  const abrirCuentaConHover = () => {
+    if (cierreHoverRef.current) clearTimeout(cierreHoverRef.current)
+    setCuentaAbierta(true)
+  }
+
+  // Pequeño margen antes de cerrar: sin esto, el mouse se corta al pasar
+  // del botón al panel (quedan separados por el margen) y el menú se cierra solo.
+  const cerrarCuentaConHover = () => {
+    cierreHoverRef.current = setTimeout(() => setCuentaAbierta(false), 150)
   }
 
   return (
@@ -85,7 +109,7 @@ export default function Header() {
           </Link>
 
           {/* DERECHA */}
-          <div className="hidden justify-self-end md:block">
+          <div className="hidden items-center gap-4 justify-self-end md:flex">
             {!isLoggedIn ? (
               <Link
                 to="/login"
@@ -94,13 +118,55 @@ export default function Header() {
                 Iniciar sesión
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={cerrarSesion}
-                className="cursor-pointer text-sm text-tinta-500 tracking-wide transition-colors hover:text-terra-700"
-              >
-                Cerrar sesión
-              </button>
+              <>
+                {rol === 'cliente' && (
+                  <div
+                    className="relative"
+                    ref={cuentaRef}
+                    onMouseEnter={abrirCuentaConHover}
+                    onMouseLeave={cerrarCuentaConHover}
+                  >
+                    <button
+                      type="button"
+                      aria-haspopup="true"
+                      aria-expanded={cuentaAbierta}
+                      onClick={() => setCuentaAbierta((v) => !v)}
+                      className="flex cursor-pointer items-center gap-1 text-tinta-700 tracking-wide transition-colors hover:text-terra-700"
+                    >
+                      Mi cuenta
+                      <ChevronDownIcon
+                        className={`size-4 transition-transform ${cuentaAbierta ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
+                      />
+                    </button>
+
+                    {cuentaAbierta && (
+                      <div className="absolute end-0 top-full z-50 mt-2 w-48 rounded-lg border border-arena-200 bg-white py-1 shadow-lg">
+                        {SECCIONES_CLIENTE.map(({ to, nombre, icono: Icono }) => (
+                          <Link
+                            key={to}
+                            to={to}
+                            onClick={() => setCuentaAbierta(false)}
+                            className="flex items-center gap-2 px-3 py-2 text-sm text-tinta-700 transition-colors hover:bg-arena-100 hover:text-tinta-900"
+                          >
+                            <Icono className="size-4" aria-hidden="true" />
+                            {nombre}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  aria-label="Cerrar sesión"
+                  title="Cerrar sesión"
+                  onClick={cerrarSesion}
+                  className="grid size-9 cursor-pointer place-items-center rounded-lg text-tinta-500 transition-colors hover:bg-arena-100 hover:text-terra-700"
+                >
+                  <XMarkIcon className="size-5" aria-hidden="true" />
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -127,13 +193,34 @@ export default function Header() {
                 Iniciar sesión
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={cerrarSesion}
-                className="cursor-pointer rounded-lg px-2 py-2 text-start text-tinta-700 tracking-wide transition-colors hover:bg-arena-100 hover:text-tinta-900"
-              >
-                Cerrar sesión
-              </button>
+              <>
+                {rol === 'cliente' && (
+                  <div className="flex flex-col gap-1">
+                    <span className="px-2 py-1 text-sm font-medium text-tinta-500 tracking-wide">
+                      Mi cuenta
+                    </span>
+                    {SECCIONES_CLIENTE.map(({ to, nombre, icono: Icono }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={() => setAbierto(false)}
+                        className="flex items-center gap-2 rounded-lg px-4 py-2 text-tinta-700 tracking-wide transition-colors hover:bg-arena-100 hover:text-tinta-900"
+                      >
+                        <Icono className="size-4" aria-hidden="true" />
+                        {nombre}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={cerrarSesion}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-start text-tinta-700 tracking-wide transition-colors hover:bg-arena-100 hover:text-tinta-900"
+                >
+                  <XMarkIcon className="size-5" aria-hidden="true" />
+                  Cerrar sesión
+                </button>
+              </>
             )}
           </nav>
         )}

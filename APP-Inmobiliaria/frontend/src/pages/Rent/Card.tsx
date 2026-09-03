@@ -69,7 +69,7 @@ export default function Card({ id, direccion, precio, estado, descripcion, tipoP
             </span>
           )}
 
-          <h3 className="font-display text-xl leading-snug text-tinta-900">
+          <h3 className="font-semibold text-xl leading-snug text-tinta-900">
             {direccion}
           </h3>
 
@@ -83,7 +83,7 @@ export default function Card({ id, direccion, precio, estado, descripcion, tipoP
               tienen descripciones de distinto largo y los precios deben
               alinearse entre sí para poder compararse de un vistazo. */}
           <div className="mt-auto flex items-baseline justify-between gap-2 border-t border-arena-200 pt-4">
-            <span className="font-display text-2xl text-terra-600 tabular-nums">
+            <span className="font-sans text-2xl text-terra-600 tabular-nums">
               ${precio.toLocaleString('es-AR')}
             </span>
             <span className="text-xs text-tinta-500">por mes</span>
